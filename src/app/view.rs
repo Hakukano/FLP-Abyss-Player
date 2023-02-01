@@ -4,9 +4,10 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, style::Margin, Frame, RichText},
+    egui::{self, style::Margin, Frame, Key, RichText},
     epaint::{Color32, ColorImage, FontId, Vec2},
 };
+use rand::Rng;
 use walkdir::DirEntry;
 
 use crate::{locale, sized_text};
@@ -94,40 +95,95 @@ impl State {
         self.home
     }
 
+    pub fn set_index(&mut self, index: usize, ctx: &egui::Context) {
+        self.index = index;
+        match self.media_type {
+            MediaType::Image => {
+                self.image.replace({
+                    let image = image::io::Reader::open(
+                        self.paths
+                            .get(self.index)
+                            .expect("Out of bound: image paths"),
+                    )
+                    .expect("Cannot open image file")
+                    .decode()
+                    .expect("Cannot decode image file");
+                    let size = [image.width() as _, image.height() as _];
+                    let image_buffer = image.to_rgba8();
+                    let pixels = image_buffer.as_flat_samples();
+                    egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice())
+                });
+                self.texture.replace(
+                    ctx.load_texture(
+                        "current_image",
+                        self.image
+                            .as_ref()
+                            .expect("Impossible: self.image was just replaced")
+                            .clone(),
+                        Default::default(),
+                    ),
+                );
+            }
+            MediaType::Video => {}
+            _ => {}
+        }
+    }
+
     pub fn update(&mut self, ctx: &egui::Context) {
         let locale = &locale::get().ui.view;
 
         egui::TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
+                top: 10.0,
+                bottom: 10.0,
                 ..Default::default()
             }))
             .show(ctx, |ui| {
-                ui.centered_and_justified(|ui| ui.label(sized_text!(locale.title.as_str(), 32.0)));
+                ui.centered_and_justified(|ui| {
+                    ui.label(sized_text!(
+                        format!(
+                            "{} {}/{}",
+                            locale.title.as_str(),
+                            self.index + 1,
+                            self.paths.len()
+                        ),
+                        32.0
+                    ))
+                });
             });
 
         egui::TopBottomPanel::bottom("home")
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
-                right: 5.0,
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
                 ..Default::default()
             }))
             .show(ctx, |ui| {
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                    if ui.button(sized_text!(locale.home.as_str(), 16.0)).clicked() {
-                        self.home = true;
-                    }
-                });
+                ui.horizontal(|ui| {
+                    ui.add_space(10.0);
+                    ui.label(sized_text!(
+                        self.paths
+                            .get(self.index)
+                            .expect("Out of bound: paths")
+                            .to_str()
+                            .expect("Invalid path string"),
+                        16.0
+                    ));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                        if ui.button(sized_text!(locale.home.as_str(), 16.0)).clicked() {
+                            self.home = true;
+                        }
+                    });
+                })
             });
 
         egui::CentralPanel::default()
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
-                right: 5.0,
-                left: 5.0,
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
+                left: 10.0,
             }))
             .show(ctx, |ui| {
                 if self.paths.is_empty() {
@@ -136,40 +192,47 @@ impl State {
 
                 match self.media_type {
                     MediaType::Image => {
-                        let image = self.image.get_or_insert_with(|| {
-                            let image = image::io::Reader::open(
-                                self.paths
-                                    .get(self.index)
-                                    .expect("Out of bound: image paths"),
-                            )
-                            .expect("Cannot open image file")
-                            .decode()
-                            .expect("Cannot decode image file");
-                            let size = [image.width() as _, image.height() as _];
-                            let image_buffer = image.to_rgba8();
-                            let pixels = image_buffer.as_flat_samples();
-                            egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice())
-                        });
-                        let texture: &egui::TextureHandle = self.texture.get_or_insert_with(|| {
-                            ui.ctx().load_texture(
-                                "current_image",
-                                image.clone(),
-                                Default::default(),
-                            )
-                        });
+                        if self.texture.is_none() {
+                            self.set_index(0, ctx);
+                        }
+                        let texture = self
+                            .texture
+                            .as_ref()
+                            .expect("Impossible: self.texture was just set");
                         let texture_size = texture.size_vec2();
                         let ui_size = ui.available_size();
                         let scale_x = ui_size.x / texture_size.x;
                         let scale_y = ui_size.y / texture_size.y;
                         let scale = scale_x.min(scale_y);
-                        ui.image(
-                            texture,
-                            Vec2::new(texture_size.x * scale, texture_size.y * scale),
-                        );
+                        ui.centered_and_justified(|ui| {
+                            ui.image(
+                                texture,
+                                Vec2::new(texture_size.x * scale, texture_size.y * scale),
+                            );
+                        });
                     }
                     MediaType::Video => {}
                     _ => {}
                 }
             });
+
+        if ctx.input().key_pressed(Key::ArrowRight) {
+            if self.index == self.paths.len() - 1 {
+                self.set_index(0, ctx);
+            } else {
+                self.set_index(self.index + 1, ctx);
+            }
+        }
+        if ctx.input().key_pressed(Key::ArrowLeft) {
+            if self.index == 0 {
+                self.set_index(self.paths.len() - 1, ctx);
+            } else {
+                self.set_index(self.index - 1, ctx);
+            }
+        }
+        if ctx.input().key_pressed(Key::R) {
+            let mut rng = rand::thread_rng();
+            self.set_index(rng.gen_range(0..self.paths.len()), ctx);
+        }
     }
 }

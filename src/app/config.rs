@@ -70,8 +70,8 @@ impl State {
 
         egui::TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
+                top: 10.0,
+                bottom: 10.0,
                 ..Default::default()
             }))
             .show(ctx, |ui| {
@@ -80,9 +80,9 @@ impl State {
 
         egui::TopBottomPanel::bottom("go")
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
-                right: 5.0,
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
                 ..Default::default()
             }))
             .show(ctx, |ui| {
@@ -100,12 +100,13 @@ impl State {
 
         egui::CentralPanel::default()
             .frame(Frame::none().inner_margin(Margin {
-                top: 5.0,
-                bottom: 5.0,
-                right: 5.0,
-                left: 5.0,
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
+                left: 10.0,
             }))
             .show(ctx, |ui| {
+                ui.spacing_mut().item_spacing.y = 10.0;
                 ui.horizontal(|ui| {
                     egui::ComboBox::from_label(sized_text!(locale.media_type.label.as_str(), 16.0))
                         .selected_text(sized_text!(self.media_type.to_string(), 16.0))

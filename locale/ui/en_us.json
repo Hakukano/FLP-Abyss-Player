@@ -4,7 +4,7 @@
     "title": "Configuration",
     "alert": "Please complete all the configuration",
     "media_type": {
-      "label": "Select a media type",
+      "label": "Media type",
       "unset": "Please select a media type to view",
       "image": "Image",
       "video": "Video"
