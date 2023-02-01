@@ -2,6 +2,19 @@
 
 This is a media player that allows you go through the entire folder of media recursively like looking into an abyss.
 
+# Install
+
+## Install From crates.io
+
+-`cargo install flp-abyss-player`
+- Download the assets from release page
+- Setup environment variable to point to the assets
+
+## Run From Source
+
+- Clone this repo
+- `cargo run --release`
+
 # Supported Media
 
 ## Images
@@ -47,3 +60,8 @@ The player will looking for all media file with said type under this path recurs
 - ArrowRight: next media
 - ArrowLeft: previous media
 - R: random media
+
+# TODO
+
+- Implement imagefcache
+- Implement video player
