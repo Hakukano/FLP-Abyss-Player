@@ -106,6 +106,8 @@ impl State {
                             .expect("Out of bound: image paths"),
                     )
                     .expect("Cannot open image file")
+                    .with_guessed_format()
+                    .expect("Cannot guess image mime type")
                     .decode()
                     .expect("Cannot decode image file")
                     .to_rgba8(),
