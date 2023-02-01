@@ -1,6 +1,6 @@
-# FLP Abyss Viewer
+# FLP Abyss Player
 
-This is a media viewer that allows you go through the entire folder of media recursively like looking into an abyss.
+This is a media player that allows you go through the entire folder of media recursively like looking into an abyss.
 
 # Supported Media
 
@@ -32,13 +32,13 @@ LOCALE= # all lower cases. e.g. en_us
 
 ## Media Type
 
-Choose the media type to view.
+Choose the media type to player.
 
 ## Root Path
 
-The viewer will looking for all media file with said type under this path recursively.
+The player will looking for all media file with said type under this path recursively.
 
-# Viewer
+# View
 
 ## Keyboard Navigation
 
