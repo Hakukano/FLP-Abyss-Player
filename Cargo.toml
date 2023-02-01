@@ -1,11 +1,11 @@
 [package]
-name = "flp_abyss_viewer"
+name = "flp-abyss-viewer"
 version = "0.1.0"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media viewer that sees all"
 repository = "https://github.com/Hakukano/FLP-Abyss-Viewer"
-documentation = "https://docs.rs/flp_abyss_viewer"
+documentation = "https://docs.rs/flp-abyss-viewer"
 homepage = "https://flp-abyss-viewer.rs/"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
