@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 mod app;
+mod font;
 mod locale;
 
 use eframe::egui;
@@ -27,6 +28,6 @@ fn main() {
     eframe::run_native(
         locale::get().ui.app_name.as_str(),
         options,
-        Box::new(|_cc| Box::<app::App>::default()),
+        Box::new(|cc| Box::new(app::App::new(cc))),
     )
 }

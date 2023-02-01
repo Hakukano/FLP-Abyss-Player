@@ -24,6 +24,8 @@ Current supported locale:
 # Env
 
 ```
+FONT_PATH= # The path to font directory
+FONTS= # The font files to be installed, separated by ; and the first one will be used as default
 LOCALE_PATH= # The path to locale directory
 LOCALE= # all lower cases. e.g. en_us
 ```

@@ -8,15 +8,17 @@ enum State {
     View(view::State),
 }
 
-impl Default for State {
-    fn default() -> Self {
-        Self::Config
-    }
-}
-
-#[derive(Default)]
 pub struct App {
     state: State,
+}
+
+impl App {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        crate::font::init(&cc.egui_ctx);
+        Self {
+            state: State::Config,
+        }
+    }
 }
 
 impl eframe::App for App {
