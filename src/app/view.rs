@@ -5,7 +5,7 @@ use std::{
 
 use eframe::{
     egui::{self, style::Margin, Frame, Key, RichText},
-    epaint::{Color32, ColorImage, FontId, Vec2},
+    epaint::{Color32, FontId, Vec2},
 };
 use rand::Rng;
 use walkdir::DirEntry;
@@ -45,7 +45,7 @@ pub struct State {
     paths: Vec<PathBuf>,
     index: usize,
 
-    image: Option<ColorImage>,
+    image: Option<image::RgbaImage>,
     texture: Option<egui::TextureHandle>,
 }
 
@@ -99,30 +99,29 @@ impl State {
         self.index = index;
         match self.media_type {
             MediaType::Image => {
-                self.image.replace({
-                    let image = image::io::Reader::open(
+                self.image.replace(
+                    image::io::Reader::open(
                         self.paths
                             .get(self.index)
                             .expect("Out of bound: image paths"),
                     )
                     .expect("Cannot open image file")
                     .decode()
-                    .expect("Cannot decode image file");
-                    let size = [image.width() as _, image.height() as _];
-                    let image_buffer = image.to_rgba8();
-                    let pixels = image_buffer.as_flat_samples();
-                    egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice())
-                });
-                self.texture.replace(
-                    ctx.load_texture(
-                        "current_image",
-                        self.image
-                            .as_ref()
-                            .expect("Impossible: self.image was just replaced")
-                            .clone(),
-                        Default::default(),
-                    ),
+                    .expect("Cannot decode image file")
+                    .to_rgba8(),
                 );
+                let image = self
+                    .image
+                    .as_ref()
+                    .expect("Impossible: self.image was just replaced");
+                self.texture.replace(ctx.load_texture(
+                    "current_image",
+                    egui::ColorImage::from_rgba_unmultiplied(
+                        [image.width() as _, image.height() as _],
+                        image.as_flat_samples().as_slice(),
+                    ),
+                    Default::default(),
+                ));
             }
             MediaType::Video => {}
             _ => {}
