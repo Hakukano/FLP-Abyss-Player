@@ -1,0 +1,23 @@
+{
+  "app_name": "Abyss Viewer",
+  "config": {
+    "title": "Configuration",
+    "alert": "Please complete all the configuration",
+    "media_type": {
+      "label": "Select a media type",
+      "unset": "Please select a media type to view",
+      "image": "Image",
+      "video": "Video"
+    },
+    "root_path": {
+      "label": "Set root path",
+      "unset": "Please pick a root path to start",
+      "set": "Current root path"
+    },
+    "go": "Dive!"
+  },
+  "view": {
+    "title": "Abyss",
+    "home": "Home"
+  }
+}
