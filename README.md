@@ -13,6 +13,7 @@ This is a media player that allows you go through the entire folder of media rec
 ## Run From Source
 
 - Clone this repo
+- Download the assets from release page
 - `cargo run --release`
 
 # Supported Media
@@ -63,5 +64,6 @@ The player will looking for all media file with said type under this path recurs
 
 # TODO
 
-- Implement imagefcache
+- Implement image cache
 - Implement video player
+- Add more locales

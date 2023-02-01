@@ -3,7 +3,7 @@ use std::{env, fs, path::Path};
 use eframe::egui;
 
 pub fn init(ctx: &egui::Context) {
-    let font_path = env::var("FONT_PATH").unwrap_or("./font".to_string());
+    let font_path = env::var("FONT_PATH").unwrap_or("./assets/font".to_string());
     let fonts = env::var("FONTS").unwrap_or("NotoSansCJKjp-Regular.otf;Inter-Regular.ttf".to_string());
     let fonts = fonts.split(';').collect::<Vec<_>>();
 

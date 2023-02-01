@@ -8,7 +8,7 @@ macro_rules! read_locale {
     ($map:ident, $locale:expr, $(($name:ident, $sub_path:expr),)+) => {
         let locale_path_env =
             env::var("LOCALE_PATH")
-            .unwrap_or("./locale".to_string());
+            .unwrap_or("./assets/locale".to_string());
         let locale_path = Path::new(locale_path_env.as_str());
         $map.insert(
             $locale.to_string(),
