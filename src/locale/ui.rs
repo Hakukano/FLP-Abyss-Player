@@ -16,11 +16,20 @@ pub struct RootPath {
 }
 
 #[derive(Deserialize)]
+pub struct VideoPlayer {
+    pub label: String,
+    pub unset: String,
+    pub qtp: String,
+    pub vlc: String,
+}
+
+#[derive(Deserialize)]
 pub struct Config {
     pub title: String,
     pub alert: String,
     pub media_type: MediaType,
     pub root_path: RootPath,
+    pub video_player: VideoPlayer,
     pub go: String,
 }
 

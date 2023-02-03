@@ -38,6 +38,36 @@ impl ToString for MediaType {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub enum VideoPlayer {
+    Unset,
+    Qtp,
+    Vlc,
+}
+
+impl VideoPlayer {
+    pub fn is_unset(&self) -> bool {
+        matches!(self, Self::Unset)
+    }
+}
+
+impl Default for VideoPlayer {
+    fn default() -> Self {
+        Self::Unset
+    }
+}
+
+impl ToString for VideoPlayer {
+    fn to_string(&self) -> String {
+        let video_player = &locale::get().ui.config.video_player;
+        match self {
+            Self::Unset => "--".to_string(),
+            Self::Qtp => video_player.qtp.clone(),
+            Self::Vlc => video_player.vlc.clone(),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct State {
     alert: bool,
@@ -46,6 +76,8 @@ pub struct State {
 
     pub media_type: MediaType,
     pub root_path: Option<String>,
+
+    pub video_player: VideoPlayer,
 }
 
 impl State {
@@ -88,7 +120,13 @@ impl State {
             .show(ctx, |ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
                     if ui.button(sized_text!(locale.go.as_str(), 16.0)).clicked() {
-                        if !(self.media_type.is_unset() || self.root_path.is_none()) {
+                        let path_set = self.root_path.is_some();
+                        let other_set = match self.media_type {
+                            MediaType::Image => true,
+                            MediaType::Video => !self.video_player.is_unset(),
+                            _ => false,
+                        };
+                        if path_set && other_set {
                             self.go = true;
                         } else {
                             self.alert_message.replace(locale.alert.clone());
@@ -158,6 +196,40 @@ impl State {
                         ));
                     }
                 });
+
+                if self.media_type == MediaType::Video {
+                    ui.horizontal(|ui| {
+                        egui::ComboBox::from_label(sized_text!(
+                            locale.video_player.label.as_str(),
+                            16.0
+                        ))
+                        .selected_text(sized_text!(self.video_player.to_string(), 16.0))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut self.video_player,
+                                VideoPlayer::Unset,
+                                sized_text!("--", 16.0),
+                            );
+                            ui.selectable_value(
+                                &mut self.video_player,
+                                VideoPlayer::Qtp,
+                                sized_text!(locale.video_player.qtp.as_str(), 16.0),
+                            );
+                            ui.selectable_value(
+                                &mut self.video_player,
+                                VideoPlayer::Vlc,
+                                sized_text!(locale.video_player.vlc.as_str(), 16.0),
+                            );
+                        });
+                        if self.video_player.is_unset() {
+                            ui.label(sized_text!(
+                                locale.video_player.unset.as_str(),
+                                16.0,
+                                Color32::LIGHT_RED
+                            ));
+                        }
+                    });
+                }
             });
     }
 }
