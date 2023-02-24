@@ -1,83 +1,15 @@
-use std::sync::Mutex;
-
 use eframe::{
-    egui::{self, style::Margin, Frame, RichText},
-    epaint::{Color32, FontId},
+    egui::{self, style::Margin, Frame, TextStyle::*},
+    epaint::Color32,
 };
-use once_cell::sync::OnceCell;
 
-use crate::{locale, sized_text};
-
-#[derive(Clone, PartialEq, Eq)]
-pub enum MediaType {
-    Unset,
-    Image,
-    Video,
-}
-
-impl MediaType {
-    pub fn is_unset(&self) -> bool {
-        matches!(self, Self::Unset)
-    }
-}
-
-impl Default for MediaType {
-    fn default() -> Self {
-        Self::Unset
-    }
-}
-
-impl ToString for MediaType {
-    fn to_string(&self) -> String {
-        let media_type = &locale::get().ui.config.media_type;
-        match self {
-            Self::Unset => "--".to_string(),
-            Self::Image => media_type.image.clone(),
-            Self::Video => media_type.video.clone(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Eq)]
-pub enum VideoPlayer {
-    Unset,
-    Qtp,
-    Vlc,
-}
-
-impl VideoPlayer {
-    pub fn is_unset(&self) -> bool {
-        matches!(self, Self::Unset)
-    }
-}
-
-impl Default for VideoPlayer {
-    fn default() -> Self {
-        Self::Unset
-    }
-}
-
-impl ToString for VideoPlayer {
-    fn to_string(&self) -> String {
-        let video_player = &locale::get().ui.config.video_player;
-        match self {
-            Self::Unset => "--".to_string(),
-            Self::Qtp => video_player.qtp.clone(),
-            Self::Vlc => video_player.vlc.clone(),
-        }
-    }
-}
+use crate::{config::*, font::gen_rich_text, locale};
 
 #[derive(Default)]
 pub struct State {
     alert: bool,
     alert_message: Option<String>,
     go: bool,
-
-    pub media_type: MediaType,
-    pub root_path: Option<String>,
-
-    pub video_player: VideoPlayer,
 }
 
 impl State {
@@ -92,11 +24,17 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
+        let mut config = get().lock().expect("Cannot get config lock");
         let locale = &locale::get().ui.config;
 
         if let Some(alert_message) = &self.alert_message {
             egui::Window::new("").open(&mut self.alert).show(ctx, |ui| {
-                ui.label(sized_text!(alert_message, 32.0, Color32::RED));
+                ui.label(gen_rich_text(
+                    ctx,
+                    alert_message,
+                    Heading,
+                    Some(Color32::RED),
+                ));
             });
         }
 
@@ -107,7 +45,9 @@ impl State {
                 ..Default::default()
             }))
             .show(ctx, |ui| {
-                ui.centered_and_justified(|ui| ui.label(sized_text!(locale.title.as_str(), 32.0)));
+                ui.centered_and_justified(|ui| {
+                    ui.label(gen_rich_text(ctx, locale.title.as_str(), Heading, None))
+                });
             });
 
         egui::TopBottomPanel::bottom("go")
@@ -119,11 +59,14 @@ impl State {
             }))
             .show(ctx, |ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                    if ui.button(sized_text!(locale.go.as_str(), 16.0)).clicked() {
-                        let path_set = self.root_path.is_some();
-                        let other_set = match self.media_type {
+                    if ui
+                        .button(gen_rich_text(ctx, locale.go.as_str(), Button, None))
+                        .clicked()
+                    {
+                        let path_set = config.root_path.is_some();
+                        let other_set = match config.media_type {
                             MediaType::Image => true,
-                            MediaType::Video => !self.video_player.is_unset(),
+                            MediaType::Video => !config.video_player.is_unset(),
                             _ => false,
                         };
                         if path_set && other_set {
@@ -146,95 +89,117 @@ impl State {
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing.y = 10.0;
                 ui.horizontal(|ui| {
-                    egui::ComboBox::from_label(sized_text!(locale.media_type.label.as_str(), 16.0))
-                        .selected_text(sized_text!(self.media_type.to_string(), 16.0))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.media_type,
-                                MediaType::Unset,
-                                sized_text!("--", 16.0),
-                            );
-                            ui.selectable_value(
-                                &mut self.media_type,
-                                MediaType::Image,
-                                sized_text!(locale.media_type.image.as_str(), 16.0),
-                            );
-                            ui.selectable_value(
-                                &mut self.media_type,
-                                MediaType::Video,
-                                sized_text!(locale.media_type.video.as_str(), 16.0),
-                            );
-                        });
-                    if self.media_type.is_unset() {
-                        ui.label(sized_text!(
+                    egui::ComboBox::from_label(gen_rich_text(
+                        ctx,
+                        locale.media_type.label.as_str(),
+                        Body,
+                        None,
+                    ))
+                    .selected_text(gen_rich_text(
+                        ctx,
+                        config.media_type.to_string(),
+                        Body,
+                        None,
+                    ))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut config.media_type,
+                            MediaType::Unset,
+                            gen_rich_text(ctx, "--", Body, None),
+                        );
+                        ui.selectable_value(
+                            &mut config.media_type,
+                            MediaType::Image,
+                            gen_rich_text(ctx, locale.media_type.image.as_str(), Body, None),
+                        );
+                        ui.selectable_value(
+                            &mut config.media_type,
+                            MediaType::Video,
+                            gen_rich_text(ctx, locale.media_type.video.as_str(), Body, None),
+                        );
+                    });
+                    if config.media_type.is_unset() {
+                        ui.label(gen_rich_text(
+                            ctx,
                             locale.media_type.unset.as_str(),
-                            16.0,
-                            Color32::LIGHT_RED
+                            Body,
+                            Some(Color32::LIGHT_RED),
                         ));
                     }
                 });
 
                 ui.horizontal(|ui| {
                     if ui
-                        .button(sized_text!(locale.root_path.label.as_str(), 16.0))
+                        .button(gen_rich_text(
+                            ctx,
+                            locale.root_path.label.as_str(),
+                            Body,
+                            None,
+                        ))
                         .clicked()
                     {
                         if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                            self.root_path.replace(path.display().to_string());
+                            config.root_path.replace(path.display().to_string());
                         }
                     }
-                    if let Some(root_path) = &self.root_path {
-                        ui.label(sized_text!(
+                    if let Some(root_path) = &config.root_path {
+                        ui.label(gen_rich_text(
+                            ctx,
                             format!("{}: {root_path}", locale.root_path.set.as_str()),
-                            16.0
+                            Body,
+                            None,
                         ));
                     } else {
-                        ui.label(sized_text!(
+                        ui.label(gen_rich_text(
+                            ctx,
                             locale.root_path.unset.as_str(),
-                            16.0,
-                            Color32::LIGHT_RED
+                            Body,
+                            Some(Color32::LIGHT_RED),
                         ));
                     }
                 });
 
-                if self.media_type == MediaType::Video {
+                if config.media_type == MediaType::Video {
                     ui.horizontal(|ui| {
-                        egui::ComboBox::from_label(sized_text!(
+                        egui::ComboBox::from_label(gen_rich_text(
+                            ctx,
                             locale.video_player.label.as_str(),
-                            16.0
+                            Body,
+                            None,
                         ))
-                        .selected_text(sized_text!(self.video_player.to_string(), 16.0))
+                        .selected_text(gen_rich_text(
+                            ctx,
+                            config.video_player.to_string(),
+                            Body,
+                            None,
+                        ))
                         .show_ui(ui, |ui| {
                             ui.selectable_value(
-                                &mut self.video_player,
+                                &mut config.video_player,
                                 VideoPlayer::Unset,
-                                sized_text!("--", 16.0),
+                                gen_rich_text(ctx, "--", Body, None),
                             );
                             ui.selectable_value(
-                                &mut self.video_player,
+                                &mut config.video_player,
                                 VideoPlayer::Qtp,
-                                sized_text!(locale.video_player.qtp.as_str(), 16.0),
+                                gen_rich_text(ctx, locale.video_player.qtp.as_str(), Body, None),
                             );
                             ui.selectable_value(
-                                &mut self.video_player,
+                                &mut config.video_player,
                                 VideoPlayer::Vlc,
-                                sized_text!(locale.video_player.vlc.as_str(), 16.0),
+                                gen_rich_text(ctx, locale.video_player.vlc.as_str(), Body, None),
                             );
                         });
-                        if self.video_player.is_unset() {
-                            ui.label(sized_text!(
+                        if config.video_player.is_unset() {
+                            ui.label(gen_rich_text(
+                                ctx,
                                 locale.video_player.unset.as_str(),
-                                16.0,
-                                Color32::LIGHT_RED
+                                Body,
+                                Some(Color32::LIGHT_RED),
                             ));
                         }
                     });
                 }
             });
     }
-}
-
-pub fn get() -> &'static Mutex<State> {
-    static CONFIG: OnceCell<Mutex<State>> = OnceCell::new();
-    CONFIG.get_or_init(|| Mutex::new(State::default()))
 }

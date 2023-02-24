@@ -4,15 +4,17 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, style::Margin, Frame, Key, RichText},
-    epaint::{Color32, FontId, Vec2},
+    egui::{self, style::Margin, Frame, Key, TextStyle::*},
+    epaint::Vec2,
 };
 use rand::Rng;
 use walkdir::DirEntry;
 
-use crate::{locale, sized_text};
-
-use super::config::{self, MediaType};
+use crate::{
+    config::{self, MediaType},
+    font::gen_rich_text,
+    locale,
+};
 
 pub trait FileExtension {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
@@ -53,7 +55,7 @@ impl State {
     pub fn new() -> Self {
         let mut paths = Vec::new();
         let (media_type, root_path) = {
-            let config = config::get().lock().expect("Cannot get config lock");
+            let config = &config::get().lock().expect("Cannot get config lock");
             (config.media_type.clone(), config.root_path.clone())
         };
         if let Some(root_path) = root_path {
@@ -140,16 +142,34 @@ impl State {
                 ..Default::default()
             }))
             .show(ctx, |ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.label(sized_text!(
-                        format!(
-                            "{} {}/{}",
-                            locale.title.as_str(),
-                            self.index + 1,
-                            self.paths.len()
-                        ),
-                        32.0
-                    ))
+                ui.horizontal(|ui| {
+                    ui.add_space(10.0);
+                    ui.label(gen_rich_text(ctx, locale.title.as_str(), Heading, None));
+                    ui.with_layout(
+                        egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
+                        |ui| {
+                            ui.add_space(10.0);
+                            ui.style_mut().drag_value_text_style = Heading;
+                            ui.label(gen_rich_text(
+                                ctx,
+                                format!("/{}", self.paths.len()),
+                                Heading,
+                                None,
+                            ));
+                            let response = ui.add(
+                                egui::DragValue::new(&mut self.index)
+                                    .speed(1)
+                                    .clamp_range(0..=(self.paths.len() - 1))
+                                    .custom_formatter(|n, _| (n as usize + 1).to_string())
+                                    .custom_parser(|s| {
+                                        s.parse::<usize>().map(|n| (n - 1) as f64).ok()
+                                    }),
+                            );
+                            if response.changed() {
+                                self.set_index(self.index, ctx);
+                            }
+                        },
+                    );
                 });
             });
 
@@ -163,16 +183,21 @@ impl State {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.add_space(10.0);
-                    ui.label(sized_text!(
+                    ui.label(gen_rich_text(
+                        ctx,
                         self.paths
                             .get(self.index)
                             .expect("Out of bound: paths")
                             .to_str()
                             .expect("Invalid path string"),
-                        16.0
+                        Body,
+                        None,
                     ));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                        if ui.button(sized_text!(locale.home.as_str(), 16.0)).clicked() {
+                        if ui
+                            .button(gen_rich_text(ctx, locale.home.as_str(), Body, None))
+                            .clicked()
+                        {
                             self.home = true;
                         }
                     });
@@ -217,21 +242,21 @@ impl State {
                 }
             });
 
-        if ctx.input().key_pressed(Key::ArrowRight) {
+        if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
             if self.index == self.paths.len() - 1 {
                 self.set_index(0, ctx);
             } else {
                 self.set_index(self.index + 1, ctx);
             }
         }
-        if ctx.input().key_pressed(Key::ArrowLeft) {
+        if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
             if self.index == 0 {
                 self.set_index(self.paths.len() - 1, ctx);
             } else {
                 self.set_index(self.index - 1, ctx);
             }
         }
-        if ctx.input().key_pressed(Key::R) {
+        if ctx.input(|i| i.key_pressed(Key::R)) {
             let mut rng = rand::thread_rng();
             self.set_index(rng.gen_range(0..self.paths.len()), ctx);
         }

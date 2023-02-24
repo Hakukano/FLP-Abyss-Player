@@ -14,7 +14,11 @@ This is a media player that allows you go through the entire folder of media rec
 
 - Clone this repo
 - Download the assets from release page
-- `cargo run --release`
+- `cargo run --release -- ...`
+
+# Usage
+
+Run with `--help`
 
 # Supported Media
 
@@ -34,17 +38,19 @@ Not supported yet.
 Current supported locale:
 
 - en\_us
-
-# Env
-
-```
-FONT_PATH= # The path to font directory
-FONTS= # The font files to be installed, separated by ; and the first one will be used as default
-LOCALE_PATH= # The path to locale directory
-LOCALE= # all lower cases. e.g. en_us
-```
+- ja\_jp
 
 # Config
+
+## Example Config File
+
+```
+{
+  "media_type": "Image",
+  "root_path": "/home/example/config.json",
+  "video_player": "Unset"
+}
+```
 
 ## Media Type
 
@@ -53,6 +59,10 @@ Choose the media type to player.
 ## Root Path
 
 The player will looking for all media file with said type under this path recursively.
+
+## Video Player
+
+Video player to play the videos.
 
 # View
 
