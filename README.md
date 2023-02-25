@@ -4,11 +4,17 @@ This is a media player that allows you go through the entire folder of media rec
 
 # Install
 
+## Windows
+
+- Download `install.ps1` from release page
+- Run it
+
+Use `uninstall.ps1` to uninstall that version.
+
 ## Install From crates.io
 
 -`cargo install flp-abyss-player`
 - Download the assets from release page
-- Setup environment variable to point to the assets
 
 ## Run From Source
 
