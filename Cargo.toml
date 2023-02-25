@@ -8,6 +8,7 @@ repository = "https://github.com/Hakukano/FLP-Abyss-Player"
 homepage = "https://flp-abyss-player.rs/"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+exclude = ["/assets", "/scripts"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

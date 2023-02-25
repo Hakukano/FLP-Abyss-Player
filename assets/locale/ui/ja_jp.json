@@ -1,0 +1,29 @@
+{
+  "app_name": "アビスプレイヤー",
+  "config": {
+    "title": "設定",
+    "alert": "必要な設定を完了してください",
+    "media_type": {
+      "label": "メディアタイプ",
+      "unset": "再生したいメディアタイプを選択してください",
+      "image": "画像",
+      "video": "動画"
+    },
+    "root_path": {
+      "label": "最上層パス",
+      "unset": "最上層パスを設定してください",
+      "set": "今設定されたパス"
+    },
+    "video_player": {
+      "label": "動画再生アプリ",
+      "unset": "動画再生アプリを設定してください",
+      "qtp": "QuickTime Player",
+      "vlc": "VLC"
+    },
+    "go": "出発！"
+  },
+  "view": {
+    "title": "アビス",
+    "home": "ホーム"
+  }
+}
