@@ -24,12 +24,20 @@ pub struct VideoPlayer {
 }
 
 #[derive(Deserialize)]
+pub struct VideoPlayerPath {
+    pub label: String,
+    pub unset: String,
+    pub set: String,
+}
+
+#[derive(Deserialize)]
 pub struct Config {
     pub title: String,
     pub alert: String,
     pub media_type: MediaType,
     pub root_path: RootPath,
     pub video_player: VideoPlayer,
+    pub video_player_path: VideoPlayerPath,
     pub go: String,
 }
 

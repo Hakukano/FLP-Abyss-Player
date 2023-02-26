@@ -36,7 +36,7 @@ impl eframe::App for App {
                 };
 
                 if should_go {
-                    next_state.replace(State::View(view::State::new()));
+                    next_state.replace(State::View(view::State::new(ctx)));
                 }
             }
             State::View(state) => {

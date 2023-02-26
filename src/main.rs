@@ -43,6 +43,10 @@ pub struct Cli {
     /// The video player to use for playing videos
     #[arg(long, value_enum)]
     pub video_player: Option<config::VideoPlayer>,
+
+    /// The video player executable path
+    #[arg(long)]
+    pub video_player_path: Option<String>,
 }
 
 fn get_cli() -> &'static Cli {

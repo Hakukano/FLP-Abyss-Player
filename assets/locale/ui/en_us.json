@@ -20,6 +20,11 @@
       "qtp": "QuickTime Player",
       "vlc": "VLC"
     },
+    "video_player_path": {
+      "label": "Set video player path",
+      "unset": "Please pick a video player path",
+      "set": "Current video player path"
+    },
     "go": "Dive!"
   },
   "view": {

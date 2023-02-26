@@ -5,5 +5,6 @@ pub fn new(cli: &Cli) -> super::Config {
         media_type: cli.media_type.clone().unwrap_or_default(),
         root_path: cli.root_path.clone(),
         video_player: cli.video_player.clone().unwrap_or_default(),
+        video_player_path: cli.video_player_path.clone(),
     }
 }
