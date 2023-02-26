@@ -3,6 +3,7 @@
 mod app;
 mod config;
 mod font;
+mod helper;
 mod locale;
 
 use clap::Parser;

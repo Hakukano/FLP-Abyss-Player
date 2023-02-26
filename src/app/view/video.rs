@@ -8,6 +8,7 @@ use eframe::egui;
 use crate::config;
 
 pub trait VideoPlayer {
+    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
     fn start(&mut self) -> Result<()>;
     fn stop(&mut self) -> Result<()>;
 }
@@ -70,5 +71,9 @@ impl super::MediaPlayer for MediaPlayer {
         self.video_player.replace(video_player);
     }
 
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {}
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        if let Some(video_player) = self.video_player.as_ref() {
+            video_player.show(ui, ctx);
+        }
+    }
 }
