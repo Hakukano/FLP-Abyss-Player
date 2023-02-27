@@ -3,14 +3,17 @@ mod vlc;
 use std::{collections::VecDeque, path::Path};
 
 use anyhow::Result;
-use eframe::egui;
+use eframe::egui::{self, Key};
 
 use crate::config;
 
 pub trait VideoPlayer {
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
     fn start(&mut self) -> Result<()>;
+    fn pause(&mut self) -> Result<()>;
     fn stop(&mut self) -> Result<()>;
+    fn fast_forward(&mut self, seconds: u32) -> Result<()>;
+    fn rewind(&mut self, seconds: u32) -> Result<()>;
 }
 
 pub struct MediaPlayer {
@@ -45,7 +48,7 @@ impl super::MediaPlayer for MediaPlayer {
         self.video_player.is_some()
     }
 
-    fn reload(&mut self, path: &dyn AsRef<Path>, _ctx: &egui::Context) {
+    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
         let (player, player_path) = {
             let config = config::get().lock().expect("Cannot get config lock");
             (
@@ -62,7 +65,9 @@ impl super::MediaPlayer for MediaPlayer {
             }
         }
         let mut video_player: Box<dyn VideoPlayer> = match player {
-            config::VideoPlayer::Vlc => Box::new(vlc::VideoPlayer::new(player_path, path)),
+            config::VideoPlayer::Vlc => {
+                Box::new(vlc::VideoPlayer::new(player_path, path, ctx.clone()))
+            }
             _ => panic!("Unknow video player: {:?}", player),
         };
         if let Err(err) = video_player.start() {
@@ -72,8 +77,18 @@ impl super::MediaPlayer for MediaPlayer {
     }
 
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        if let Some(video_player) = self.video_player.as_ref() {
+        if let Some(video_player) = self.video_player.as_mut() {
             video_player.show(ui, ctx);
+
+            if ctx.input(|i| i.key_pressed(Key::Space)) {
+                let _ = video_player.pause();
+            }
+            if ctx.input(|i| i.key_pressed(Key::F)) {
+                let _ = video_player.fast_forward(5);
+            }
+            if ctx.input(|i| i.key_pressed(Key::B)) {
+                let _ = video_player.rewind(5);
+            }
         }
     }
 }
