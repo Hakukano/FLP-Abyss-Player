@@ -19,7 +19,6 @@ Use `uninstall.ps1` to uninstall that version.
 ## Run From Source
 
 - Clone this repo
-- Download the assets from release page
 - `cargo run --release -- ...`
 
 # Usage
@@ -37,7 +36,7 @@ Run with `--help`
 
 ## Video
 
-Not supported yet.
+- whatever vlc supports
 
 # locale
 
@@ -55,20 +54,9 @@ Current supported locale:
   "media_type": "Image",
   "root_path": "/home/example/config.json",
   "video_player": "Unset"
+  "video_player_path": "/bin/vlc"
 }
 ```
-
-## Media Type
-
-Choose the media type to player.
-
-## Root Path
-
-The player will looking for all media file with said type under this path recursively.
-
-## Video Player
-
-Video player to play the videos.
 
 # View
 
@@ -77,9 +65,13 @@ Video player to play the videos.
 - ArrowRight: next media
 - ArrowLeft: previous media
 - R: random media
+- Space: Pause/Resume media
+- F: Fast forward 5s
+- B: Rewind 5s
 
 # TODO
 
 - Implement image cache
-- Implement video player
+- Implement more video player
+- Improve ui: locale + interactive?
 - Add more locales
