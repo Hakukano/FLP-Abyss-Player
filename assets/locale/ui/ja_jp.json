@@ -20,6 +20,11 @@
       "qtp": "QuickTime Player",
       "vlc": "VLC"
     },
+    "video_player_path": {
+      "label": "動画再生アプリパス",
+      "unset": "動画再生アプリパスを設定してください",
+      "set": "今設定されたパス"
+    },
     "go": "出発！"
   },
   "view": {

@@ -1,12 +1,12 @@
+mod image;
+mod video;
+
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
-use eframe::{
-    egui::{self, style::Margin, Frame, Key, TextStyle::*},
-    epaint::Vec2,
-};
+use eframe::egui::{self, style::Margin, Frame, Key, TextStyle::*};
 use rand::Rng;
 use walkdir::DirEntry;
 
@@ -40,23 +40,33 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
+trait MediaPlayer {
+    fn loaded(&self) -> bool;
+    fn support_extensions(&self) -> &[String];
+    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
+}
+
 pub struct State {
     home: bool,
 
-    media_type: MediaType,
     paths: Vec<PathBuf>,
     index: usize,
 
-    image: Option<image::RgbaImage>,
-    texture: Option<egui::TextureHandle>,
+    media_player: Box<dyn MediaPlayer>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(ctx: &egui::Context) -> Self {
         let mut paths = Vec::new();
         let (media_type, root_path) = {
             let config = &config::get().lock().expect("Cannot get config lock");
             (config.media_type.clone(), config.root_path.clone())
+        };
+        let mut media_player: Box<dyn MediaPlayer> = match media_type {
+            MediaType::Image => Box::new(image::MediaPlayer::new()),
+            MediaType::Video => Box::new(video::MediaPlayer::new()),
+            _ => panic!("Unknown media type"),
         };
         if let Some(root_path) = root_path {
             for entry in walkdir::WalkDir::new(root_path)
@@ -64,24 +74,20 @@ impl State {
                 .filter_entry(|e| !is_hidden(e))
                 .filter_map(|e| e.ok())
             {
-                if match media_type {
-                    MediaType::Image => entry
-                        .path()
-                        .has_extension(&["bmp", "gif", "jpeg", "jpg", "png"]),
-                    MediaType::Video => entry.path().has_extension(&["avi", "mov", "mp4", "wmv"]),
-                    _ => false,
-                } {
+                if entry
+                    .path()
+                    .has_extension(media_player.support_extensions())
+                {
                     paths.push(entry.path().to_path_buf());
                 }
             }
         }
+        media_player.reload(paths.get(0).expect("Empty paths"), ctx);
         Self {
             home: false,
-            media_type,
             paths,
             index: 0,
-            image: None,
-            texture: None,
+            media_player,
         }
     }
 
@@ -89,8 +95,6 @@ impl State {
         self.home = false;
         self.paths.clear();
         self.index = 0;
-        self.image.take();
-        self.texture.take();
     }
 
     pub fn should_home(&self) -> bool {
@@ -99,37 +103,8 @@ impl State {
 
     pub fn set_index(&mut self, index: usize, ctx: &egui::Context) {
         self.index = index;
-        match self.media_type {
-            MediaType::Image => {
-                self.image.replace(
-                    image::io::Reader::open(
-                        self.paths
-                            .get(self.index)
-                            .expect("Out of bound: image paths"),
-                    )
-                    .expect("Cannot open image file")
-                    .with_guessed_format()
-                    .expect("Cannot guess image mime type")
-                    .decode()
-                    .expect("Cannot decode image file")
-                    .to_rgba8(),
-                );
-                let image = self
-                    .image
-                    .as_ref()
-                    .expect("Impossible: self.image was just replaced");
-                self.texture.replace(ctx.load_texture(
-                    "current_image",
-                    egui::ColorImage::from_rgba_unmultiplied(
-                        [image.width() as _, image.height() as _],
-                        image.as_flat_samples().as_slice(),
-                    ),
-                    Default::default(),
-                ));
-            }
-            MediaType::Video => {}
-            _ => {}
-        }
+        self.media_player
+            .reload(self.paths.get(index).expect("Out of bound: paths"), ctx)
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
@@ -215,31 +190,7 @@ impl State {
                 if self.paths.is_empty() {
                     return;
                 }
-
-                match self.media_type {
-                    MediaType::Image => {
-                        if self.texture.is_none() {
-                            self.set_index(0, ctx);
-                        }
-                        let texture = self
-                            .texture
-                            .as_ref()
-                            .expect("Impossible: self.texture was just set");
-                        let texture_size = texture.size_vec2();
-                        let ui_size = ui.available_size();
-                        let scale_x = ui_size.x / texture_size.x;
-                        let scale_y = ui_size.y / texture_size.y;
-                        let scale = scale_x.min(scale_y);
-                        ui.centered_and_justified(|ui| {
-                            ui.image(
-                                texture,
-                                Vec2::new(texture_size.x * scale, texture_size.y * scale),
-                            );
-                        });
-                    }
-                    MediaType::Video => {}
-                    _ => {}
-                }
+                self.media_player.show_central_panel(ui, ctx);
             });
 
         if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {

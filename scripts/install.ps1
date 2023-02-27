@@ -32,10 +32,17 @@ $locale = switch ((Get-WinSystemLocale).name) {
 
 $hkcr = "HKCR:"
 $reg_shell = "$hkcr\Folder\shell"
+
 $reg_image_name = "$package-$version-image"
 $reg_image = "$reg_shell\$reg_image_name"
 $reg_image_command_name = "command"
 $reg_image_command = "$reg_image\$reg_image_command_name"
+
+$reg_vlc_name = "$package-$version-vlc"
+$reg_vlc = "$reg_shell\$reg_vlc_name"
+$reg_vlc_command_name = "command"
+$reg_vlc_command = "$reg_vlc\$reg_vlc_command_name"
+$vlc_bin_path = where.exe vlc
 
 # Install binary
 rm -ErrorAction Ignore -Recurse -Force $bin_dir
@@ -67,9 +74,17 @@ $obj_short_cut.Save()
 if (!(Test-Path $hkcr)) {
   New-PSDrive -PSProvider registry -Root HKEY_CLASSES_ROOT -Name HKCR
 }
+# Image
 if (Test-Path $reg_image) {
   Remove-Item -Path $reg_image -Recurse
 }
 New-Item -Path $reg_shell -Name $reg_image_name
 New-Item -Path $reg_image -Name $reg_image_command_name
 Set-ItemProperty -Path $reg_image_command -Name '(Default)' -Value "`"$bin_path`" --font-path `"$font_path`" --fonts `"$fonts`" --locale-path `"$locale_path`" --locale `"$locale`" --media-type `"image`" --root-path `"%V`""
+# VLC
+if (Test-Path $reg_vlc) {
+  Remove-Item -Path $reg_vlc -Recurse
+}
+New-Item -Path $reg_shell -Name $reg_vlc_name
+New-Item -Path $reg_vlc -Name $reg_vlc_command_name
+Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --font-path `"$font_path`" --fonts `"$fonts`" --locale-path `"$locale_path`" --locale `"$locale`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""

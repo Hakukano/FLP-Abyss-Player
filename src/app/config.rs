@@ -66,7 +66,10 @@ impl State {
                         let path_set = config.root_path.is_some();
                         let other_set = match config.media_type {
                             MediaType::Image => true,
-                            MediaType::Video => !config.video_player.is_unset(),
+                            MediaType::Video => {
+                                !config.video_player.is_unset()
+                                    && config.video_player_path.is_some()
+                            }
                             _ => false,
                         };
                         if path_set && other_set {
@@ -194,6 +197,40 @@ impl State {
                             ui.label(gen_rich_text(
                                 ctx,
                                 locale.video_player.unset.as_str(),
+                                Body,
+                                Some(Color32::LIGHT_RED),
+                            ));
+                        }
+                    });
+
+                    ui.horizontal(|ui| {
+                        if ui
+                            .button(gen_rich_text(
+                                ctx,
+                                locale.video_player_path.label.as_str(),
+                                Body,
+                                None,
+                            ))
+                            .clicked()
+                        {
+                            if let Some(path) = rfd::FileDialog::new().pick_file() {
+                                config.video_player_path.replace(path.display().to_string());
+                            }
+                        }
+                        if let Some(video_player_path) = &config.video_player_path {
+                            ui.label(gen_rich_text(
+                                ctx,
+                                format!(
+                                    "{}: {video_player_path}",
+                                    locale.video_player_path.set.as_str()
+                                ),
+                                Body,
+                                None,
+                            ));
+                        } else {
+                            ui.label(gen_rich_text(
+                                ctx,
+                                locale.video_player_path.unset.as_str(),
                                 Body,
                                 Some(Color32::LIGHT_RED),
                             ));

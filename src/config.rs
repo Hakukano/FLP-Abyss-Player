@@ -75,6 +75,7 @@ pub struct Config {
     pub root_path: Option<String>,
 
     pub video_player: VideoPlayer,
+    pub video_player_path: Option<String>,
 }
 
 pub fn get() -> &'static Mutex<Config> {
