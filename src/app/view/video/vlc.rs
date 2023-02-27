@@ -210,6 +210,14 @@ impl VideoPlayer {
     }
 }
 
+impl Drop for VideoPlayer {
+    fn drop(&mut self) {
+        if let Some(child) = self.child.as_mut() {
+            let _ = child.kill();
+        }
+    }
+}
+
 impl super::VideoPlayer for VideoPlayer {
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let status = self.status.read().expect("Cannot get status read lock");

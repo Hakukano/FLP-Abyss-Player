@@ -1,7 +1,7 @@
 pub mod args;
 pub mod json;
 
-use std::sync::Mutex;
+use std::sync::RwLock;
 
 use clap::ValueEnum;
 use once_cell::sync::OnceCell;
@@ -78,8 +78,8 @@ pub struct Config {
     pub video_player_path: Option<String>,
 }
 
-pub fn get() -> &'static Mutex<Config> {
-    static CONFIG: OnceCell<Mutex<Config>> = OnceCell::new();
+pub fn get() -> &'static RwLock<Config> {
+    static CONFIG: OnceCell<RwLock<Config>> = OnceCell::new();
     CONFIG.get_or_init(|| {
         let cli = get_cli();
         let config = match (
@@ -92,6 +92,6 @@ pub fn get() -> &'static Mutex<Config> {
             (Some(config_file), _, _, _) => json::new(config_file),
             _ => args::new(cli),
         };
-        Mutex::new(config)
+        RwLock::new(config)
     })
 }

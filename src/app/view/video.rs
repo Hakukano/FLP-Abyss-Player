@@ -50,7 +50,7 @@ impl super::MediaPlayer for MediaPlayer {
 
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
         let (player, player_path) = {
-            let config = config::get().lock().expect("Cannot get config lock");
+            let config = config::get().read().expect("Cannot get config lock");
             (
                 config.video_player.clone(),
                 config

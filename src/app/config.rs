@@ -24,7 +24,7 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
-        let mut config = get().lock().expect("Cannot get config lock");
+        let mut config = get().write().expect("Cannot get config lock");
         let locale = &locale::get().ui.config;
 
         if let Some(alert_message) = &self.alert_message {

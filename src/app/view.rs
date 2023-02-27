@@ -60,7 +60,7 @@ impl State {
     pub fn new(ctx: &egui::Context) -> Self {
         let mut paths = Vec::new();
         let (media_type, root_path) = {
-            let config = &config::get().lock().expect("Cannot get config lock");
+            let config = &config::get().read().expect("Cannot get config lock");
             (config.media_type.clone(), config.root_path.clone())
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
