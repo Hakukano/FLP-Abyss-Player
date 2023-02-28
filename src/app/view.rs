@@ -11,6 +11,7 @@ use chrono::{DateTime, Utc};
 use eframe::{
     egui::{self, style::Margin, Frame, Key, Layout, TextStyle::*},
     emath::Align,
+    epaint::Vec2,
 };
 use rand::Rng;
 use tokio::runtime::{self, Runtime};
@@ -19,8 +20,8 @@ use walkdir::DirEntry;
 use crate::{
     config::{self, MediaType},
     font::gen_rich_text,
-    locale,
-    widget::player_bar::PlayerBar,
+    get_cli, locale,
+    widget::{button_icon::ButtonIcon, player_bar::PlayerBar},
 };
 
 const RUNTIME_THREADS: usize = 2;
@@ -62,6 +63,8 @@ trait MediaPlayer: Send + Sync {
 
 pub struct State {
     player_bar: PlayerBar,
+    prev_icon: ButtonIcon,
+    next_icon: ButtonIcon,
 
     home: bool,
 
@@ -99,8 +102,13 @@ impl State {
             }
         }
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
+        let icon_path = Path::new(get_cli().assets_path.as_str())
+            .join("image")
+            .join("icon");
         Self {
             player_bar: PlayerBar::new(ctx),
+            prev_icon: ButtonIcon::from_rgba_image_files("prev", icon_path.join("prev.png"), ctx),
+            next_icon: ButtonIcon::from_rgba_image_files("next", icon_path.join("next.png"), ctx),
             home: false,
             paths,
             index: 0,
@@ -199,7 +207,12 @@ impl State {
                             egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
                             |ui| {
                                 ui.add_space(10.0);
+                                ui.spacing_mut().item_spacing = Vec2::new(8.0, 8.0);
                                 ui.style_mut().drag_value_text_style = Body;
+                                let max_size = Vec2::new(20.0, 20.0);
+                                if self.next_icon.show(max_size, ui).clicked() {
+                                    self.next(ctx);
+                                }
                                 ui.label(gen_rich_text(
                                     ctx,
                                     format!("/{}", self.paths.len()),
@@ -207,17 +220,22 @@ impl State {
                                     None,
                                 ));
                                 let mut idx = self.index;
-                                let response = ui.add(
-                                    egui::DragValue::new(&mut idx)
-                                        .speed(1)
-                                        .clamp_range(0..=(self.paths.len() - 1))
-                                        .custom_formatter(|n, _| (n as usize + 1).to_string())
-                                        .custom_parser(|s| {
-                                            s.parse::<usize>().map(|n| (n - 1) as f64).ok()
-                                        }),
-                                );
-                                if response.changed() {
+                                if ui
+                                    .add(
+                                        egui::DragValue::new(&mut idx)
+                                            .speed(1)
+                                            .clamp_range(0..=(self.paths.len() - 1))
+                                            .custom_formatter(|n, _| (n as usize + 1).to_string())
+                                            .custom_parser(|s| {
+                                                s.parse::<usize>().map(|n| (n - 1) as f64).ok()
+                                            }),
+                                    )
+                                    .changed()
+                                {
                                     self.set_index(idx, ctx);
+                                }
+                                if self.prev_icon.show(max_size, ui).clicked() {
+                                    self.prev(ctx);
                                 }
                             },
                         );
@@ -270,10 +288,10 @@ impl State {
                 self.media_player.show_central_panel(ui, ctx);
             });
 
-        if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
+        if ctx.input(|i| i.key_pressed(Key::J)) {
             self.next(ctx);
         }
-        if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
+        if ctx.input(|i| i.key_pressed(Key::K)) {
             self.prev(ctx);
         }
         if ctx.input(|i| i.key_pressed(Key::R)) {

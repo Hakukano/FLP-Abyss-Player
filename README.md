@@ -68,8 +68,8 @@ Current supported locale:
 ## Keyboard Navigation
 
 ### General
-- ArrowRight: next media
-- ArrowLeft: previous media
+- J: next media
+- K: previous media
 - R: random media
 - 1: toggle repeat current media
 - 2: toggle auto play
