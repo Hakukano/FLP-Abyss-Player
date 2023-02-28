@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $org = "FLProject"
 $package = "flp-abyss-player"
-$version = "0.3.0"
+$version = "0.4.0"
 
 $bin_dir = "$env:PROGRAMFILES\$org\$package\$version"
 $bin_path = "$bin_dir\bin\$package.exe"
