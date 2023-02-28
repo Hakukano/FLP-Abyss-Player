@@ -4,8 +4,8 @@ mod view;
 use eframe::egui;
 
 enum State {
-    Config(config::State),
-    View(view::State),
+    Config(Box<config::State>),
+    View(view::TimedState),
 }
 
 pub struct App {
@@ -16,7 +16,7 @@ impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         crate::font::init(&cc.egui_ctx);
         Self {
-            state: State::Config(config::State::default()),
+            state: State::Config(Box::new(config::State::new(&cc.egui_ctx))),
         }
     }
 }
@@ -28,22 +28,29 @@ impl eframe::App for App {
             State::Config(state) => {
                 let should_go = {
                     state.update(ctx);
-                    let should_go = state.should_go();
-                    if should_go {
-                        state.reset();
-                    }
-                    should_go
+                    state.should_go()
                 };
 
                 if should_go {
-                    next_state.replace(State::View(view::State::new(ctx)));
+                    next_state.replace(State::View(view::TimedState::new(
+                        view::State::new(ctx),
+                        ctx.clone(),
+                    )));
                 }
             }
-            State::View(state) => {
-                state.update(ctx);
-                if state.should_home() {
-                    next_state.replace(State::Config(config::State::default()));
-                    state.reset();
+            State::View(timed_state) => {
+                timed_state
+                    .state
+                    .write()
+                    .expect("Cannot get view state lock")
+                    .update(ctx);
+                if timed_state
+                    .state
+                    .read()
+                    .expect("Cannot get view state lock")
+                    .should_home()
+                {
+                    next_state.replace(State::Config(Box::new(config::State::new(ctx))));
                 }
             }
         }

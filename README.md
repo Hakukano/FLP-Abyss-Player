@@ -53,7 +53,12 @@ Current supported locale:
 {
   "media_type": "Image",
   "root_path": "/home/example/config.json",
-  "video_player": "Unset"
+  "repeat": false,
+  "auto": true,
+  "auto_interval": 3,
+  "loop": true,
+  "random": true,
+  "video_player": "Unset",
   "video_player_path": "/bin/vlc"
 }
 ```
@@ -62,9 +67,16 @@ Current supported locale:
 
 ## Keyboard Navigation
 
+### General
 - ArrowRight: next media
 - ArrowLeft: previous media
 - R: random media
+- 1: toggle repeat current media
+- 2: toggle auto play
+- 3: toggle loop play
+- 4: toggle random play
+
+### Video
 - Space: Pause/Resume media
 - F: Fast forward 5s
 - B: Rewind 5s

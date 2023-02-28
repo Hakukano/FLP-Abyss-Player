@@ -3,7 +3,10 @@ use std::{
     fmt::Display,
     path::Path,
     process::{Child, Command},
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
 };
 
 use anyhow::Result;
@@ -26,7 +29,7 @@ const VLC_HTTP_STATUS: &str = "/status.xml";
 const RUNTIME_THREADS: usize = 4;
 const RUNTIME_THREAD_NAME: &str = "video_player";
 const RUNTIME_THREAD_STACK_SIZE: usize = 3 * 1024 * 1024;
-const STATUS_SYNC_INTERVAL_MS: u64 = 400;
+const STATUS_SYNC_INTERVAL_MS: u64 = 300;
 
 fn gen_vlc_http_request_url_base(port: u16, extra_path: impl Display) -> String {
     format!("http://{VLC_HTTP_HOST}:{}/requests{}", port, extra_path)
@@ -62,7 +65,7 @@ mod status {
         pub category: Vec<Category>,
     }
 
-    #[derive(Default, Deserialize)]
+    #[derive(Default, Serialize, Deserialize)]
     #[serde(rename = "root")]
     pub struct Root {
         #[serde(skip_deserializing)]
@@ -80,7 +83,7 @@ mod status {
         pub rate: u32,
         pub state: String,
         #[serde(rename = "loop")]
-        pub loopp: bool,
+        pub lop: bool,
         pub version: String,
         pub position: f32,
         pub repeat: bool,
@@ -96,7 +99,8 @@ pub struct VideoPlayer {
     child: Option<Child>,
 
     runtime: runtime::Runtime,
-
+    /// The video has been played at least once or is still being played
+    played: Arc<AtomicBool>,
     status: Arc<RwLock<status::Root>>,
 }
 
@@ -142,11 +146,13 @@ impl VideoPlayer {
             http_port,
             child: None,
             runtime,
+            played: Arc::new(AtomicBool::new(false)),
             status: Arc::new(RwLock::new(status::Root::default())),
         };
 
         let request_url = gen_vlc_http_request_url_base(video_player.http_port, VLC_HTTP_STATUS);
         let request_password = video_player.http_password.clone();
+        let played = video_player.played.clone();
         let status = video_player.status.clone();
         video_player.runtime.spawn(async move {
             let mut timer =
@@ -157,6 +163,7 @@ impl VideoPlayer {
                     .request(Method::GET, request_url.as_str())
                     .basic_auth("", Some(request_password.as_str()));
                 let ctx = ctx.clone();
+                let played = played.clone();
                 let status = status.clone();
                 let _ = tokio::spawn(async move {
                     match request.send().await {
@@ -173,18 +180,23 @@ impl VideoPlayer {
                                     .error
                                     .push_back(err.to_string());
                             }
-                            Ok(text) => match quick_xml::de::from_str(text.as_str()) {
-                                Err(err) => {
-                                    status
-                                        .write()
-                                        .expect("Cannot get status write lock")
-                                        .error
-                                        .push_back(err.to_string());
+                            Ok(text) => {
+                                match quick_xml::de::from_str::<status::Root>(text.as_str()) {
+                                    Err(err) => {
+                                        status
+                                            .write()
+                                            .expect("Cannot get status write lock")
+                                            .error
+                                            .push_back(err.to_string());
+                                    }
+                                    Ok(xml) => {
+                                        if xml.state == "playing" || xml.state == "paused" {
+                                            played.swap(true, Ordering::AcqRel);
+                                        }
+                                        *status.write().expect("Cannot get status write lock") = xml
+                                    }
                                 }
-                                Ok(xml) => {
-                                    *status.write().expect("Cannot get status write lock") = xml
-                                }
-                            },
+                            }
                         },
                     }
                     ctx.request_repaint();
@@ -219,6 +231,11 @@ impl Drop for VideoPlayer {
 }
 
 impl super::VideoPlayer for VideoPlayer {
+    fn is_end(&self) -> bool {
+        self.played.load(Ordering::Acquire)
+            && self.status.read().expect("Cannot get status lock").state == "stopped"
+    }
+
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let status = self.status.read().expect("Cannot get status read lock");
 
@@ -281,7 +298,6 @@ impl super::VideoPlayer for VideoPlayer {
         let mut xml_serializer = quick_xml::se::Serializer::new(String::new());
         xml_serializer.indent(' ', 2);
         let information = status
-            .information
             .serialize(xml_serializer)
             .expect("Cannot serialize information");
         ui.with_layout(

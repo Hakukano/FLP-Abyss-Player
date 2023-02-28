@@ -17,7 +17,7 @@ pub fn init(ctx: &egui::Context) {
         fd.font_data.insert(
             font.to_string(),
             egui::FontData::from_owned(
-                fs::read(Path::new(cli.font_path.as_str()).join(font))
+                fs::read(Path::new(cli.assets_path.as_str()).join("font").join(font))
                     .expect("Cannot read font file"),
             ),
         );
