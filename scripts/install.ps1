@@ -21,9 +21,7 @@ $assets_dir = "$data_dir\assets"
 $start_menu_dir = "$env:USERPROFILE\Start Menu\Programs\$org"
 $start_menu_shortcut = "$start_menu_dir\$package-$version.lnk"
 
-$font_path = "$assets_dir\font"
 $fonts = "NotoSansCJKjp-Regular.otf;Inter-Regular.ttf"
-$locale_path = "$assets_dir\locale"
 $locale = switch ((Get-WinSystemLocale).name) {
   "ja-JP" { "ja_jp"; break }
   "en-US" { "en_us"; break }
@@ -67,7 +65,7 @@ if (!(Test-Path $start_menu_dir)) {
 $obj_shell = New-Object -ComObject ("WScript.Shell")
 $obj_short_cut = $obj_shell.CreateShortcut($start_menu_shortcut)
 $obj_short_cut.TargetPath = $bin_path
-$obj_short_cut.Arguments = "--font-path `"$font_path`" --fonts `"$fonts`" --locale-path `"$locale_path`" --locale `"$locale`""
+$obj_short_cut.Arguments = "--assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`""
 $obj_short_cut.Save()
 
 # Add context menu item
@@ -80,11 +78,11 @@ if (Test-Path $reg_image) {
 }
 New-Item -Path $reg_shell -Name $reg_image_name
 New-Item -Path $reg_image -Name $reg_image_command_name
-Set-ItemProperty -Path $reg_image_command -Name '(Default)' -Value "`"$bin_path`" --font-path `"$font_path`" --fonts `"$fonts`" --locale-path `"$locale_path`" --locale `"$locale`" --media-type `"image`" --root-path `"%V`""
+Set-ItemProperty -Path $reg_image_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`" --media-type `"image`" --root-path `"%V`""
 # VLC
 if (Test-Path $reg_vlc) {
   Remove-Item -Path $reg_vlc -Recurse
 }
 New-Item -Path $reg_shell -Name $reg_vlc_name
 New-Item -Path $reg_vlc -Name $reg_vlc_command_name
-Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --font-path `"$font_path`" --fonts `"$fonts`" --locale-path `"$locale_path`" --locale `"$locale`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""
+Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""

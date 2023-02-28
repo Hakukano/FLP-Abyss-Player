@@ -7,7 +7,8 @@ use eframe::egui::{self, Key};
 
 use crate::config;
 
-pub trait VideoPlayer {
+pub trait VideoPlayer: Send + Sync {
+    fn is_end(&self) -> bool;
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
     fn start(&mut self) -> Result<()>;
     fn pause(&mut self) -> Result<()>;
@@ -44,15 +45,22 @@ impl super::MediaPlayer for MediaPlayer {
         self.support_extensions.as_slice()
     }
 
-    fn loaded(&self) -> bool {
+    fn is_loaded(&self) -> bool {
         self.video_player.is_some()
+    }
+
+    fn is_end(&self) -> bool {
+        self.video_player
+            .as_ref()
+            .map(|v| v.is_end())
+            .unwrap_or(false)
     }
 
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
         let (player, player_path) = {
-            let config = config::get().lock().expect("Cannot get config lock");
+            let config = config::get().read().expect("Cannot get config lock");
             (
-                config.video_player.clone(),
+                config.video_player,
                 config
                     .video_player_path
                     .clone()

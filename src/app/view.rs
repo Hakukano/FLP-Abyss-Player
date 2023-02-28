@@ -4,17 +4,29 @@ mod video;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
+    sync::{Arc, RwLock},
 };
 
-use eframe::egui::{self, style::Margin, Frame, Key, TextStyle::*};
+use chrono::{DateTime, Utc};
+use eframe::{
+    egui::{self, style::Margin, Frame, Key, Layout, TextStyle::*},
+    emath::Align,
+};
 use rand::Rng;
+use tokio::runtime::{self, Runtime};
 use walkdir::DirEntry;
 
 use crate::{
     config::{self, MediaType},
     font::gen_rich_text,
     locale,
+    widget::player_bar::PlayerBar,
 };
+
+const RUNTIME_THREADS: usize = 2;
+const RUNTIME_THREAD_NAME: &str = "view";
+const RUNTIME_THREAD_STACK_SIZE: usize = 3 * 1024 * 1024;
+const STATUS_SYNC_INTERVAL_MS: u64 = 300;
 
 pub trait FileExtension {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
@@ -40,18 +52,22 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-trait MediaPlayer {
-    fn loaded(&self) -> bool;
+trait MediaPlayer: Send + Sync {
+    fn is_loaded(&self) -> bool;
+    fn is_end(&self) -> bool;
     fn support_extensions(&self) -> &[String];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
 }
 
 pub struct State {
+    player_bar: PlayerBar,
+
     home: bool,
 
     paths: Vec<PathBuf>,
     index: usize,
+    next: bool,
 
     media_player: Box<dyn MediaPlayer>,
 }
@@ -60,8 +76,8 @@ impl State {
     pub fn new(ctx: &egui::Context) -> Self {
         let mut paths = Vec::new();
         let (media_type, root_path) = {
-            let config = &config::get().lock().expect("Cannot get config lock");
-            (config.media_type.clone(), config.root_path.clone())
+            let config = &config::get().read().expect("Cannot get config lock");
+            (config.media_type, config.root_path.clone())
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
@@ -84,17 +100,13 @@ impl State {
         }
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
         Self {
+            player_bar: PlayerBar::new(ctx),
             home: false,
             paths,
             index: 0,
+            next: false,
             media_player,
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.home = false;
-        self.paths.clear();
-        self.index = 0;
     }
 
     pub fn should_home(&self) -> bool {
@@ -107,46 +119,111 @@ impl State {
             .reload(self.paths.get(index).expect("Out of bound: paths"), ctx)
     }
 
+    pub fn random(&mut self, ctx: &egui::Context) {
+        let mut rng = rand::thread_rng();
+        self.set_index(rng.gen_range(0..self.paths.len()), ctx);
+    }
+
+    pub fn next(&mut self, ctx: &egui::Context) {
+        let (repeat, random, lop) = {
+            let config = config::get().read().expect("Cannot get config lock");
+            (config.repeat, config.random, config.lop)
+        };
+        if repeat {
+            self.set_index(self.index, ctx);
+            return;
+        }
+        if random {
+            self.random(ctx);
+            return;
+        }
+        if self.index == self.paths.len() - 1 && lop {
+            self.set_index(0, ctx);
+        } else if self.index < self.paths.len() - 1 {
+            self.set_index(self.index + 1, ctx);
+        }
+    }
+
+    pub fn prev(&mut self, ctx: &egui::Context) {
+        let (repeat, random, lop) = {
+            let config = config::get().read().expect("Cannot get config lock");
+            (config.repeat, config.random, config.lop)
+        };
+        if repeat {
+            self.set_index(self.index, ctx);
+            return;
+        }
+        if random {
+            self.random(ctx);
+            return;
+        }
+        if self.index == 0 && lop {
+            self.set_index(self.paths.len() - 1, ctx);
+        } else if self.index > 0 {
+            self.set_index(self.index - 1, ctx);
+        }
+    }
+
     pub fn update(&mut self, ctx: &egui::Context) {
+        if self.next {
+            self.next = false;
+            self.next(ctx);
+        }
+
         let locale = &locale::get().ui.view;
 
-        egui::TopBottomPanel::top("title")
-            .frame(Frame::none().inner_margin(Margin {
-                top: 10.0,
-                bottom: 10.0,
-                ..Default::default()
-            }))
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.add_space(10.0);
-                    ui.label(gen_rich_text(ctx, locale.title.as_str(), Heading, None));
-                    ui.with_layout(
-                        egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
-                        |ui| {
-                            ui.add_space(10.0);
-                            ui.style_mut().drag_value_text_style = Heading;
-                            ui.label(gen_rich_text(
-                                ctx,
-                                format!("/{}", self.paths.len()),
-                                Heading,
-                                None,
-                            ));
-                            let response = ui.add(
-                                egui::DragValue::new(&mut self.index)
-                                    .speed(1)
-                                    .clamp_range(0..=(self.paths.len() - 1))
-                                    .custom_formatter(|n, _| (n as usize + 1).to_string())
-                                    .custom_parser(|s| {
-                                        s.parse::<usize>().map(|n| (n - 1) as f64).ok()
-                                    }),
-                            );
-                            if response.changed() {
-                                self.set_index(self.index, ctx);
-                            }
-                        },
-                    );
+        {
+            egui::TopBottomPanel::top("title")
+                .frame(Frame::none().inner_margin(Margin {
+                    top: 10.0,
+                    bottom: 10.0,
+                    ..Default::default()
+                }))
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.add_space(10.0);
+                        ui.with_layout(
+                            Layout::left_to_right(Align::TOP).with_cross_justify(true),
+                            |ui| {
+                                let max_height = 20.0;
+                                ui.set_height(max_height);
+                                ui.style_mut().drag_value_text_style = Body;
+                                {
+                                    let mut config =
+                                        config::get().write().expect("Cannot get config lock");
+                                    self.player_bar.show(max_height, &mut config, ui);
+                                }
+                            },
+                        );
+                        ui.with_layout(
+                            egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
+                            |ui| {
+                                ui.add_space(10.0);
+                                ui.style_mut().drag_value_text_style = Body;
+                                ui.label(gen_rich_text(
+                                    ctx,
+                                    format!("/{}", self.paths.len()),
+                                    Body,
+                                    None,
+                                ));
+                                let mut idx = self.index;
+                                let response = ui.add(
+                                    egui::DragValue::new(&mut idx)
+                                        .speed(1)
+                                        .clamp_range(0..=(self.paths.len() - 1))
+                                        .custom_formatter(|n, _| (n as usize + 1).to_string())
+                                        .custom_parser(|s| {
+                                            s.parse::<usize>().map(|n| (n - 1) as f64).ok()
+                                        }),
+                                );
+                                if response.changed() {
+                                    self.set_index(idx, ctx);
+                                }
+                            },
+                        );
+                    });
                 });
-            });
+        }
 
         egui::TopBottomPanel::bottom("home")
             .frame(Frame::none().inner_margin(Margin {
@@ -194,22 +271,92 @@ impl State {
             });
 
         if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
-            if self.index == self.paths.len() - 1 {
-                self.set_index(0, ctx);
-            } else {
-                self.set_index(self.index + 1, ctx);
-            }
+            self.next(ctx);
         }
         if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
-            if self.index == 0 {
-                self.set_index(self.paths.len() - 1, ctx);
-            } else {
-                self.set_index(self.index - 1, ctx);
-            }
+            self.prev(ctx);
         }
         if ctx.input(|i| i.key_pressed(Key::R)) {
-            let mut rng = rand::thread_rng();
-            self.set_index(rng.gen_range(0..self.paths.len()), ctx);
+            self.random(ctx);
         }
+        if ctx.input(|i| i.key_pressed(Key::Num1)) {
+            let mut config = config::get().write().expect("Cannot get config lock");
+            config.repeat = !config.repeat
+        }
+        if ctx.input(|i| i.key_pressed(Key::Num2)) {
+            let mut config = config::get().write().expect("Cannot get config lock");
+            config.auto = !config.auto
+        }
+        if ctx.input(|i| i.key_pressed(Key::Num3)) {
+            let mut config = config::get().write().expect("Cannot get config lock");
+            config.lop = !config.lop
+        }
+        if ctx.input(|i| i.key_pressed(Key::Num4)) {
+            let mut config = config::get().write().expect("Cannot get config lock");
+            config.random = !config.random
+        }
+    }
+}
+
+pub struct TimedState {
+    pub state: Arc<RwLock<State>>,
+    runtime: Runtime,
+    end_time: Arc<RwLock<Option<DateTime<Utc>>>>,
+}
+
+impl TimedState {
+    pub fn new(state: State, ctx: egui::Context) -> Self {
+        let runtime = runtime::Builder::new_multi_thread()
+            .worker_threads(RUNTIME_THREADS)
+            .thread_name(RUNTIME_THREAD_NAME)
+            .thread_stack_size(RUNTIME_THREAD_STACK_SIZE)
+            .enable_all()
+            .build()
+            .expect("Cannot build tokio runtime");
+        let timed_state = Self {
+            state: Arc::new(RwLock::new(state)),
+            runtime,
+            end_time: Arc::new(RwLock::new(None)),
+        };
+
+        let state = timed_state.state.clone();
+        let end_time = timed_state.end_time.clone();
+        timed_state.runtime.spawn(async move {
+            let mut timer =
+                tokio::time::interval(std::time::Duration::from_millis(STATUS_SYNC_INTERVAL_MS));
+            loop {
+                timer.tick().await;
+                let (auto, auto_interval) = {
+                    let config = config::get().read().expect("Cannot get config lock");
+                    (config.auto, config.auto_interval)
+                };
+                if !auto {
+                    end_time.write().expect("Cannot get end time lock").take();
+                    continue;
+                }
+                if state
+                    .read()
+                    .expect("Cannot get view state lock")
+                    .media_player
+                    .is_end()
+                {
+                    let duration_after_end = Utc::now()
+                        - *end_time
+                            .write()
+                            .expect("Cannot get end time lock")
+                            .get_or_insert_with(Utc::now);
+                    let is_timed_out = duration_after_end.num_seconds() >= auto_interval as i64;
+                    if is_timed_out {
+                        end_time.write().expect("Cannot get end time lock").take();
+                        state.write().expect("Cannot get view state lock").next = true;
+                        ctx.request_repaint();
+                    }
+                } else {
+                    end_time.write().expect("Cannot get end time lock").take();
+                }
+            }
+        });
+
+        timed_state
     }
 }

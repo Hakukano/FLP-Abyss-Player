@@ -1,22 +1,28 @@
 use eframe::{
-    egui::{self, style::Margin, Frame, TextStyle::*},
+    egui::{self, style::Margin, Frame, Layout, TextStyle::*},
+    emath::Align,
     epaint::Color32,
 };
 
-use crate::{config::*, font::gen_rich_text, locale};
+use crate::{config::*, font::gen_rich_text, locale, widget::player_bar::PlayerBar};
 
-#[derive(Default)]
 pub struct State {
+    player_bar: PlayerBar,
+
     alert: bool,
     alert_message: Option<String>,
     go: bool,
 }
 
 impl State {
-    pub fn reset(&mut self) {
-        self.alert = false;
-        self.alert_message.take();
-        self.go = false;
+    pub fn new(ctx: &egui::Context) -> Self {
+        Self {
+            player_bar: PlayerBar::new(ctx),
+
+            alert: false,
+            alert_message: None,
+            go: false,
+        }
     }
 
     pub fn should_go(&self) -> bool {
@@ -24,7 +30,7 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
-        let mut config = get().lock().expect("Cannot get config lock");
+        let mut config = get().write().expect("Cannot get config lock");
         let locale = &locale::get().ui.config;
 
         if let Some(alert_message) = &self.alert_message {
@@ -161,6 +167,15 @@ impl State {
                         ));
                     }
                 });
+
+                ui.with_layout(
+                    Layout::left_to_right(Align::TOP).with_cross_justify(true),
+                    |ui| {
+                        let max_height = 20.0;
+                        ui.set_height(max_height);
+                        self.player_bar.show(max_height, &mut config, ui);
+                    },
+                );
 
                 if config.media_type == MediaType::Video {
                     ui.horizontal(|ui| {

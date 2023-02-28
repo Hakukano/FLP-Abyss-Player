@@ -8,7 +8,7 @@ pub mod ui;
 
 macro_rules! read_locale {
     ($cli:ident, $map:ident, $locale:expr, $(($name:ident, $sub_path:expr),)+) => {
-        let locale_path = Path::new($cli.locale_path.as_str());
+        let locale_path = Path::new($cli.assets_path.as_str()).join("locale");
         $map.insert(
             $locale.to_string(),
             Locale {
