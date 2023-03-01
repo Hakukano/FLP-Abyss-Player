@@ -42,11 +42,31 @@ impl ToString for MediaType {
     }
 }
 
+impl From<u8> for MediaType {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Image,
+            2 => Self::Video,
+            _ => Self::Unset,
+        }
+    }
+}
+
+impl Into<u8> for MediaType {
+    fn into(self) -> u8 {
+        match self {
+            Self::Image => 1,
+            Self::Video => 2,
+            _ => 0,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
 pub enum VideoPlayer {
     Unset,
-    Qtp,
     Vlc,
+    Qtp,
 }
 
 impl VideoPlayer {
@@ -66,17 +86,34 @@ impl ToString for VideoPlayer {
         let video_player = &locale::get().ui.config.video_player;
         match self {
             Self::Unset => "--".to_string(),
-            Self::Qtp => video_player.qtp.clone(),
             Self::Vlc => video_player.vlc.clone(),
+            Self::Qtp => video_player.qtp.clone(),
+        }
+    }
+}
+
+impl From<u8> for VideoPlayer {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Vlc,
+            2 => Self::Qtp,
+            _ => Self::Unset,
+        }
+    }
+}
+
+impl Into<u8> for VideoPlayer {
+    fn into(self) -> u8 {
+        match self {
+            Self::Vlc => 1,
+            Self::Qtp => 2,
+            _ => 0,
         }
     }
 }
 
 #[derive(Default, Deserialize)]
 pub struct Config {
-    pub media_type: MediaType,
-    pub root_path: Option<String>,
-
     pub repeat: bool,
     pub auto: bool,
     pub auto_interval: u32,
@@ -84,6 +121,10 @@ pub struct Config {
     pub lop: bool,
     pub random: bool,
 
+    pub playlist_path: Option<String>,
+
+    pub media_type: MediaType,
+    pub root_path: Option<String>,
     pub video_player: VideoPlayer,
     pub video_player_path: Option<String>,
 }

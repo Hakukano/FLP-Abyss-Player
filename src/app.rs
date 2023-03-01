@@ -33,7 +33,7 @@ impl eframe::App for App {
 
                 if should_go {
                     next_state.replace(State::View(view::TimedState::new(
-                        view::State::new(ctx),
+                        view::State::new(ctx, state.playlist_body.as_ref()),
                         ctx.clone(),
                     )));
                 }

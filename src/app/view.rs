@@ -20,7 +20,7 @@ use walkdir::DirEntry;
 use crate::{
     config::{self, MediaType},
     font::gen_rich_text,
-    get_cli, locale,
+    get_cli, locale, playlist,
     widget::{button_icon::ButtonIcon, player_bar::PlayerBar},
 };
 
@@ -76,18 +76,30 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &egui::Context) -> Self {
-        let mut paths = Vec::new();
-        let (media_type, root_path) = {
-            let config = &config::get().read().expect("Cannot get config lock");
-            (config.media_type, config.root_path.clone())
+    pub fn new(ctx: &egui::Context, playlist_body: Option<&playlist::Body>) -> Self {
+        let media_type = {
+            config::get()
+                .read()
+                .expect("Cannot get config lock")
+                .media_type
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new()),
             _ => panic!("Unknown media type"),
         };
-        if let Some(root_path) = root_path {
+        let mut paths = Vec::new();
+        if let Some(playlist_body) = playlist_body {
+            playlist_body.write_paths(&mut paths);
+        } else {
+            let root_path = {
+                config::get()
+                    .read()
+                    .expect("Cannot get config lock")
+                    .root_path
+                    .clone()
+                    .expect("There must be a root path at this point")
+            };
             for entry in walkdir::WalkDir::new(root_path)
                 .into_iter()
                 .filter_entry(|e| !is_hidden(e))

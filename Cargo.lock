@@ -1042,6 +1042,7 @@ dependencies = [
  "clap",
  "eframe",
  "image",
+ "nom",
  "once_cell",
  "passwords",
  "quick-xml",

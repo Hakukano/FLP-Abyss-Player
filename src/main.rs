@@ -5,11 +5,16 @@ mod config;
 mod font;
 mod helper;
 mod locale;
+mod playlist;
 mod widget;
 
 use clap::Parser;
 use eframe::egui;
 use once_cell::sync::OnceCell;
+
+const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
+const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
+const VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
     let auto_interval = s.parse::<u32>().map_err(|err| err.to_string())?;
@@ -27,55 +32,59 @@ fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
 #[derive(Clone, Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// The path to assets directory
+    /// [Startup] The path to assets directory
     #[arg(long)]
     pub assets_path: String,
 
-    /// The font files to be installed, separated by ; and the first one will be used as default
+    /// [Startup] The font files to be installed, separated by ; and the first one will be used as default
     #[arg(long)]
     pub fonts: String,
 
-    /// The locale to use, in lower case. e.g. en_us
+    /// [Startup] The locale to use, in lower case. e.g. en_us
     #[arg(long)]
     pub locale: String,
 
-    /// Path to json config file
+    /// [Startup] Path to json config file
     #[arg(long)]
     pub config_file: Option<String>,
 
-    /// The media type to be played
-    #[arg(long, value_enum, default_value_t = config::MediaType::Unset)]
-    pub media_type: config::MediaType,
-
-    /// The root path
-    #[arg(long)]
-    pub root_path: Option<String>,
-
-    /// Repeat on one media
+    /// [Player] Repeat on one media
     #[arg(long, default_value_t = false)]
     pub repeat: bool,
 
-    /// Auto play
+    /// [Player] Auto play
     #[arg(long, default_value_t = false)]
     pub auto: bool,
 
-    /// The interva of seconds for auto play to next media. Range: (1..=60)
+    /// [Player] The interva of seconds for auto play to next media. Range: (1..=60)
     #[arg(long, default_value_t = 1, value_parser = value_parser_auto_interval)]
     pub auto_interval: u32,
 
-    /// Loop the playlist
+    /// [Player] Loop the playlist
     #[arg(long = "loop", default_value_t = false)]
     pub lop: bool,
 
-    /// Randomize next media
+    /// [Player] Randomize next media
     #[arg(long, default_value_t = false)]
     pub random: bool,
 
-    /// The video player to use for playing videos
+    /// [Naviation] Path to playlist file. This option will overwrite all other navigation options
+    #[arg(long)]
+    pub playlist_path: Option<String>,
+
+    /// [Naviation] The media type to be played
+    #[arg(long, value_enum, default_value_t = config::MediaType::Unset)]
+    pub media_type: config::MediaType,
+
+    /// [Naviation] The root path
+    #[arg(long)]
+    pub root_path: Option<String>,
+
+    /// [Naviation] The video player to use for playing videos
     #[arg(long, value_enum, default_value_t = config::VideoPlayer::Unset)]
     pub video_player: config::VideoPlayer,
 
-    /// The video player executable path
+    /// [Naviation] The video player executable path
     #[arg(long)]
     pub video_player_path: Option<String>,
 }
