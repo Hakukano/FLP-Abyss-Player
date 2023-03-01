@@ -75,24 +75,37 @@ pub fn header(data: &[u8]) -> IResult<&[u8], Header> {
     let (data, version) = version(data)?;
     let (data, time) = time(data)?;
     let (data, media_type) = media_type(data)?;
-    let (data, video_player) = video_player(data)?;
-    let (data, video_path_path_size) = size(data)?;
-    let (data, video_player_path) = if video_path_path_size == 0 {
-        (data, None)
+    if media_type == MediaType::Video {
+        let (data, video_player) = video_player(data)?;
+        let (data, video_path_path_size) = size(data)?;
+        let (data, video_player_path) = if video_path_path_size == 0 {
+            (data, None)
+        } else {
+            let (data, s) = string(video_path_path_size)(data)?;
+            (data, Some(s))
+        };
+        Ok((
+            data,
+            Header {
+                version,
+                time,
+                media_type,
+                video_player,
+                video_player_path,
+            },
+        ))
     } else {
-        let (data, s) = string(video_path_path_size)(data)?;
-        (data, Some(s))
-    };
-    Ok((
-        data,
-        Header {
-            version,
-            time,
-            media_type,
-            video_player,
-            video_player_path,
-        },
-    ))
+        Ok((
+            data,
+            Header {
+                version,
+                time,
+                media_type,
+                video_player: VideoPlayer::Unset,
+                video_player_path: None,
+            },
+        ))
+    }
 }
 
 pub fn body(mut data: &[u8]) -> IResult<&[u8], Body> {

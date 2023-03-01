@@ -84,18 +84,20 @@ impl super::MediaPlayer for MediaPlayer {
         self.video_player.replace(video_player);
     }
 
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
         if let Some(video_player) = self.video_player.as_mut() {
             video_player.show(ui, ctx);
 
-            if ctx.input(|i| i.key_pressed(Key::Space)) {
-                let _ = video_player.pause();
-            }
-            if ctx.input(|i| i.key_pressed(Key::F)) {
-                let _ = video_player.fast_forward(5);
-            }
-            if ctx.input(|i| i.key_pressed(Key::B)) {
-                let _ = video_player.rewind(5);
+            if can_input {
+                if ctx.input(|i| i.key_pressed(Key::Space)) {
+                    let _ = video_player.pause();
+                }
+                if ctx.input(|i| i.key_pressed(Key::F)) {
+                    let _ = video_player.fast_forward(5);
+                }
+                if ctx.input(|i| i.key_pressed(Key::B)) {
+                    let _ = video_player.rewind(5);
+                }
             }
         }
     }

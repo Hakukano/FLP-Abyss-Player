@@ -67,9 +67,11 @@ Breaking changes will only be made when bumping major versions.
 - `XX`: version patch
 - `XX XX XX XX XX XX XX XX`: unix timestamp
 - `XX`: media type
+- <<< if media type is video
 - `XX`: video player
 - `XX XX XX XX XX XX XX XX`: video player path `$size`
 - `(XX){$size}`: video player path
+- >>>
 
 ### Body
 

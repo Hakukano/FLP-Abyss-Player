@@ -49,17 +49,19 @@ fn string(mut buffer: Vec<u8>, data: &str) -> Vec<u8> {
 }
 
 pub fn header(body: &Header) -> Vec<u8> {
-    let buffer = video_player(
-        media_type(time(version(magic(Vec::new()))), body.media_type),
-        body.video_player,
-    );
-    if let Some(video_player_path) = body.video_player_path.as_ref() {
-        string(
-            size(buffer, video_player_path.len() as u64),
-            video_player_path,
-        )
+    let buffer = media_type(time(version(magic(Vec::new()))), body.media_type);
+    if body.media_type == MediaType::Video {
+        let buffer = video_player(buffer, body.video_player);
+        if let Some(video_player_path) = body.video_player_path.as_ref() {
+            string(
+                size(buffer, video_player_path.len() as u64),
+                video_player_path,
+            )
+        } else {
+            size(buffer, 0)
+        }
     } else {
-        size(buffer, 0)
+        buffer
     }
 }
 

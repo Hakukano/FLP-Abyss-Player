@@ -73,7 +73,7 @@ impl State {
         let locale = &locale::get().ui.config;
 
         if let Some(alert_message) = &self.alert_message {
-            egui::Window::new("").open(&mut self.alert).show(ctx, |ui| {
+            egui::Window::new("alert").open(&mut self.alert).show(ctx, |ui| {
                 ui.label(gen_rich_text(
                     ctx,
                     alert_message,
