@@ -1,4 +1,4 @@
-use std::net::TcpListener;
+use std::{fmt::Display, net::TcpListener};
 
 use eframe::egui::Vec2;
 
@@ -29,4 +29,12 @@ pub fn scale_fit_all(max_size: Vec2, origin_size: Vec2) -> Vec2 {
 pub fn scale_fit_height(max_height: f32, origin_size: Vec2) -> Vec2 {
     let scale = max_height / origin_size.y;
     Vec2::new(origin_size.x * scale, origin_size.y * scale)
+}
+
+pub fn message_dialog_error(error: impl Display) -> bool {
+    rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Error)
+        .set_buttons(rfd::MessageButtons::Ok)
+        .set_description(error.to_string().as_str())
+        .show()
 }

@@ -1,6 +1,13 @@
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+pub struct PlaylistPath {
+    pub label: String,
+    pub unset: String,
+    pub set: String,
+}
+
+#[derive(Deserialize)]
 pub struct MediaType {
     pub label: String,
     pub unset: String,
@@ -34,6 +41,7 @@ pub struct VideoPlayerPath {
 pub struct Config {
     pub title: String,
     pub alert: String,
+    pub playlist_path: PlaylistPath,
     pub media_type: MediaType,
     pub root_path: RootPath,
     pub video_player: VideoPlayer,

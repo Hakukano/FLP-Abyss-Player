@@ -3,6 +3,11 @@
   "config": {
     "title": "Configuration",
     "alert": "Please complete all the configuration",
+    "playlist_path": {
+      "label": "Set playlist path",
+      "unset": "Please pick a playlist path to start",
+      "set": "Current playlist path"
+    },
     "media_type": {
       "label": "Media type",
       "unset": "Please select a media type to play",

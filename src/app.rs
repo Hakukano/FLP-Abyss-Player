@@ -1,5 +1,5 @@
 mod config;
-mod view;
+pub mod view;
 
 use eframe::egui;
 
@@ -33,7 +33,7 @@ impl eframe::App for App {
 
                 if should_go {
                     next_state.replace(State::View(view::TimedState::new(
-                        view::State::new(ctx),
+                        view::State::new(ctx, state.playlist.as_ref()),
                         ctx.clone(),
                     )));
                 }
@@ -50,6 +50,11 @@ impl eframe::App for App {
                     .expect("Cannot get view state lock")
                     .should_home()
                 {
+                    crate::config::get()
+                        .write()
+                        .expect("Cannot get config lock")
+                        .playlist_path
+                        .take();
                     next_state.replace(State::Config(Box::new(config::State::new(ctx))));
                 }
             }

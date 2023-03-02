@@ -11,6 +11,7 @@ use chrono::{DateTime, Utc};
 use eframe::{
     egui::{self, style::Margin, Frame, Key, Layout, TextStyle::*},
     emath::Align,
+    epaint::Vec2,
 };
 use rand::Rng;
 use tokio::runtime::{self, Runtime};
@@ -19,8 +20,12 @@ use walkdir::DirEntry;
 use crate::{
     config::{self, MediaType},
     font::gen_rich_text,
-    locale,
-    widget::player_bar::PlayerBar,
+    get_cli, locale, playlist,
+    widget::{
+        button_icon::ButtonIcon,
+        player_bar::PlayerBar,
+        playlist::{Playlist, PlaylistState},
+    },
 };
 
 const RUNTIME_THREADS: usize = 2;
@@ -52,17 +57,36 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-trait MediaPlayer: Send + Sync {
+pub trait MediaPlayer: Send + Sync {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
     fn support_extensions(&self) -> &[String];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
+
+    fn get_all_matched_paths(&self, root_path: &dyn AsRef<Path>) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+        for entry in walkdir::WalkDir::new(root_path)
+            .into_iter()
+            .filter_entry(|e| !is_hidden(e))
+            .filter_map(|e| e.ok())
+        {
+            if entry.path().has_extension(self.support_extensions()) {
+                paths.push(entry.path().to_path_buf());
+            }
+        }
+        paths
+    }
 }
 
 pub struct State {
     player_bar: PlayerBar,
+    prev_icon: ButtonIcon,
+    next_icon: ButtonIcon,
+    playlist_icon: ButtonIcon,
+    playlist: Playlist,
 
+    show_playlist: bool,
     home: bool,
 
     paths: Vec<PathBuf>,
@@ -70,42 +94,58 @@ pub struct State {
     next: bool,
 
     media_player: Box<dyn MediaPlayer>,
+
+    playlist_state: PlaylistState,
 }
 
 impl State {
-    pub fn new(ctx: &egui::Context) -> Self {
-        let mut paths = Vec::new();
-        let (media_type, root_path) = {
-            let config = &config::get().read().expect("Cannot get config lock");
-            (config.media_type, config.root_path.clone())
+    pub fn new(ctx: &egui::Context, playlist: Option<&(playlist::Header, playlist::Body)>) -> Self {
+        let media_type = {
+            config::get()
+                .read()
+                .expect("Cannot get config lock")
+                .media_type
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new()),
             _ => panic!("Unknown media type"),
         };
-        if let Some(root_path) = root_path {
-            for entry in walkdir::WalkDir::new(root_path)
-                .into_iter()
-                .filter_entry(|e| !is_hidden(e))
-                .filter_map(|e| e.ok())
-            {
-                if entry
-                    .path()
-                    .has_extension(media_player.support_extensions())
-                {
-                    paths.push(entry.path().to_path_buf());
-                }
-            }
+        let mut paths = Vec::new();
+        if let Some((_, playlist_body)) = playlist {
+            playlist_body.write_paths(&mut paths);
+        } else {
+            let root_path = {
+                config::get()
+                    .read()
+                    .expect("Cannot get config lock")
+                    .root_path
+                    .clone()
+                    .expect("There must be a root path at this point")
+            };
+            paths = media_player.get_all_matched_paths(&root_path.as_str());
         }
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
+        let icon_path = Path::new(get_cli().assets_path.as_str())
+            .join("image")
+            .join("icon");
         Self {
             player_bar: PlayerBar::new(ctx),
+            prev_icon: ButtonIcon::from_rgba_image_files("prev", icon_path.join("prev.png"), ctx),
+            next_icon: ButtonIcon::from_rgba_image_files("next", icon_path.join("next.png"), ctx),
+            playlist_icon: ButtonIcon::from_rgba_image_files(
+                "playlist",
+                icon_path.join("playlist.png"),
+                ctx,
+            ),
+            playlist: Playlist::new(ctx),
+            show_playlist: false,
             home: false,
-            paths,
+            paths: paths.clone(),
             index: 0,
             next: false,
             media_player,
+            playlist_state: PlaylistState::new(playlist.map(|p| p.0.clone()), paths, 0),
         }
     }
 
@@ -113,8 +153,13 @@ impl State {
         self.home
     }
 
+    fn can_input(&self) -> bool {
+        !self.show_playlist
+    }
+
     pub fn set_index(&mut self, index: usize, ctx: &egui::Context) {
         self.index = index;
+        self.playlist_state.set_index(index);
         self.media_player
             .reload(self.paths.get(index).expect("Out of bound: paths"), ctx)
     }
@@ -165,6 +210,17 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
+        if let Some(paths) = self
+            .playlist_state
+            .consume_paths_change()
+            .map(|ps| ps.to_vec())
+        {
+            self.paths = paths;
+        }
+        if let Some(index) = self.playlist_state.consume_index_change() {
+            self.set_index(index, ctx);
+        }
+
         if self.next {
             self.next = false;
             self.next(ctx);
@@ -172,42 +228,65 @@ impl State {
 
         let locale = &locale::get().ui.view;
 
-        {
-            egui::TopBottomPanel::top("title")
-                .frame(Frame::none().inner_margin(Margin {
-                    top: 10.0,
-                    bottom: 10.0,
-                    ..Default::default()
-                }))
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.add_space(10.0);
-                        ui.with_layout(
-                            Layout::left_to_right(Align::TOP).with_cross_justify(true),
-                            |ui| {
-                                let max_height = 20.0;
-                                ui.set_height(max_height);
-                                ui.style_mut().drag_value_text_style = Body;
-                                {
-                                    let mut config =
-                                        config::get().write().expect("Cannot get config lock");
-                                    self.player_bar.show(max_height, &mut config, ui);
-                                }
-                            },
-                        );
-                        ui.with_layout(
-                            egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
-                            |ui| {
-                                ui.add_space(10.0);
-                                ui.style_mut().drag_value_text_style = Body;
-                                ui.label(gen_rich_text(
-                                    ctx,
-                                    format!("/{}", self.paths.len()),
-                                    Body,
-                                    None,
-                                ));
-                                let mut idx = self.index;
-                                let response = ui.add(
+        egui::Window::new("playlist")
+            .resizable(true)
+            .default_size(Vec2::new(600.0, 600.0))
+            .open(&mut self.show_playlist)
+            .show(ctx, |ui| {
+                self.playlist.show(
+                    &mut self.playlist_state,
+                    ui,
+                    ctx,
+                    &mut config::get().write().expect("Cannot get config lock"),
+                    Some(self.index),
+                    self.media_player.as_ref(),
+                )
+            });
+
+        egui::TopBottomPanel::top("title")
+            .frame(Frame::none().inner_margin(Margin {
+                top: 10.0,
+                bottom: 10.0,
+                ..Default::default()
+            }))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(10.0);
+                    ui.with_layout(
+                        Layout::left_to_right(Align::TOP).with_cross_justify(true),
+                        |ui| {
+                            let max_height = 20.0;
+                            ui.set_height(max_height);
+                            ui.style_mut().drag_value_text_style = Body;
+                            {
+                                let mut config =
+                                    config::get().write().expect("Cannot get config lock");
+                                self.player_bar.show(max_height, &mut config, ui);
+                            }
+                        },
+                    );
+                    ui.with_layout(
+                        egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
+                        |ui| {
+                            ui.add_space(10.0);
+                            ui.spacing_mut().item_spacing = Vec2::new(8.0, 8.0);
+                            ui.style_mut().drag_value_text_style = Body;
+                            let max_size = Vec2::new(20.0, 20.0);
+                            if self.playlist_icon.show(max_size, ui).clicked() {
+                                self.show_playlist = true;
+                            }
+                            if self.next_icon.show(max_size, ui).clicked() {
+                                self.next(ctx);
+                            }
+                            ui.label(gen_rich_text(
+                                ctx,
+                                format!("/{}", self.paths.len()),
+                                Body,
+                                None,
+                            ));
+                            let mut idx = self.index;
+                            if ui
+                                .add(
                                     egui::DragValue::new(&mut idx)
                                         .speed(1)
                                         .clamp_range(0..=(self.paths.len() - 1))
@@ -215,15 +294,18 @@ impl State {
                                         .custom_parser(|s| {
                                             s.parse::<usize>().map(|n| (n - 1) as f64).ok()
                                         }),
-                                );
-                                if response.changed() {
-                                    self.set_index(idx, ctx);
-                                }
-                            },
-                        );
-                    });
+                                )
+                                .changed()
+                            {
+                                self.set_index(idx, ctx);
+                            }
+                            if self.prev_icon.show(max_size, ui).clicked() {
+                                self.prev(ctx);
+                            }
+                        },
+                    );
                 });
-        }
+            });
 
         egui::TopBottomPanel::bottom("home")
             .frame(Frame::none().inner_margin(Margin {
@@ -267,33 +349,36 @@ impl State {
                 if self.paths.is_empty() {
                     return;
                 }
-                self.media_player.show_central_panel(ui, ctx);
+                self.media_player
+                    .show_central_panel(ui, ctx, self.can_input());
             });
 
-        if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
-            self.next(ctx);
-        }
-        if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
-            self.prev(ctx);
-        }
-        if ctx.input(|i| i.key_pressed(Key::R)) {
-            self.random(ctx);
-        }
-        if ctx.input(|i| i.key_pressed(Key::Num1)) {
-            let mut config = config::get().write().expect("Cannot get config lock");
-            config.repeat = !config.repeat
-        }
-        if ctx.input(|i| i.key_pressed(Key::Num2)) {
-            let mut config = config::get().write().expect("Cannot get config lock");
-            config.auto = !config.auto
-        }
-        if ctx.input(|i| i.key_pressed(Key::Num3)) {
-            let mut config = config::get().write().expect("Cannot get config lock");
-            config.lop = !config.lop
-        }
-        if ctx.input(|i| i.key_pressed(Key::Num4)) {
-            let mut config = config::get().write().expect("Cannot get config lock");
-            config.random = !config.random
+        if self.can_input() {
+            if ctx.input(|i| i.key_pressed(Key::J)) {
+                self.next(ctx);
+            }
+            if ctx.input(|i| i.key_pressed(Key::K)) {
+                self.prev(ctx);
+            }
+            if ctx.input(|i| i.key_pressed(Key::R)) {
+                self.random(ctx);
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num1)) {
+                let mut config = config::get().write().expect("Cannot get config lock");
+                config.repeat = !config.repeat
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num2)) {
+                let mut config = config::get().write().expect("Cannot get config lock");
+                config.auto = !config.auto
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num3)) {
+                let mut config = config::get().write().expect("Cannot get config lock");
+                config.lop = !config.lop
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num4)) {
+                let mut config = config::get().write().expect("Cannot get config lock");
+                config.random = !config.random
+            }
         }
     }
 }

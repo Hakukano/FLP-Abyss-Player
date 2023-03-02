@@ -54,7 +54,7 @@ impl super::MediaPlayer for MediaPlayer {
         ));
     }
 
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context, _can_input: bool) {
         if let Some(texture) = self.texture.as_ref() {
             ui.centered_and_justified(|ui| {
                 ui.image(

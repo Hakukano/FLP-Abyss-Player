@@ -34,7 +34,7 @@ pub fn init(ctx: &egui::Context) {
         (Body, FontId::proportional(16.0)),
         (Monospace, FontId::proportional(16.0)),
         (Button, FontId::proportional(16.0)),
-        (Small, FontId::proportional(8.0)),
+        (Small, FontId::proportional(12.0)),
     ]
     .into();
     ctx.set_style(style);
