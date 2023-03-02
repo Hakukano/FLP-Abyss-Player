@@ -21,9 +21,6 @@ $assets_dir = "$data_dir\assets"
 $start_menu_dir = "$env:USERPROFILE\Start Menu\Programs\$org"
 $start_menu_shortcut = "$start_menu_dir\$package-$version.lnk"
 
-$fonts = "NotoSansCJKjp-Regular.otf;Inter-Regular.ttf"
-$locale = (Get-WinSystemLocale).name.replace("-", "_")
-
 $hkcr = "HKCR:"
 $reg_shell = "$hkcr\Folder\shell"
 

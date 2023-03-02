@@ -53,8 +53,16 @@ impl Locales {
 
     fn get_one(&self) -> &Locale {
         let cli = get_cli();
-        self.get(&cli.locale)
-            .unwrap_or_else(|| self.get("en_US").expect("locale en_US is not found"))
+        if let Some(locale) = cli.locale.as_ref() {
+            self.get(locale)
+                .unwrap_or_else(|| self.get("en_US").expect("locale en_US is not found"))
+        } else {
+            let system_locale = sys_locale::get_locale()
+                .map(|l| l.replace('-', "_"))
+                .unwrap_or_else(|| "en_US".to_string());
+            self.get(system_locale.as_str())
+                .unwrap_or_else(|| self.get("en_US").expect("locale en_US is not found"))
+        }
     }
 }
 

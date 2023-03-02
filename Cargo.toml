@@ -28,5 +28,6 @@ reqwest = "0.11.14"
 rfd = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sys-locale = "0.2"
 tokio = { version = "1", features = ["full"] }
 walkdir = "2.3"

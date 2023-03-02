@@ -36,13 +36,9 @@ pub struct Cli {
     #[arg(long)]
     pub assets_path: String,
 
-    /// [Startup] The font files to be installed, separated by ; and the first one will be used as default
+    /// [Startup] The locale to use. e.g. en_US. Default to system locale
     #[arg(long)]
-    pub fonts: String,
-
-    /// [Startup] The locale to use. e.g. en_US
-    #[arg(long)]
-    pub locale: String,
+    pub locale: Option<String>,
 
     /// [Startup] Path to json config file
     #[arg(long)]

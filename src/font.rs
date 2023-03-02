@@ -1,4 +1,7 @@
-use std::{fs, path::Path};
+use std::{
+    fs::{self, read_dir},
+    path::Path,
+};
 
 use eframe::{
     egui::{
@@ -11,20 +14,27 @@ use eframe::{
 use crate::get_cli;
 
 pub fn init(ctx: &egui::Context) {
-    let cli = get_cli();
     let mut fd = egui::FontDefinitions::default();
-    for (i, font) in cli.fonts.split(';').enumerate() {
+    let assets_path = get_cli().assets_path.as_str();
+    let font_path = Path::new(assets_path).join("font");
+    for (i, entry) in read_dir(font_path)
+        .expect("Cannot read font directory")
+        .flatten()
+        .enumerate()
+    {
+        let font = entry
+            .file_name()
+            .to_str()
+            .expect("Invalid path")
+            .to_string();
         fd.font_data.insert(
-            font.to_string(),
-            egui::FontData::from_owned(
-                fs::read(Path::new(cli.assets_path.as_str()).join("font").join(font))
-                    .expect("Cannot read font file"),
-            ),
+            font.clone(),
+            egui::FontData::from_owned(fs::read(entry.path()).expect("Cannot read font file")),
         );
         fd.families
             .get_mut(&egui::FontFamily::Proportional)
             .unwrap()
-            .insert(i, font.to_string());
+            .insert(i, font);
     }
     ctx.set_fonts(fd);
 
