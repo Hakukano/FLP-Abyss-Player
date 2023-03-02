@@ -1,6 +1,6 @@
 [package]
 name = "flp-abyss-player"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media player that sees all"
@@ -8,7 +8,7 @@ repository = "https://github.com/Hakukano/FLP-Abyss-Player"
 homepage = "https://flp-abyss-player.rs/"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-exclude = ["/assets", "/scripts", "/deny.toml"]
+exclude = ["/assets", "/out", "/scripts", "/deny.toml"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
