@@ -71,7 +71,7 @@ Breaking changes will only be made when bumping major versions.
 - `XX`: video player
 - `XX XX XX XX XX XX XX XX`: video player path `$size`
 - `(XX){$size}`: video player path
-- >>>
+- \>>>
 
 ### Body
 
