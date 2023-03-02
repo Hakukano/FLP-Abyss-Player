@@ -1,16 +1,27 @@
 use std::path::{Path, PathBuf};
 
+use chrono::{DateTime, Local};
 use eframe::{
     egui::{self, Layout, TextStyle},
     emath::Align,
     epaint::{Color32, Vec2},
 };
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
-use crate::{config, font::gen_rich_text, get_cli};
+use crate::{
+    app::view::MediaPlayer,
+    config::{self, MediaType, VideoPlayer},
+    font::gen_rich_text,
+    get_cli,
+    helper::message_dialog_error,
+    locale,
+    playlist::{self, Body, Header},
+};
 
 use super::button_icon::ButtonIcon;
 
 pub struct PlaylistState {
+    header: Option<Header>,
     paths: Vec<PathBuf>,
     paths_changed: bool,
     index: usize,
@@ -20,8 +31,9 @@ pub struct PlaylistState {
 }
 
 impl PlaylistState {
-    pub fn new(paths: Vec<PathBuf>, index: usize) -> Self {
+    pub fn new(header: Option<Header>, paths: Vec<PathBuf>, index: usize) -> Self {
         Self {
+            header,
             paths,
             paths_changed: false,
             index,
@@ -31,8 +43,8 @@ impl PlaylistState {
         }
     }
 
-    pub fn set_paths(&mut self, paths: Vec<PathBuf>) {
-        self.paths = paths;
+    fn can_change(&self) -> bool {
+        !(self.paths_changed || self.index_changed)
     }
 
     pub fn set_index(&mut self, index: usize) {
@@ -60,7 +72,8 @@ impl PlaylistState {
 
 pub struct Playlist {
     search_icon: ButtonIcon,
-    add_icon: ButtonIcon,
+    add_one_icon: ButtonIcon,
+    add_many_icon: ButtonIcon,
     up_icon: ButtonIcon,
     down_icon: ButtonIcon,
     remove_icon: ButtonIcon,
@@ -79,7 +92,16 @@ impl Playlist {
                 icon_path.join("search.png"),
                 ctx,
             ),
-            add_icon: ButtonIcon::from_rgba_image_files("add", icon_path.join("add.png"), ctx),
+            add_one_icon: ButtonIcon::from_rgba_image_files(
+                "add_one",
+                icon_path.join("add_one.png"),
+                ctx,
+            ),
+            add_many_icon: ButtonIcon::from_rgba_image_files(
+                "add_many",
+                icon_path.join("add_many.png"),
+                ctx,
+            ),
             up_icon: ButtonIcon::from_rgba_image_files("up", icon_path.join("up.png"), ctx),
             down_icon: ButtonIcon::from_rgba_image_files("down", icon_path.join("down.png"), ctx),
             remove_icon: ButtonIcon::from_rgba_image_files(
@@ -95,9 +117,11 @@ impl Playlist {
     pub fn show(
         &mut self,
         state: &mut PlaylistState,
-        config: &mut config::Config,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
+        config: &mut config::Config,
+        current_index: Option<usize>,
+        media_player: &dyn MediaPlayer,
     ) {
         ui.with_layout(Layout::top_down(Align::TOP), |ui| {
             ui.group(|ui| {
@@ -130,48 +154,91 @@ impl Playlist {
 
                         ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                             if self
-                                .add_icon
+                                .add_many_icon
                                 .show(Vec2::new(max_height, max_height), ui)
                                 .clicked()
+                                && state.can_change()
                             {
-                                // TODO
+                                if let Some(paths) = rfd::FileDialog::new().pick_folders() {
+                                    for path in paths.into_iter() {
+                                        state
+                                            .paths
+                                            .append(&mut media_player.get_all_matched_paths(&path));
+                                    }
+                                    state.paths_changed = true;
+                                }
+                            }
+
+                            if self
+                                .add_one_icon
+                                .show(Vec2::new(max_height, max_height), ui)
+                                .clicked()
+                                && state.can_change()
+                            {
+                                if let Some(mut paths) = rfd::FileDialog::new()
+                                    .add_filter(
+                                        "Media",
+                                        media_player
+                                            .support_extensions()
+                                            .iter()
+                                            .map(|s| s.as_str())
+                                            .collect::<Vec<_>>()
+                                            .as_slice(),
+                                    )
+                                    .pick_files()
+                                {
+                                    state.paths.append(&mut paths);
+                                    state.paths_changed = true;
+                                }
                             }
                         })
                     },
                 );
             });
 
+            let matcher = SkimMatcherV2::default();
+            let paths: Vec<(usize, String)> = state
+                .paths
+                .iter()
+                .enumerate()
+                .filter_map(|(i, p)| {
+                    let p = p.to_str().expect("Invalid path").to_string();
+                    if state.search {
+                        matcher
+                            .fuzzy_match(p.as_str(), state.search_string.as_str())
+                            .map(|_| (i, p))
+                    } else {
+                        Some((i, p))
+                    }
+                })
+                .collect();
             ui.add_space(5.0);
             ui.group(|ui| {
                 let text_style = TextStyle::Small;
                 let max_height = ui.text_style_height(&text_style);
                 ui.spacing_mut().interact_size.y = max_height;
-                egui::ScrollArea::vertical().show_rows(
-                    ui,
-                    max_height,
-                    state.paths.len(),
-                    |ui, row_range| {
+                egui::ScrollArea::vertical()
+                    .max_height(50.0 * max_height)
+                    .show_rows(ui, max_height, paths.len(), |ui, row_range| {
                         for row in row_range {
                             ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
+                                let (index, path) = paths.get(row).expect("Out of range: paths");
                                 if ui
                                     .button(gen_rich_text(
                                         ctx,
-                                        state
-                                            .paths
-                                            .get(row)
-                                            .map(|p| p.to_str().expect("Invalid path").to_string())
-                                            .expect("Out of range: paths"),
+                                        path,
                                         text_style.clone(),
-                                        if row == state.index {
+                                        if Some(*index) == current_index {
                                             Some(Color32::LIGHT_GREEN)
                                         } else {
                                             None
                                         },
                                     ))
                                     .clicked()
+                                    && state.can_change()
                                 {
                                     state.index_changed = true;
-                                    state.index = row;
+                                    state.index = *index;
                                 }
 
                                 ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
@@ -180,29 +247,258 @@ impl Playlist {
                                         .remove_icon
                                         .show(Vec2::new(max_height, max_height), ui)
                                         .clicked()
+                                        && state.can_change()
                                     {
-                                        // TODO
+                                        if let Some(current_index) = current_index {
+                                            if *index != current_index {
+                                                state.paths.remove(*index);
+                                                state.paths_changed = true;
+                                            }
+                                            if *index < current_index {
+                                                state.index -= 1;
+                                                state.index_changed = true;
+                                            }
+                                        } else {
+                                            state.paths.remove(*index);
+                                            state.paths_changed = true;
+                                        }
                                     }
                                     if self
                                         .down_icon
                                         .show(Vec2::new(max_height, max_height), ui)
                                         .clicked()
+                                        && state.can_change()
+                                        && *index < state.paths.len() - 1
                                     {
-                                        // TODO
+                                        if let Some(current_index) = current_index {
+                                            state.paths.swap(*index, *index + 1);
+                                            state.paths_changed = true;
+                                            if *index == current_index {
+                                                state.index += 1;
+                                                state.index_changed = true;
+                                            } else if *index + 1 == current_index {
+                                                state.index -= 1;
+                                                state.index_changed = true;
+                                            }
+                                        } else {
+                                            state.paths.swap(*index, *index + 1);
+                                            state.paths_changed = true;
+                                        }
                                     }
                                     if self
                                         .up_icon
                                         .show(Vec2::new(max_height, max_height), ui)
                                         .clicked()
+                                        && state.can_change()
+                                        && *index > 0
                                     {
-                                        // TODO
+                                        if let Some(current_index) = current_index {
+                                            state.paths.swap(*index, *index - 1);
+                                            state.paths_changed = true;
+                                            if *index == current_index {
+                                                state.index -= 1;
+                                                state.index_changed = true;
+                                            } else if *index - 1 == current_index {
+                                                state.index += 1;
+                                                state.index_changed = true;
+                                            }
+                                        } else {
+                                            state.paths.swap(*index, *index - 1);
+                                            state.paths_changed = true;
+                                        }
                                     }
                                 });
                             });
                         }
-                    },
-                );
+                    });
             });
+
+            ui.add_space(5.0);
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    let max_height = 20.0;
+                    ui.set_height(max_height);
+
+                    if self
+                        .save_icon
+                        .show(Vec2::new(max_height, max_height), ui)
+                        .clicked()
+                        && state.can_change()
+                    {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_title("SAVE")
+                            .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
+                            .save_file()
+                        {
+                            let mut new_header = Header::from_config(config);
+                            if let Some(header) = state.header.as_ref() {
+                                new_header.video_player = header.video_player;
+                                new_header.video_player_path = header.video_player_path.clone();
+                            }
+                            let buffer = new_header.save();
+                            if let Err(err) =
+                                Body::from_paths(state.paths.as_slice()).save(buffer, path)
+                            {
+                                message_dialog_error(err);
+                            } else {
+                                state.header.replace(new_header);
+                            }
+                        }
+                    }
+
+                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
+                        if self
+                            .load_icon
+                            .show(Vec2::new(max_height, max_height), ui)
+                            .clicked()
+                            && state.can_change()
+                        {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .set_title("LOAD")
+                                .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
+                                .pick_file()
+                            {
+                                match Header::load(path) {
+                                    Err(err) => {
+                                        message_dialog_error(err);
+                                    }
+                                    Ok((data, header)) => match Body::load(data) {
+                                        Err(err) => {
+                                            message_dialog_error(err);
+                                        }
+                                        Ok(body) => {
+                                            if header.media_type != config.media_type {
+                                                message_dialog_error(
+                                                    "This playlist has a different media type!",
+                                                );
+                                            } else {
+                                                state.header.replace(header);
+                                                body.write_paths(&mut state.paths);
+                                                state.paths_changed = true;
+                                            }
+                                        }
+                                    },
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+
+            if let Some(header) = state.header.as_mut() {
+                ui.add_space(5.0);
+                ui.group(|ui| {
+                    egui::Grid::new("header")
+                        .spacing(Vec2::new(8.0, 8.0))
+                        .striped(true)
+                        .show(ui, |ui| {
+                            let locale = &locale::get().ui.config;
+
+                            ui.label(gen_rich_text(
+                                ctx,
+                                header.version.to_string(),
+                                TextStyle::Body,
+                                None,
+                            ));
+                            ui.label(gen_rich_text(
+                                ctx,
+                                DateTime::<Local>::from(header.time).to_rfc3339(),
+                                TextStyle::Body,
+                                None,
+                            ));
+                            ui.end_row();
+
+                            ui.label(gen_rich_text(
+                                ctx,
+                                locale.media_type.label.as_str(),
+                                TextStyle::Body,
+                                None,
+                            ));
+                            ui.label(gen_rich_text(
+                                ctx,
+                                header.media_type.to_string(),
+                                TextStyle::Body,
+                                None,
+                            ));
+                            ui.end_row();
+
+                            if header.media_type == MediaType::Video {
+                                ui.label(gen_rich_text(
+                                    ctx,
+                                    locale.video_player.label.as_str(),
+                                    TextStyle::Body,
+                                    if header.video_player != config.video_player {
+                                        Some(Color32::LIGHT_RED)
+                                    } else {
+                                        None
+                                    },
+                                ));
+                                egui::ComboBox::from_id_source("video_player")
+                                    .selected_text(gen_rich_text(
+                                        ctx,
+                                        header.video_player.to_string(),
+                                        TextStyle::Body,
+                                        None,
+                                    ))
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(
+                                            &mut header.video_player,
+                                            VideoPlayer::Unset,
+                                            gen_rich_text(ctx, "--", TextStyle::Body, None),
+                                        );
+                                        ui.selectable_value(
+                                            &mut header.video_player,
+                                            VideoPlayer::Qtp,
+                                            gen_rich_text(
+                                                ctx,
+                                                locale.video_player.qtp.as_str(),
+                                                TextStyle::Body,
+                                                None,
+                                            ),
+                                        );
+                                        ui.selectable_value(
+                                            &mut header.video_player,
+                                            VideoPlayer::Vlc,
+                                            gen_rich_text(
+                                                ctx,
+                                                locale.video_player.vlc.as_str(),
+                                                TextStyle::Body,
+                                                None,
+                                            ),
+                                        );
+                                    });
+                                ui.end_row();
+
+                                ui.label(gen_rich_text(
+                                    ctx,
+                                    locale.video_player_path.label.as_str(),
+                                    TextStyle::Body,
+                                    if header.video_player_path != config.video_player_path {
+                                        Some(Color32::LIGHT_RED)
+                                    } else {
+                                        None
+                                    },
+                                ));
+                                if ui
+                                    .button(gen_rich_text(
+                                        ctx,
+                                        locale.video_player_path.label.as_str(),
+                                        TextStyle::Body,
+                                        None,
+                                    ))
+                                    .clicked()
+                                {
+                                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                                        header
+                                            .video_player_path
+                                            .replace(path.display().to_string());
+                                    }
+                                }
+                                ui.end_row();
+                            }
+                        });
+                });
+            }
         });
     }
 }

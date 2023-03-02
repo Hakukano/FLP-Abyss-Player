@@ -4,16 +4,17 @@ use eframe::{
     epaint::Color32,
 };
 
-use crate::{config::*, font::gen_rich_text, locale, playlist, widget::player_bar::PlayerBar};
+use crate::{
+    config::*, font::gen_rich_text, helper::message_dialog_error, locale, playlist,
+    widget::player_bar::PlayerBar,
+};
 
 pub struct State {
     player_bar: PlayerBar,
 
-    alert: bool,
-    alert_message: Option<String>,
     go: bool,
 
-    pub playlist_body: Option<playlist::Body>,
+    pub playlist: Option<(playlist::Header, playlist::Body)>,
 }
 
 impl State {
@@ -21,11 +22,9 @@ impl State {
         Self {
             player_bar: PlayerBar::new(ctx),
 
-            alert: false,
-            alert_message: None,
             go: false,
 
-            playlist_body: None,
+            playlist: None,
         }
     }
 
@@ -45,17 +44,15 @@ impl State {
         if let Some(playlist_path) = config.playlist_path.clone() {
             match playlist::Header::load(playlist_path) {
                 Err(err) => {
-                    self.alert_message.replace(err.to_string());
-                    self.alert = true;
+                    message_dialog_error(err.to_string());
                 }
                 Ok((rest, header)) => match playlist::Body::load(rest) {
                     Err(err) => {
-                        self.alert_message.replace(err.to_string());
-                        self.alert = true;
+                        message_dialog_error(err.to_string());
                     }
                     Ok(body) => {
                         header.writer_config(config);
-                        self.playlist_body.replace(body);
+                        self.playlist.replace((header, body));
                         self.go = true;
                     }
                 },
@@ -63,25 +60,13 @@ impl State {
         } else if path_set && other_set {
             self.go = true;
         } else {
-            self.alert_message.replace(locale.alert.clone());
-            self.alert = true;
+            message_dialog_error(locale.alert.clone());
         }
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
         let mut config = get().write().expect("Cannot get config lock");
         let locale = &locale::get().ui.config;
-
-        if let Some(alert_message) = &self.alert_message {
-            egui::Window::new("alert").open(&mut self.alert).show(ctx, |ui| {
-                ui.label(gen_rich_text(
-                    ctx,
-                    alert_message,
-                    Heading,
-                    Some(Color32::RED),
-                ));
-            });
-        }
 
         egui::TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {

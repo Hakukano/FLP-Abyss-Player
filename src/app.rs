@@ -1,5 +1,5 @@
 mod config;
-mod view;
+pub mod view;
 
 use eframe::egui;
 
@@ -33,7 +33,7 @@ impl eframe::App for App {
 
                 if should_go {
                     next_state.replace(State::View(view::TimedState::new(
-                        view::State::new(ctx, state.playlist_body.as_ref()),
+                        view::State::new(ctx, state.playlist.as_ref()),
                         ctx.clone(),
                     )));
                 }

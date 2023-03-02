@@ -68,5 +68,5 @@ pub fn header(body: &Header) -> Vec<u8> {
 pub fn body(buffer: Vec<u8>, data: &Body) -> Vec<u8> {
     data.item_paths
         .iter()
-        .fold(buffer, |acc, cur| string(acc, cur))
+        .fold(buffer, |acc, cur| string(size(acc, cur.len() as u64), cur))
 }

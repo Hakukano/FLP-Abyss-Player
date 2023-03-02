@@ -52,11 +52,11 @@ impl From<u8> for MediaType {
     }
 }
 
-impl Into<u8> for MediaType {
-    fn into(self) -> u8 {
-        match self {
-            Self::Image => 1,
-            Self::Video => 2,
+impl From<MediaType> for u8 {
+    fn from(media_type: MediaType) -> Self {
+        match media_type {
+            MediaType::Image => 1,
+            MediaType::Video => 2,
             _ => 0,
         }
     }
@@ -102,11 +102,11 @@ impl From<u8> for VideoPlayer {
     }
 }
 
-impl Into<u8> for VideoPlayer {
-    fn into(self) -> u8 {
-        match self {
-            Self::Vlc => 1,
-            Self::Qtp => 2,
+impl From<VideoPlayer> for u8 {
+    fn from(video_player: VideoPlayer) -> Self {
+        match video_player {
+            VideoPlayer::Vlc => 1,
+            VideoPlayer::Qtp => 2,
             _ => 0,
         }
     }

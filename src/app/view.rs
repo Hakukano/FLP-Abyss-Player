@@ -57,12 +57,26 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-trait MediaPlayer: Send + Sync {
+pub trait MediaPlayer: Send + Sync {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
     fn support_extensions(&self) -> &[String];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
+
+    fn get_all_matched_paths(&self, root_path: &dyn AsRef<Path>) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+        for entry in walkdir::WalkDir::new(root_path)
+            .into_iter()
+            .filter_entry(|e| !is_hidden(e))
+            .filter_map(|e| e.ok())
+        {
+            if entry.path().has_extension(self.support_extensions()) {
+                paths.push(entry.path().to_path_buf());
+            }
+        }
+        paths
+    }
 }
 
 pub struct State {
@@ -85,7 +99,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &egui::Context, playlist_body: Option<&playlist::Body>) -> Self {
+    pub fn new(ctx: &egui::Context, playlist: Option<&(playlist::Header, playlist::Body)>) -> Self {
         let media_type = {
             config::get()
                 .read()
@@ -98,7 +112,7 @@ impl State {
             _ => panic!("Unknown media type"),
         };
         let mut paths = Vec::new();
-        if let Some(playlist_body) = playlist_body {
+        if let Some((_, playlist_body)) = playlist {
             playlist_body.write_paths(&mut paths);
         } else {
             let root_path = {
@@ -109,18 +123,7 @@ impl State {
                     .clone()
                     .expect("There must be a root path at this point")
             };
-            for entry in walkdir::WalkDir::new(root_path)
-                .into_iter()
-                .filter_entry(|e| !is_hidden(e))
-                .filter_map(|e| e.ok())
-            {
-                if entry
-                    .path()
-                    .has_extension(media_player.support_extensions())
-                {
-                    paths.push(entry.path().to_path_buf());
-                }
-            }
+            paths = media_player.get_all_matched_paths(&root_path.as_str());
         }
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
         let icon_path = Path::new(get_cli().assets_path.as_str())
@@ -142,7 +145,7 @@ impl State {
             index: 0,
             next: false,
             media_player,
-            playlist_state: PlaylistState::new(paths, 0),
+            playlist_state: PlaylistState::new(playlist.map(|p| p.0.clone()), paths, 0),
         }
     }
 
@@ -232,9 +235,11 @@ impl State {
             .show(ctx, |ui| {
                 self.playlist.show(
                     &mut self.playlist_state,
-                    &mut config::get().write().expect("Cannot get config lock"),
                     ui,
                     ctx,
+                    &mut config::get().write().expect("Cannot get config lock"),
+                    Some(self.index),
+                    self.media_player.as_ref(),
                 )
             });
 

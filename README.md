@@ -14,7 +14,7 @@ Use `uninstall.ps1` to uninstall that version.
 
 ## Install From crates.io
 
--`cargo install flp-abyss-player`
+- `cargo install flp-abyss-player`
 - Download the assets from release page
 
 ## Run From Source
@@ -54,7 +54,7 @@ Breaking changes will only be made when bumping major versions.
 
 ## Extension
 
-`.fappl` - [f]LProject [a]byss [p]layer [p]lay[l]ist
+`fappl` - [f]LProject [a]byss [p]layer [p]lay[l]ist
 
 ## File Structure
 

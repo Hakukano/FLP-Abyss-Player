@@ -4,6 +4,7 @@
 - <a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Roundicons - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/down-arrow" title="down arrow icons">Down arrow icons created by gungyoga04 - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/download" title="download icons">Download icons created by Bharat Icons - Flaticon</a>
+- <a href="https://www.flaticon.com/free-icons/duplicate" title="duplicate icons">Duplicate icons created by Dewi Sari - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/minus-sign" title="minus sign icons">Minus sign icons created by kliwir art - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/next" title="next icons">Next icons created by Roundicons - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/play" title="play icons">Play icons created by Freepik - Flaticon</a>

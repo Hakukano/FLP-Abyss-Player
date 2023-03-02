@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     fs::File,
     io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
@@ -15,9 +16,12 @@ use crate::{
 mod parser;
 mod writer;
 
+pub const EXTENSION: &str = "fappl";
+
 const FLP: &[u8] = b"FLP";
 const APPL: &[u8] = b"APPL";
 
+#[derive(Clone)]
 pub struct Version {
     major: u8,
     minor: u8,
@@ -38,12 +42,19 @@ impl Version {
     }
 }
 
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+#[derive(Clone)]
 pub struct Header {
-    version: Version,
-    time: DateTime<Utc>,
-    media_type: MediaType,
-    video_player: VideoPlayer,
-    video_player_path: Option<String>,
+    pub version: Version,
+    pub time: DateTime<Utc>,
+    pub media_type: MediaType,
+    pub video_player: VideoPlayer,
+    pub video_player_path: Option<String>,
 }
 
 impl Header {
@@ -102,7 +113,7 @@ impl Body {
 
     pub fn save(&self, buffer: Vec<u8>, path: impl AsRef<Path>) -> Result<()> {
         let bytes = writer::body(buffer, self);
-        BufWriter::new(File::open(path)?).write_all(bytes.as_slice())?;
+        BufWriter::new(File::create(path)?).write_all(bytes.as_slice())?;
         Ok(())
     }
 }
