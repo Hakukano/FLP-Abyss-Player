@@ -43,8 +43,8 @@ Run with `--help`
 
 Current supported locale:
 
-- en\_us
-- ja\_jp
+- en\_US
+- ja\_JP
 
 # Playlist
 

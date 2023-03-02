@@ -50,6 +50,11 @@ impl eframe::App for App {
                     .expect("Cannot get view state lock")
                     .should_home()
                 {
+                    crate::config::get()
+                        .write()
+                        .expect("Cannot get config lock")
+                        .playlist_path
+                        .take();
                     next_state.replace(State::Config(Box::new(config::State::new(ctx))));
                 }
             }

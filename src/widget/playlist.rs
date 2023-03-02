@@ -218,7 +218,7 @@ impl Playlist {
                 let max_height = ui.text_style_height(&text_style);
                 ui.spacing_mut().interact_size.y = max_height;
                 egui::ScrollArea::vertical()
-                    .max_height(50.0 * max_height)
+                    .max_height(30.0 * max_height)
                     .show_rows(ui, max_height, paths.len(), |ui, row_range| {
                         for row in row_range {
                             ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {

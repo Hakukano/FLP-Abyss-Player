@@ -22,11 +22,7 @@ $start_menu_dir = "$env:USERPROFILE\Start Menu\Programs\$org"
 $start_menu_shortcut = "$start_menu_dir\$package-$version.lnk"
 
 $fonts = "NotoSansCJKjp-Regular.otf;Inter-Regular.ttf"
-$locale = switch ((Get-WinSystemLocale).name) {
-  "ja-JP" { "ja_jp"; break }
-  "en-US" { "en_us"; break }
-  default { "en_us"; break }
-}
+$locale = (Get-WinSystemLocale).name.replace("-", "_")
 
 $hkcr = "HKCR:"
 $reg_shell = "$hkcr\Folder\shell"

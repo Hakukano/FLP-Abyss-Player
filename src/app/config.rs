@@ -5,7 +5,7 @@ use eframe::{
 };
 
 use crate::{
-    config::*, font::gen_rich_text, helper::message_dialog_error, locale, playlist,
+    config::*, font::gen_rich_text, get_cli, helper::message_dialog_error, locale, playlist,
     widget::player_bar::PlayerBar,
 };
 
@@ -32,7 +32,7 @@ impl State {
         self.go
     }
 
-    fn try_go(&mut self, config: &mut Config, locale: &locale::ui::Config) {
+    fn try_go(&mut self, config: &mut Config, locale: &locale::ui::Config) -> bool {
         let path_set = config.root_path.is_some();
         let other_set = match config.media_type {
             MediaType::Image => true,
@@ -45,28 +45,40 @@ impl State {
             match playlist::Header::load(playlist_path) {
                 Err(err) => {
                     message_dialog_error(err.to_string());
+                    false
                 }
                 Ok((rest, header)) => match playlist::Body::load(rest) {
                     Err(err) => {
                         message_dialog_error(err.to_string());
+                        false
                     }
                     Ok(body) => {
                         header.writer_config(config);
                         self.playlist.replace((header, body));
                         self.go = true;
+                        true
                     }
                 },
             }
         } else if path_set && other_set {
             self.go = true;
+            true
         } else {
             message_dialog_error(locale.alert.clone());
+            false
         }
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
         let mut config = get().write().expect("Cannot get config lock");
         let locale = &locale::get().ui.config;
+
+        if get_cli().playlist_path.is_some()
+            && config.playlist_path.is_some()
+            && !self.try_go(&mut config, locale)
+        {
+            panic!("Broken playlist file");
+        }
 
         egui::TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {
@@ -93,7 +105,7 @@ impl State {
                         .button(gen_rich_text(ctx, locale.go.as_str(), Button, None))
                         .clicked()
                     {
-                        self.try_go(&mut config, locale)
+                        self.try_go(&mut config, locale);
                     }
                 });
             });

@@ -147,13 +147,13 @@ pub fn get() -> &'static RwLock<Config> {
     CONFIG.get_or_init(|| {
         let cli = get_cli();
         let config = match (
+            cli.playlist_path.as_ref(),
             cli.config_file.as_ref(),
             cli.media_type,
             cli.root_path.as_ref(),
             cli.video_player,
         ) {
-            (None, MediaType::Unset, None, VideoPlayer::Unset) => Config::default(),
-            (Some(config_file), _, _, _) => json::new(config_file),
+            (None, Some(config_file), _, _, _) => json::new(config_file),
             _ => args::new(cli),
         };
         RwLock::new(config)

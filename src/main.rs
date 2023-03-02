@@ -40,7 +40,7 @@ pub struct Cli {
     #[arg(long)]
     pub fonts: String,
 
-    /// [Startup] The locale to use, in lower case. e.g. en_us
+    /// [Startup] The locale to use. e.g. en_US
     #[arg(long)]
     pub locale: String,
 

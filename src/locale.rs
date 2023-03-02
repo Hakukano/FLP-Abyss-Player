@@ -1,36 +1,15 @@
-use std::{collections::HashMap, fs::File, ops::Deref, path::Path};
+use std::{
+    collections::HashMap,
+    fs::{read_dir, File},
+    ops::Deref,
+    path::Path,
+};
 
 use once_cell::sync::OnceCell;
 
 use crate::get_cli;
 
 pub mod ui;
-
-macro_rules! read_locale {
-    ($cli:ident, $map:ident, $locale:expr, $(($name:ident, $sub_path:expr),)+) => {
-        let locale_path = Path::new($cli.assets_path.as_str()).join("locale");
-        $map.insert(
-            $locale.to_string(),
-            Locale {
-                $(
-                    $name: serde_json::from_reader(File::open(locale_path
-                            .join($sub_path)
-                            .join(format!("{}.json", $locale)))
-                        .expect("Cannot open locale file"))
-                    .expect("Cannot parse locale file"),
-                )+
-            }
-        );
-    }
-}
-
-macro_rules! read_locales {
-    ($cli:ident, $map:ident, $($locale:expr,)+) => {
-        $(
-            read_locale!($cli, $map, $locale, (ui, "ui"),);
-        )+
-    }
-}
 
 pub struct Locale {
     pub ui: ui::Locale,
@@ -40,15 +19,42 @@ struct Locales(HashMap<String, Locale>);
 
 impl Locales {
     fn new() -> Self {
-        let cli = get_cli();
+        let assets_path = get_cli().assets_path.as_str();
         let mut map = HashMap::new();
-        read_locales!(cli, map, "en_us", "ja_jp",);
+
+        let locale_path = Path::new(assets_path).join("locale");
+        for entry in read_dir(locale_path)
+            .expect("Cannot read directory")
+            .flatten()
+        {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_dir() {
+                    let locale = entry
+                        .file_name()
+                        .to_str()
+                        .expect("Invalid path")
+                        .to_string();
+                    map.insert(
+                        locale.clone(),
+                        Locale {
+                            ui: serde_json::from_reader(
+                                File::open(entry.path().join("ui.json"))
+                                    .expect("Cannot open locale file"),
+                            )
+                            .expect("Cannot parse locale file"),
+                        },
+                    );
+                }
+            }
+        }
+
         Self(map)
     }
 
     fn get_one(&self) -> &Locale {
         let cli = get_cli();
-        self.get(&cli.locale).expect("Unknown LOCALE")
+        self.get(&cli.locale)
+            .unwrap_or_else(|| self.get("en_US").expect("locale en_US is not found"))
     }
 }
 
