@@ -7,7 +7,7 @@ if ((Get-Command "$cargo" -ErrorAction SilentlyContinue) -eq $null) {
 
 $org = "FLProject"
 $package = "flp-abyss-player"
-$version = "0.5.0"
+$version = "0.5.1"
 
 $bin_dir = "$env:PROGRAMFILES\$org\$package\$version"
 $bin_path = "$bin_dir\bin\$package.exe"
