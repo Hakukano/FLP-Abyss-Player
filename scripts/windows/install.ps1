@@ -1,46 +1,10 @@
-$ErrorActionPreference = "Stop"
-
-$cargo = "cargo.exe"
-if ((Get-Command "$cargo" -ErrorAction SilentlyContinue) -eq $null) { 
-   throw "Unable to find $cargo in your PATH"
+$ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+try {
+    . ("$ScriptDirectory\common.ps1")
 }
-
-$org = "FLProject"
-$package = "flp-abyss-player"
-$version = "0.4.0"
-
-$bin_dir = "$env:PROGRAMFILES\$org\$package\$version"
-$bin_path = "$bin_dir\bin\$package.exe"
-
-$data_dir = "$env:LOCALAPPDATA\$org\$package\$version"
-
-$assets_url = "https://github.com/Hakukano/FLP-Abyss-Player/releases/download/v$version/assets.zip"
-$assets_zip = "$data_dir\assets.zip"
-$assets_dir = "$data_dir\assets"
-
-$start_menu_dir = "$env:USERPROFILE\Start Menu\Programs\$org"
-$start_menu_shortcut = "$start_menu_dir\$package-$version.lnk"
-
-$fonts = "NotoSansCJKjp-Regular.otf;Inter-Regular.ttf"
-$locale = switch ((Get-WinSystemLocale).name) {
-  "ja-JP" { "ja_jp"; break }
-  "en-US" { "en_us"; break }
-  default { "en_us"; break }
+catch {
+    Write-Host "Error while loading supporting PowerShell Scripts" 
 }
-
-$hkcr = "HKCR:"
-$reg_shell = "$hkcr\Folder\shell"
-
-$reg_image_name = "$package-$version-image"
-$reg_image = "$reg_shell\$reg_image_name"
-$reg_image_command_name = "command"
-$reg_image_command = "$reg_image\$reg_image_command_name"
-
-$reg_vlc_name = "$package-$version-vlc"
-$reg_vlc = "$reg_shell\$reg_vlc_name"
-$reg_vlc_command_name = "command"
-$reg_vlc_command = "$reg_vlc\$reg_vlc_command_name"
-$vlc_bin_path = where.exe vlc
 
 # Install binary
 rm -ErrorAction Ignore -Recurse -Force $bin_dir
@@ -86,3 +50,7 @@ if (Test-Path $reg_vlc) {
 New-Item -Path $reg_shell -Name $reg_vlc_name
 New-Item -Path $reg_vlc -Name $reg_vlc_command_name
 Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""
+
+# Associate playlist file
+cmd /c ftype $playlist_filetype=$bin_path "--assets-path" "$assets_dir" "--fonts" "$fonts" "--locale" "$locale" "--playlist-path" "%1"
+cmd /c assoc $playlist_extension=$playlist_filetype
