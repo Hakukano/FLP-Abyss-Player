@@ -28,7 +28,7 @@ if (!(Test-Path $start_menu_dir)) {
 }
 $obj_shell = New-Object -ComObject ("WScript.Shell")
 $obj_short_cut = $obj_shell.CreateShortcut($start_menu_shortcut)
-$obj_short_cut.TargetPath = $bin_path
+$obj_short_cut.TargetPath = "$bin_path"
 $obj_short_cut.Arguments = "--assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`""
 $obj_short_cut.Save()
 
@@ -52,5 +52,5 @@ New-Item -Path $reg_vlc -Name $reg_vlc_command_name
 Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --fonts `"$fonts`" --locale `"$locale`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""
 
 # Associate playlist file
-cmd /c ftype $playlist_filetype=$bin_path "--assets-path" "$assets_dir" "--fonts" "$fonts" "--locale" "$locale" "--playlist-path" "%1"
 cmd /c assoc $playlist_extension=$playlist_filetype
+cmd /c "ftype $playlist_filetype=$start_menu_shortcut --playlist-path %1"

@@ -7,8 +7,8 @@ catch {
 }
 
 # Disassociate playlist file
-cmd /c assoc $playlist_extension=
 cmd /c ftype $playlist_filetype=
+cmd /c assoc $playlist_extension=
 
 # Remove context menu item
 if (!(Test-Path $hkcr)) {
