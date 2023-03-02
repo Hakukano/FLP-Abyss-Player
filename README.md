@@ -6,7 +6,8 @@ This is a media player that allows you go through the entire folder of media rec
 
 ## Windows
 
-- Download `install.ps1` from release page
+- Download `scripts.zip` from release page
+- Go to `windows`
 - Run `Set-ExecutionPolicy -ExecutionPolicy ByPass -Scope Process`
 - Run `install.ps1`
 
