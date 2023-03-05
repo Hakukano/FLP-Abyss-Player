@@ -1,3 +1,5 @@
+#[cfg(feature = "opengl")]
+mod native;
 mod vlc;
 
 use std::{collections::VecDeque, path::Path};

@@ -26,7 +26,8 @@ pub struct RootPath {
 pub struct VideoPlayer {
     pub label: String,
     pub unset: String,
-    pub qtp: String,
+    #[cfg(feature = "opengl")]
+    pub native: String,
     pub vlc: String,
 }
 

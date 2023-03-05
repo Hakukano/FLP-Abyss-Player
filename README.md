@@ -27,6 +27,14 @@ Use `uninstall.ps1` to uninstall that version.
 
 Run with `--help`
 
+# Features
+
+## GStreamer
+
+You need to install gstreamer package and build with `opengl` feature! It gives this player ability to play video/audio natively.
+
+Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gstreamer-rs/stable/latest/docs/gstreamer/#installation)
+
 # Supported Media
 
 ## Images
@@ -38,9 +46,10 @@ Run with `--help`
 
 ## Video
 
-- whatever vlc supports
+- gstreamer
+- vlc
 
-# locale
+# Locale
 
 Current supported locale:
 

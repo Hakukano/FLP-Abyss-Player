@@ -446,12 +446,13 @@ impl Playlist {
                                             VideoPlayer::Unset,
                                             gen_rich_text(ctx, "--", TextStyle::Body, None),
                                         );
+                                        #[cfg(feature = "opengl")]
                                         ui.selectable_value(
                                             &mut header.video_player,
-                                            VideoPlayer::Qtp,
+                                            VideoPlayer::Native,
                                             gen_rich_text(
                                                 ctx,
-                                                locale.video_player.qtp.as_str(),
+                                                locale.video_player.native.as_str(),
                                                 TextStyle::Body,
                                                 None,
                                             ),
