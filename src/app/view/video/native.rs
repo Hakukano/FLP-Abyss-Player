@@ -1,341 +1,290 @@
-use std::{
-    collections::VecDeque,
-    fmt::Display,
-    path::Path,
-    process::{Child, Command},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, RwLock,
-    },
-};
+use std::path::Path;
 
 use anyhow::Result;
-use eframe::{
-    egui::{self, TextStyle},
-    epaint::Color32,
-};
-use passwords::PasswordGenerator;
-use reqwest::{Client, Method};
-use serde::Serialize;
-use tokio::runtime;
+use eframe::egui;
+use gst::prelude::*;
+use gstreamer as gst;
 
-use crate::{
-    font::gen_rich_text,
-    helper::{find_available_port, seconds_to_h_m_s},
-};
-
-fn gen_vlc_http_request_url_base(port: u16, extra_path: impl Display) -> String {
-    format!("http://{VLC_HTTP_HOST}:{}/requests{}", port, extra_path)
+struct SourceElements {
+    source: gst::Element,
+    demux: gst::Element,
 }
 
-mod status {
-    use std::collections::VecDeque;
-
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename = "info")]
-    pub struct Info {
-        #[serde(rename = "@name")]
-        pub name: String,
-        #[serde(rename = "$value", default)]
-        pub value: String,
+impl SourceElements {
+    fn new(video_path: impl AsRef<Path>) -> Self {
+        Self {
+            source: gst::ElementFactory::make("filesrc")
+                .property("location", video_path.as_ref().display().to_string())
+                .build()
+                .expect("Cannot build source"),
+            demux: gst::ElementFactory::make("qtdemux")
+                .name("demux")
+                .build()
+                .expect("Cannot build demux"),
+        }
     }
 
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename = "category")]
-    pub struct Category {
-        #[serde(rename = "@name")]
-        pub name: String,
-        #[serde(default)]
-        pub info: Vec<Info>,
+    fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
+        pipeline
+            .add_many(&[&self.source, &self.demux])
+            .expect("Cannot add source elements to pipeline");
     }
 
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename = "information")]
-    pub struct Information {
-        #[serde(default)]
-        pub category: Vec<Category>,
+    fn link(self, video_queue: gst::Element, audio_queue: gst::Element) -> gst::Element {
+        gst::Element::link_many(&[&self.source, &self.demux]).expect("Cannot link source elements");
+
+        self.demux.connect_pad_added(move |_src, src_pad| {
+            let new_pad_type = src_pad
+                .current_caps()
+                .expect("Failed to get caps of new pad.")
+                .structure(0)
+                .expect("Failed to get first structure of caps.")
+                .name();
+            if new_pad_type.starts_with("video/") {
+                let video_queue_sink = video_queue
+                    .static_pad("sink")
+                    .expect("Cannot get convert sink pad");
+                if video_queue_sink.is_linked() {
+                    return;
+                }
+                src_pad
+                    .link(&video_queue_sink)
+                    .expect("Cannot link video sink to demux src");
+            } else if new_pad_type.starts_with("audio/") {
+                let audio_queue_sink = audio_queue
+                    .static_pad("sink")
+                    .expect("Cannot get convert sink pad");
+                if audio_queue_sink.is_linked() {
+                    return;
+                }
+                src_pad
+                    .link(&audio_queue_sink)
+                    .expect("Cannot link audio sink to demux src");
+            } else {
+                return;
+            }
+        });
+
+        self.source
+    }
+}
+
+struct VideoElements {
+    queue: gst::Element,
+    decode: gst::Element,
+    convert: gst::Element,
+    scale: gst::Element,
+    sink: gst::Element,
+}
+
+impl VideoElements {
+    fn new() -> Self {
+        Self {
+            queue: gst::ElementFactory::make("queue")
+                .build()
+                .expect("Cannot build queue"),
+            decode: gst::ElementFactory::make("decodebin")
+                .build()
+                .expect("Cannot build decodebin"),
+            convert: gst::ElementFactory::make("videoconvert")
+                .build()
+                .expect("Cannot build videoconvert"),
+            scale: gst::ElementFactory::make("videoscale")
+                .build()
+                .expect("Cannot build videoscale"),
+            sink: gst::ElementFactory::make("fakesink")
+                .build()
+                .expect("Cannot build video sink"),
+        }
     }
 
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename = "root")]
-    pub struct Root {
-        #[serde(skip_deserializing)]
-        pub error: VecDeque<String>,
+    fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
+        pipeline
+            .add_many(&[
+                &self.queue,
+                &self.decode,
+                &self.convert,
+                &self.scale,
+                &self.sink,
+            ])
+            .expect("Cannot add video elements to pipeline");
+    }
 
-        pub fullscreen: bool,
-        pub aspectratio: Option<String>,
-        pub audiodelay: f32,
-        pub apiversion: u32,
-        pub currentplid: i32,
-        pub time: u32,
-        pub volume: u32,
-        pub length: u32,
-        pub random: bool,
-        pub rate: u32,
-        pub state: String,
-        #[serde(rename = "loop")]
-        pub lop: bool,
-        pub version: String,
-        pub position: f32,
-        pub repeat: bool,
-        pub subtitledelay: u32,
-        pub information: Information,
+    fn link(self) -> gst::Element {
+        gst::Element::link_many(&[&self.queue, &self.decode]).expect("Cannot link video elements");
+        gst::Element::link_many(&[&self.convert, &self.scale, &self.sink])
+            .expect("Cannot link video elements");
+
+        self.decode.connect_pad_added(move |_src, src_pad| {
+            let convert_sink = self
+                .convert
+                .static_pad("sink")
+                .expect("Cannot get convert sink pad");
+            if convert_sink.is_linked() {
+                return;
+            }
+
+            let new_pad_type = src_pad
+                .current_caps()
+                .expect("Failed to get caps of new pad.")
+                .structure(0)
+                .expect("Failed to get first structure of caps.")
+                .name();
+            if !new_pad_type.starts_with("video/x-raw") {
+                return;
+            }
+
+            src_pad
+                .link(&convert_sink)
+                .expect("Cannot link convert sink to decode src");
+        });
+
+        self.queue
+    }
+}
+
+struct AudioElements {
+    queue: gst::Element,
+    decode: gst::Element,
+    convert: gst::Element,
+    resample: gst::Element,
+    sink: gst::Element,
+}
+
+impl AudioElements {
+    fn new() -> Self {
+        Self {
+            queue: gst::ElementFactory::make("queue")
+                .build()
+                .expect("Cannot build queue"),
+            decode: gst::ElementFactory::make("decodebin")
+                .build()
+                .expect("Cannot build decodebin"),
+            convert: gst::ElementFactory::make("audioconvert")
+                .build()
+                .expect("Cannot build audioconvert"),
+            resample: gst::ElementFactory::make("audioresample")
+                .build()
+                .expect("Cannot build audioresample"),
+            sink: gst::ElementFactory::make("autoaudiosink")
+                .build()
+                .expect("Cannot build audio sink"),
+        }
+    }
+
+    fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
+        pipeline
+            .add_many(&[
+                &self.queue,
+                &self.decode,
+                &self.convert,
+                &self.resample,
+                &self.sink,
+            ])
+            .expect("Cannot add audio elements to pipeline");
+    }
+
+    fn link(self) -> gst::Element {
+        gst::Element::link_many(&[&self.queue, &self.decode]).expect("Cannot link audio elements");
+        gst::Element::link_many(&[&self.convert, &self.resample, &self.sink])
+            .expect("Cannot link audio elements");
+
+        self.decode.connect_pad_added(move |_src, src_pad| {
+            let convert_sink = self
+                .convert
+                .static_pad("sink")
+                .expect("Cannot get convert sink pad");
+            if convert_sink.is_linked() {
+                return;
+            }
+
+            let new_pad_type = src_pad
+                .current_caps()
+                .expect("Failed to get caps of new pad.")
+                .structure(0)
+                .expect("Failed to get first structure of caps.")
+                .name();
+            if !new_pad_type.starts_with("audio/x-raw") {
+                return;
+            }
+
+            src_pad
+                .link(&convert_sink)
+                .expect("Cannot link convert sink to decode src");
+        });
+
+        self.queue
     }
 }
 
 pub struct VideoPlayer {
-    command: Command,
-    http_password: String,
-    http_port: u16,
-    child: Option<Child>,
-
-    runtime: runtime::Runtime,
-    /// The video has been played at least once or is still being played
-    played: Arc<AtomicBool>,
-    status: Arc<RwLock<status::Root>>,
+    pipeline: gst::Pipeline,
 }
 
 impl VideoPlayer {
-    pub fn new(
-        player_path: impl AsRef<Path>,
-        video_path: impl AsRef<Path>,
-        ctx: egui::Context,
-    ) -> Self {
-        let pg = PasswordGenerator {
-            length: 16,
-            numbers: true,
-            lowercase_letters: true,
-            uppercase_letters: true,
-            symbols: false,
-            spaces: false,
-            exclude_similar_characters: false,
-            strict: true,
-        };
-        let http_password = pg.generate_one().expect("Cannot generate password");
-        let http_port = find_available_port().expect("Cannot find an available port");
-        let mut command = Command::new(player_path.as_ref());
-        command
-            .arg("--extraintf")
-            .arg("http")
-            .arg("--http-host")
-            .arg(VLC_HTTP_HOST)
-            .arg("--http-port")
-            .arg(http_port.to_string())
-            .arg("--http-password")
-            .arg(http_password.as_str())
-            .arg(video_path.as_ref());
-        let runtime = runtime::Builder::new_multi_thread()
-            .worker_threads(RUNTIME_THREADS)
-            .thread_name(RUNTIME_THREAD_NAME)
-            .thread_stack_size(RUNTIME_THREAD_STACK_SIZE)
-            .enable_all()
-            .build()
-            .expect("Cannot build tokio runtime");
-        let video_player = Self {
-            command,
-            http_password,
-            http_port,
-            child: None,
-            runtime,
-            played: Arc::new(AtomicBool::new(false)),
-            status: Arc::new(RwLock::new(status::Root::default())),
-        };
+    pub fn new(video_path: impl AsRef<Path>) -> Self {
+        gst::init().expect("Cannot initialize gstream");
 
-        let request_url = gen_vlc_http_request_url_base(video_player.http_port, VLC_HTTP_STATUS);
-        let request_password = video_player.http_password.clone();
-        let played = video_player.played.clone();
-        let status = video_player.status.clone();
-        video_player.runtime.spawn(async move {
-            let mut timer =
-                tokio::time::interval(std::time::Duration::from_millis(STATUS_SYNC_INTERVAL_MS));
-            loop {
-                timer.tick().await;
-                let request = Client::new()
-                    .request(Method::GET, request_url.as_str())
-                    .basic_auth("", Some(request_password.as_str()));
-                let ctx = ctx.clone();
-                let played = played.clone();
-                let status = status.clone();
-                let _ = tokio::spawn(async move {
-                    match request.send().await {
-                        Err(_) => {
-                            let mut queue = VecDeque::new();
-                            queue.push_back("Waiting for the stream...".to_string());
-                            status.write().expect("Cannot get status write lock").error = queue;
-                        }
-                        Ok(response) => match response.text().await {
-                            Err(err) => {
-                                status
-                                    .write()
-                                    .expect("Cannot get status write lock")
-                                    .error
-                                    .push_back(err.to_string());
-                            }
-                            Ok(text) => {
-                                match quick_xml::de::from_str::<status::Root>(text.as_str()) {
-                                    Err(err) => {
-                                        status
-                                            .write()
-                                            .expect("Cannot get status write lock")
-                                            .error
-                                            .push_back(err.to_string());
-                                    }
-                                    Ok(xml) => {
-                                        if xml.state == "playing" || xml.state == "paused" {
-                                            played.swap(true, Ordering::AcqRel);
-                                        }
-                                        *status.write().expect("Cannot get status write lock") = xml
-                                    }
-                                }
-                            }
-                        },
-                    }
-                    ctx.request_repaint();
-                })
-                .await;
-            }
-        });
+        let source_elements = SourceElements::new(video_path);
+        let video_elements = VideoElements::new();
+        let audio_elements = AudioElements::new();
 
-        video_player
-    }
+        let pipeline = gst::Pipeline::default();
 
-    fn send_status_get_request(&self, query: Vec<(String, String)>) {
-        let request_url = gen_vlc_http_request_url_base(self.http_port, VLC_HTTP_STATUS);
-        let request_password = self.http_password.clone();
-        self.runtime.spawn(async move {
-            let _ = Client::new()
-                .request(Method::GET, request_url.as_str())
-                .query(query.as_slice())
-                .basic_auth("", Some(request_password.as_str()))
-                .send()
-                .await;
-        });
+        source_elements.add_to_pipeline(&pipeline);
+        video_elements.add_to_pipeline(&pipeline);
+        audio_elements.add_to_pipeline(&pipeline);
+
+        let video_queue = video_elements.link();
+        let audio_queue = audio_elements.link();
+        let _source = source_elements.link(video_queue, audio_queue);
+
+        Self { pipeline }
     }
 }
 
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
-        if let Some(child) = self.child.as_mut() {
-            let _ = child.kill();
-        }
+        let _ = self.pipeline.set_state(gst::State::Null);
     }
 }
 
 impl super::VideoPlayer for VideoPlayer {
+    fn is_paused(&self) -> bool {
+        self.pipeline.current_state() == gst::State::Paused
+    }
+
     fn is_end(&self) -> bool {
-        self.played.load(Ordering::Acquire)
-            && self.status.read().expect("Cannot get status lock").state == "stopped"
+        self.pipeline.current_state() == gst::State::Null
     }
 
-    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let status = self.status.read().expect("Cannot get status read lock");
-
-        ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
-
-        if !status.error.is_empty() {
-            status.error.iter().for_each(|err| {
-                ui.horizontal(|ui| {
-                    ui.add_space(10.0);
-                    ui.label(gen_rich_text(
-                        ctx,
-                        err,
-                        TextStyle::Body,
-                        Some(Color32::LIGHT_RED),
-                    ));
-                });
-            });
-            return;
-        }
-
-        ui.horizontal(|ui| {
-            ui.add_space(10.0);
-            ui.label(gen_rich_text(
-                ctx,
-                format!(
-                    "Now playing: {}",
-                    status
-                        .information
-                        .category
-                        .iter()
-                        .find(|c| c.name == "meta")
-                        .map(|c| c
-                            .info
-                            .iter()
-                            .find(|i| i.name == "filename")
-                            .map(|i| i.value.clone())
-                            .unwrap_or_else(|| "No filename found".to_string()))
-                        .unwrap_or_else(|| "No meta found".to_string())
-                ),
-                TextStyle::Body,
-                None,
-            ));
-        });
-
-        let (time_h, time_m, time_s) = seconds_to_h_m_s(status.time);
-        let (length_h, length_m, length_s) = seconds_to_h_m_s(status.length);
-        ui.horizontal(|ui| {
-            ui.add_space(10.0);
-            ui.label(gen_rich_text(
-                ctx,
-                format!(
-                    "Time: {:02}:{:02}:{:02} / {:02}:{:02}:{:02}",
-                    time_h, time_m, time_s, length_h, length_m, length_s
-                ),
-                TextStyle::Body,
-                None,
-            ));
-        });
-
-        let mut xml_serializer = quick_xml::se::Serializer::new(String::new());
-        xml_serializer.indent(' ', 2);
-        let information = status
-            .serialize(xml_serializer)
-            .expect("Cannot serialize information");
-        ui.with_layout(
-            egui::Layout::left_to_right(egui::Align::TOP).with_cross_justify(true),
-            |ui| {
-                ui.add_space(10.0);
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.label(information.as_str());
-                });
-            },
-        );
-    }
+    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {}
 
     fn start(&mut self) -> Result<()> {
-        if self.child.is_none() {
-            self.child.replace(self.command.spawn()?);
-        }
+        self.pipeline.set_state(gst::State::Playing)?;
+        Ok(())
+    }
+
+    fn resume(&mut self) -> Result<()> {
+        self.pipeline.set_state(gst::State::Playing)?;
         Ok(())
     }
 
     fn pause(&mut self) -> Result<()> {
-        self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
+        self.pipeline.set_state(gst::State::Paused)?;
         Ok(())
     }
 
     fn stop(&mut self) -> Result<()> {
-        if let Some(mut child) = self.child.take() {
-            child.kill()?;
-        }
+        self.pipeline.set_state(gst::State::Null)?;
         Ok(())
     }
 
     fn fast_forward(&mut self, seconds: u32) -> Result<()> {
-        self.send_status_get_request(vec![
-            ("command".to_string(), "seek".to_string()),
-            ("val".to_string(), format!("+{seconds}")),
-        ]);
         Ok(())
     }
 
     fn rewind(&mut self, seconds: u32) -> Result<()> {
-        self.send_status_get_request(vec![
-            ("command".to_string(), "seek".to_string()),
-            ("val".to_string(), format!("-{seconds}")),
-        ]);
         Ok(())
     }
 }

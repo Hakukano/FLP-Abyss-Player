@@ -10,9 +10,11 @@ use eframe::egui::{self, Key};
 use crate::config;
 
 pub trait VideoPlayer: Send + Sync {
+    fn is_paused(&self) -> bool;
     fn is_end(&self) -> bool;
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
     fn start(&mut self) -> Result<()>;
+    fn resume(&mut self) -> Result<()>;
     fn pause(&mut self) -> Result<()>;
     fn stop(&mut self) -> Result<()>;
     fn fast_forward(&mut self, seconds: u32) -> Result<()>;
@@ -61,13 +63,7 @@ impl super::MediaPlayer for MediaPlayer {
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
         let (player, player_path) = {
             let config = config::get().read().expect("Cannot get config lock");
-            (
-                config.video_player,
-                config
-                    .video_player_path
-                    .clone()
-                    .expect("video player path should have be set at this point"),
-            )
+            (config.video_player, config.video_player_path.clone())
         };
         if let Some(mut video_player) = self.video_player.take() {
             if let Err(err) = video_player.stop() {
@@ -75,9 +71,13 @@ impl super::MediaPlayer for MediaPlayer {
             }
         }
         let mut video_player: Box<dyn VideoPlayer> = match player {
-            config::VideoPlayer::Vlc => {
-                Box::new(vlc::VideoPlayer::new(player_path, path, ctx.clone()))
-            }
+            #[cfg(feature = "opengl")]
+            config::VideoPlayer::Native => Box::new(native::VideoPlayer::new(path)),
+            config::VideoPlayer::Vlc => Box::new(vlc::VideoPlayer::new(
+                player_path.expect("Player path should be availalbe at this point"),
+                path,
+                ctx.clone(),
+            )),
             _ => panic!("Unknow video player: {:?}", player),
         };
         if let Err(err) = video_player.start() {
@@ -92,7 +92,11 @@ impl super::MediaPlayer for MediaPlayer {
 
             if can_input {
                 if ctx.input(|i| i.key_pressed(Key::Space)) {
-                    let _ = video_player.pause();
+                    if video_player.is_paused() {
+                        let _ = video_player.resume();
+                    } else {
+                        let _ = video_player.pause();
+                    }
                 }
                 if ctx.input(|i| i.key_pressed(Key::F)) {
                     let _ = video_player.fast_forward(5);
