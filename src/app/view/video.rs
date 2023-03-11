@@ -19,6 +19,7 @@ pub trait VideoPlayer: Send + Sync {
     fn resume(&mut self) -> Result<()>;
     fn pause(&mut self) -> Result<()>;
     fn stop(&mut self) -> Result<()>;
+    fn seek(&mut self, seconds: u32) -> Result<()>;
     fn fast_forward(&mut self, seconds: u32) -> Result<()>;
     fn rewind(&mut self, seconds: u32) -> Result<()>;
 }

@@ -340,6 +340,14 @@ impl super::VideoPlayer for VideoPlayer {
         Ok(())
     }
 
+    fn seek(&mut self, seconds: u32) -> Result<()> {
+        self.send_status_get_request(vec![
+            ("command".to_string(), "seek".to_string()),
+            ("val".to_string(), format!("{seconds}")),
+        ]);
+        Ok(())
+    }
+
     fn fast_forward(&mut self, seconds: u32) -> Result<()> {
         self.send_status_get_request(vec![
             ("command".to_string(), "seek".to_string()),

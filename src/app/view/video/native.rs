@@ -837,6 +837,10 @@ impl super::VideoPlayer for VideoPlayer {
         Ok(())
     }
 
+    fn seek(&mut self, _seconds: u32) -> Result<()> {
+        Ok(())
+    }
+
     fn fast_forward(&mut self, _seconds: u32) -> Result<()> {
         Ok(())
     }
