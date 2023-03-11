@@ -18,10 +18,14 @@ pub fn seconds_to_h_m_s(seconds: u32) -> (u32, u32, u32) {
     (h, m, s)
 }
 
-pub fn scale_fit_all(max_size: Vec2, origin_size: Vec2) -> Vec2 {
+pub fn scale_fit_all_scale(max_size: Vec2, origin_size: Vec2) -> f32 {
     let scale_x = max_size.x / origin_size.x;
     let scale_y = max_size.y / origin_size.y;
-    let scale = scale_x.min(scale_y);
+    scale_x.min(scale_y)
+}
+
+pub fn scale_fit_all(max_size: Vec2, origin_size: Vec2) -> Vec2 {
+    let scale = scale_fit_all_scale(max_size, origin_size);
     Vec2::new(origin_size.x * scale, origin_size.y * scale)
 }
 

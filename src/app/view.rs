@@ -99,7 +99,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &egui::Context, playlist: Option<&(playlist::Header, playlist::Body)>) -> Self {
+    pub fn new(
+        ctx: &egui::Context,
+        playlist: Option<&(playlist::Header, playlist::Body)>,
+        #[cfg(feature = "opengl")] gl: Arc<glow::Context>,
+    ) -> Self {
         let media_type = {
             config::get()
                 .read()
@@ -108,7 +112,10 @@ impl State {
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
-            MediaType::Video => Box::new(video::MediaPlayer::new()),
+            MediaType::Video => Box::new(video::MediaPlayer::new(
+                #[cfg(feature = "opengl")]
+                gl,
+            )),
             _ => panic!("Unknown media type"),
         };
         let mut paths = Vec::new();

@@ -2,6 +2,8 @@
 mod native;
 mod vlc;
 
+#[cfg(feature = "opengl")]
+use std::sync::Arc;
 use std::{collections::VecDeque, path::Path};
 
 use anyhow::Result;
@@ -27,10 +29,13 @@ pub struct MediaPlayer {
     video_player: Option<Box<dyn VideoPlayer>>,
 
     error: VecDeque<String>,
+
+    #[cfg(feature = "opengl")]
+    gl: Arc<glow::Context>,
 }
 
 impl MediaPlayer {
-    pub fn new() -> Self {
+    pub fn new(#[cfg(feature = "opengl")] gl: Arc<glow::Context>) -> Self {
         Self {
             support_extensions: vec![
                 "avi".to_string(),
@@ -40,6 +45,8 @@ impl MediaPlayer {
             ],
             video_player: None,
             error: VecDeque::new(),
+            #[cfg(feature = "opengl")]
+            gl,
         }
     }
 }
@@ -72,7 +79,9 @@ impl super::MediaPlayer for MediaPlayer {
         }
         let mut video_player: Box<dyn VideoPlayer> = match player {
             #[cfg(feature = "opengl")]
-            config::VideoPlayer::Native => Box::new(native::VideoPlayer::new(path)),
+            config::VideoPlayer::Native => {
+                Box::new(native::VideoPlayer::new(path, self.gl.clone(), ctx.clone()))
+            }
             config::VideoPlayer::Vlc => Box::new(vlc::VideoPlayer::new(
                 player_path.expect("Player path should be availalbe at this point"),
                 path,
