@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Local};
@@ -14,11 +16,14 @@ use crate::{
     font::gen_rich_text,
     get_cli,
     helper::message_dialog_error,
-    locale,
+    locale::Locale,
     playlist::{self, Body, Header},
 };
 
-use super::button_icon::ButtonIcon;
+use super::{
+    button_icon::ButtonIcon,
+    config::{video_player::ConfigVideoPlayer, video_player_path::ConfigVideoPlayerPath},
+};
 
 pub struct PlaylistState {
     header: Option<Header>,
@@ -79,11 +84,15 @@ pub struct Playlist {
     remove_icon: ButtonIcon,
     save_icon: ButtonIcon,
     load_icon: ButtonIcon,
+
+    config_video_player: ConfigVideoPlayer,
+    config_video_player_path: ConfigVideoPlayerPath,
 }
 
 impl Playlist {
     pub fn new(ctx: &egui::Context) -> Self {
-        let icon_path = Path::new(get_cli().assets_path.as_str())
+        let cli = get_cli();
+        let icon_path = Path::new(cli.assets_path.as_str())
             .join("image")
             .join("icon");
         Self {
@@ -111,6 +120,9 @@ impl Playlist {
             ),
             save_icon: ButtonIcon::from_rgba_image_files("save", icon_path.join("save.png"), ctx),
             load_icon: ButtonIcon::from_rgba_image_files("load", icon_path.join("load.png"), ctx),
+
+            config_video_player: ConfigVideoPlayer::new(ctx, cli),
+            config_video_player_path: ConfigVideoPlayerPath::new(ctx, cli),
         }
     }
 
@@ -120,6 +132,7 @@ impl Playlist {
         ui: &mut egui::Ui,
         ctx: &egui::Context,
         config: &mut config::Config,
+        locale: &Locale,
         current_index: Option<usize>,
         media_player: &dyn MediaPlayer,
     ) {
@@ -392,7 +405,7 @@ impl Playlist {
                         .spacing(Vec2::new(8.0, 8.0))
                         .striped(true)
                         .show(ui, |ui| {
-                            let locale = &locale::get().ui.config;
+                            let locale = &locale.ui.config;
 
                             ui.label(gen_rich_text(
                                 ctx,
@@ -406,6 +419,7 @@ impl Playlist {
                                 TextStyle::Body,
                                 None,
                             ));
+                            ui.label("");
                             ui.end_row();
 
                             ui.label(gen_rich_text(
@@ -420,6 +434,7 @@ impl Playlist {
                                 TextStyle::Body,
                                 None,
                             ));
+                            ui.label("");
                             ui.end_row();
 
                             if header.media_type == MediaType::Video {
@@ -433,69 +448,50 @@ impl Playlist {
                                         None
                                     },
                                 ));
-                                egui::ComboBox::from_id_source("video_player")
-                                    .selected_text(gen_rich_text(
-                                        ctx,
-                                        header.video_player.to_string(),
-                                        TextStyle::Body,
-                                        None,
-                                    ))
-                                    .show_ui(ui, |ui| {
-                                        ui.selectable_value(
-                                            &mut header.video_player,
-                                            VideoPlayer::Unset,
-                                            gen_rich_text(ctx, "--", TextStyle::Body, None),
-                                        );
-                                        #[cfg(feature = "opengl")]
-                                        ui.selectable_value(
-                                            &mut header.video_player,
-                                            VideoPlayer::Native,
-                                            gen_rich_text(
-                                                ctx,
-                                                locale.video_player.native.as_str(),
-                                                TextStyle::Body,
-                                                None,
-                                            ),
-                                        );
-                                        ui.selectable_value(
-                                            &mut header.video_player,
-                                            VideoPlayer::Vlc,
-                                            gen_rich_text(
-                                                ctx,
-                                                locale.video_player.vlc.as_str(),
-                                                TextStyle::Body,
-                                                None,
-                                            ),
-                                        );
-                                    });
+                                self.config_video_player.show_config(
+                                    ui,
+                                    ctx,
+                                    locale,
+                                    &mut header.video_player,
+                                );
+                                self.config_video_player.show_hint(
+                                    ui,
+                                    ctx,
+                                    locale,
+                                    &header.video_player,
+                                );
                                 ui.end_row();
 
-                                ui.label(gen_rich_text(
-                                    ctx,
-                                    locale.video_player_path.label.as_str(),
-                                    TextStyle::Body,
-                                    if header.video_player_path != config.video_player_path {
-                                        Some(Color32::LIGHT_RED)
-                                    } else {
-                                        None
-                                    },
-                                ));
-                                if ui
-                                    .button(gen_rich_text(
-                                        ctx,
-                                        locale.video_player_path.label.as_str(),
-                                        TextStyle::Body,
-                                        None,
-                                    ))
-                                    .clicked()
-                                {
-                                    if let Some(path) = rfd::FileDialog::new().pick_file() {
-                                        header
-                                            .video_player_path
-                                            .replace(path.display().to_string());
+                                match header.video_player {
+                                    #[cfg(feature = "native")]
+                                    VideoPlayer::Native => {}
+                                    _ => {
+                                        ui.label(gen_rich_text(
+                                            ctx,
+                                            locale.video_player_path.label.as_str(),
+                                            TextStyle::Body,
+                                            if header.video_player_path != config.video_player_path
+                                            {
+                                                Some(Color32::LIGHT_RED)
+                                            } else {
+                                                None
+                                            },
+                                        ));
+                                        self.config_video_player_path.show_config(
+                                            ui,
+                                            ctx,
+                                            locale,
+                                            &mut header.video_player_path,
+                                        );
+                                        self.config_video_player_path.show_hint(
+                                            ui,
+                                            ctx,
+                                            locale,
+                                            &header.video_player_path,
+                                        );
+                                        ui.end_row();
                                     }
                                 }
-                                ui.end_row();
                             }
                         });
                 });

@@ -35,14 +35,6 @@ const VERTICES: &[f32] = &[
 
 const INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
 
-#[rustfmt::skip]
-const IDENTITY: &[f32] = &[
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0,
-];
-
 #[cfg(target_arch = "wasm32")]
 const SHADER_VERSION: &str = "#version 300 es";
 #[cfg(not(target_arch = "wasm32"))]
@@ -508,7 +500,7 @@ impl VideoFrame {
         }
     }
 
-    fn paint(&mut self, max_size: Vec2) {
+    fn paint(&mut self) {
         if self.width == 0 || self.height == 0 {
             return;
         }
@@ -625,20 +617,16 @@ impl VideoFrame {
             let transform_location = gl
                 .get_uniform_location(self.program, "u_transformation")
                 .expect("Cannot find uniform location");
+            #[rustfmt::skip]
+            let transform = &[
+                  1.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0,
+                  0.0, 0.0, 0.0, 1.0,
+            ];
             gl_strict!(
                 gl,
-                gl.uniform_matrix_4_f32_slice(Some(&transform_location), false, IDENTITY)
-            );
-
-            let scaled = scale_fit_all(max_size, Vec2::new(self.width as f32, self.height as f32));
-            gl_strict!(
-                gl,
-                gl.viewport(
-                    scaled.x as i32 / 2,
-                    scaled.y as i32 / 2,
-                    scaled.x as i32,
-                    scaled.y as i32,
-                )
+                gl.uniform_matrix_4_f32_slice(Some(&transform_location), false, transform)
             );
 
             gl_strict!(
@@ -787,8 +775,21 @@ impl super::VideoPlayer for VideoPlayer {
 
     fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
-            let (rect, response) =
-                ui.allocate_exact_size(ui.available_size(), egui::Sense::click());
+            let max_size = {
+                let video_frame_guard = self.video_frame.read().unwrap();
+                if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
+                    scale_fit_all(
+                        ui.available_size(),
+                        Vec2::new(
+                            video_frame_guard.width as f32,
+                            video_frame_guard.height as f32,
+                        ),
+                    )
+                } else {
+                    ui.available_size()
+                }
+            };
+            let (rect, response) = ui.allocate_exact_size(max_size, egui::Sense::click());
             if response.clicked() {
                 if self.is_paused() {
                     let _ = self.resume();
@@ -800,7 +801,7 @@ impl super::VideoPlayer for VideoPlayer {
             let callback = egui::PaintCallback {
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
                     move |_info, _painter| {
-                        video_frame.write().unwrap().paint(rect.size());
+                        video_frame.write().unwrap().paint();
                     },
                 )),
                 rect,

@@ -31,7 +31,7 @@ Run with `--help`
 
 ## GStreamer
 
-You need to install gstreamer package and build with `opengl` feature! It gives this player ability to play video/audio natively.
+You need to install gstreamer package and build with `native` feature! It gives this player ability to play video/audio natively.
 
 Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gstreamer-rs/stable/latest/docs/gstreamer/#installation)
 

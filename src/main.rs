@@ -96,9 +96,9 @@ fn main() -> eframe::Result<()> {
 
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(1600.0, 900.0)),
-        #[cfg(feature = "opengl")]
+        #[cfg(feature = "native")]
         multisampling: 4,
-        #[cfg(feature = "opengl")]
+        #[cfg(feature = "native")]
         renderer: eframe::Renderer::Glow,
         ..Default::default()
     };

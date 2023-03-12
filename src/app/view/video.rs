@@ -1,8 +1,8 @@
-#[cfg(feature = "opengl")]
+#[cfg(feature = "native")]
 mod native;
 mod vlc;
 
-#[cfg(feature = "opengl")]
+#[cfg(feature = "native")]
 use std::sync::Arc;
 use std::{collections::VecDeque, path::Path};
 
@@ -31,12 +31,12 @@ pub struct MediaPlayer {
 
     error: VecDeque<String>,
 
-    #[cfg(feature = "opengl")]
+    #[cfg(feature = "native")]
     gl: Arc<glow::Context>,
 }
 
 impl MediaPlayer {
-    pub fn new(#[cfg(feature = "opengl")] gl: Arc<glow::Context>) -> Self {
+    pub fn new(#[cfg(feature = "native")] gl: Arc<glow::Context>) -> Self {
         Self {
             support_extensions: vec![
                 "avi".to_string(),
@@ -46,7 +46,7 @@ impl MediaPlayer {
             ],
             video_player: None,
             error: VecDeque::new(),
-            #[cfg(feature = "opengl")]
+            #[cfg(feature = "native")]
             gl,
         }
     }
@@ -79,7 +79,7 @@ impl super::MediaPlayer for MediaPlayer {
             }
         }
         let mut video_player: Box<dyn VideoPlayer> = match player {
-            #[cfg(feature = "opengl")]
+            #[cfg(feature = "native")]
             config::VideoPlayer::Native => {
                 Box::new(native::VideoPlayer::new(path, self.gl.clone(), ctx.clone()))
             }
