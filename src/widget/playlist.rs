@@ -10,9 +10,11 @@ use eframe::{
 };
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
+#[cfg(feature = "native")]
+use crate::config::VideoPlayer;
 use crate::{
     app::view::MediaPlayer,
-    config::{self, MediaType, VideoPlayer},
+    config::{self, MediaType},
     font::gen_rich_text,
     get_cli,
     helper::message_dialog_error,
