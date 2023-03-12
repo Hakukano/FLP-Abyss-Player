@@ -5,13 +5,20 @@ use std::{
 };
 
 use anyhow::Result;
-use eframe::{egui, epaint::Vec2};
+use eframe::{
+    egui::{self, Layout, TextStyle},
+    emath::Align,
+    epaint::Vec2,
+};
 use gst::prelude::*;
 use gstreamer::{self as gst, element_error};
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
-use crate::helper::scale_fit_all;
+use crate::{
+    font::gen_rich_text,
+    helper::{scale_fit_all, seconds_to_h_m_s},
+};
 
 macro_rules! gl_strict {
     ($gl:expr, $stmt:stmt) => {
@@ -687,8 +694,8 @@ impl VideoPlayer {
             pipeline.write().unwrap().replace(gst::Pipeline::default());
 
             let bus = {
-                let pipeline_gaurd = pipeline.read().unwrap();
-                let pipeline = pipeline_gaurd
+                let pipeline_guard = pipeline.read().unwrap();
+                let pipeline = pipeline_guard
                     .as_ref()
                     .expect("pipeline has just been replaced");
                 source_elements.add_to_pipeline(pipeline);
@@ -773,13 +780,14 @@ impl super::VideoPlayer for VideoPlayer {
         *self.state.read().unwrap() == gst::State::Null
     }
 
-    fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let bar_height = ui.text_style_height(&TextStyle::Body);
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let max_size = {
                 let video_frame_guard = self.video_frame.read().unwrap();
                 if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
                     scale_fit_all(
-                        ui.available_size(),
+                        Vec2::new(ui.available_width(), ui.available_height() - bar_height),
                         Vec2::new(
                             video_frame_guard.width as f32,
                             video_frame_guard.height as f32,
@@ -808,6 +816,49 @@ impl super::VideoPlayer for VideoPlayer {
             };
             ui.painter().add(callback);
         });
+
+        ui.with_layout(
+            Layout::left_to_right(Align::TOP).with_main_justify(true),
+            |ui| {
+                ui.set_height(bar_height);
+                ui.spacing_mut().slider_width = ui.available_width() - 150.0;
+                let (mut position, duration) = {
+                    if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+                        (
+                            pipeline
+                                .query_position::<gst::ClockTime>()
+                                .map(|c| c.seconds())
+                                .unwrap_or(0) as u32,
+                            pipeline
+                                .query_duration::<gst::ClockTime>()
+                                .map(|c| c.seconds())
+                                .unwrap_or(0) as u32,
+                        )
+                    } else {
+                        (0, 0)
+                    }
+                };
+                if ui
+                    .add(egui::Slider::new(&mut position, 0..=duration).show_value(false))
+                    .changed()
+                {
+                    let _ = self.seek(position);
+                }
+                ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
+                    let (position_h, position_m, position_s) = seconds_to_h_m_s(position);
+                    let (duration_h, duration_m, duration_s) = seconds_to_h_m_s(duration);
+                    ui.label(gen_rich_text(
+                        ctx,
+                        format!(
+                            "{:02}:{:02}:{:02} / {:02}:{:02}:{:02}",
+                            position_h, position_m, position_s, duration_h, duration_m, duration_s
+                        ),
+                        TextStyle::Body,
+                        None,
+                    ));
+                });
+            },
+        );
     }
 
     fn start(&mut self) -> Result<()> {
@@ -838,15 +889,44 @@ impl super::VideoPlayer for VideoPlayer {
         Ok(())
     }
 
-    fn seek(&mut self, _seconds: u32) -> Result<()> {
+    fn seek(&mut self, seconds: u32) -> Result<()> {
+        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+            pipeline.seek_simple(
+                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
+                seconds as u64 * gst::ClockTime::SECOND,
+            )?;
+        }
         Ok(())
     }
 
-    fn fast_forward(&mut self, _seconds: u32) -> Result<()> {
+    fn fast_forward(&mut self, seconds: u32) -> Result<()> {
+        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+            pipeline.seek_simple(
+                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
+                (pipeline
+                    .query_position::<gst::ClockTime>()
+                    .map(|c| c.seconds())
+                    .unwrap_or(0)
+                    + seconds as u64)
+                    * gst::ClockTime::SECOND,
+            )?;
+        }
         Ok(())
     }
 
-    fn rewind(&mut self, _seconds: u32) -> Result<()> {
+    fn rewind(&mut self, seconds: u32) -> Result<()> {
+        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+            pipeline.seek_simple(
+                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
+                (pipeline
+                    .query_position::<gst::ClockTime>()
+                    .map(|c| c.seconds())
+                    .unwrap_or(0)
+                    .max(seconds as u64)
+                    - seconds as u64)
+                    * gst::ClockTime::SECOND,
+            )?;
+        }
         Ok(())
     }
 }
