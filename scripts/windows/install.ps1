@@ -1,5 +1,5 @@
  param (
-   [switch]$native = $false,
+   [switch]$native = $false
  )
 
 $ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
