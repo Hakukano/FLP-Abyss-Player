@@ -65,8 +65,9 @@ impl From<MediaType> for u8 {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
 pub enum VideoPlayer {
     Unset,
+    #[cfg(feature = "native")]
+    Native,
     Vlc,
-    Qtp,
 }
 
 impl VideoPlayer {
@@ -86,8 +87,9 @@ impl ToString for VideoPlayer {
         let video_player = &locale::get().ui.config.video_player;
         match self {
             Self::Unset => "--".to_string(),
+            #[cfg(feature = "native")]
+            Self::Native => video_player.native.clone(),
             Self::Vlc => video_player.vlc.clone(),
-            Self::Qtp => video_player.qtp.clone(),
         }
     }
 }
@@ -95,8 +97,9 @@ impl ToString for VideoPlayer {
 impl From<u8> for VideoPlayer {
     fn from(n: u8) -> Self {
         match n {
+            #[cfg(feature = "native")]
+            255 => Self::Native,
             1 => Self::Vlc,
-            2 => Self::Qtp,
             _ => Self::Unset,
         }
     }
@@ -105,8 +108,9 @@ impl From<u8> for VideoPlayer {
 impl From<VideoPlayer> for u8 {
     fn from(video_player: VideoPlayer) -> Self {
         match video_player {
+            #[cfg(feature = "native")]
+            VideoPlayer::Native => 255,
             VideoPlayer::Vlc => 1,
-            VideoPlayer::Qtp => 2,
             _ => 0,
         }
     }

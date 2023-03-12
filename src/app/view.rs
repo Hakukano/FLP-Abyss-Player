@@ -60,7 +60,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
 pub trait MediaPlayer: Send + Sync {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
-    fn support_extensions(&self) -> &[String];
+    fn support_extensions(&self) -> &[&str];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
 
@@ -99,7 +99,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &egui::Context, playlist: Option<&(playlist::Header, playlist::Body)>) -> Self {
+    pub fn new(
+        ctx: &egui::Context,
+        playlist: Option<&(playlist::Header, playlist::Body)>,
+        #[cfg(feature = "native")] gl: Arc<glow::Context>,
+    ) -> Self {
         let media_type = {
             config::get()
                 .read()
@@ -108,7 +112,10 @@ impl State {
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
-            MediaType::Video => Box::new(video::MediaPlayer::new()),
+            MediaType::Video => Box::new(video::MediaPlayer::new(
+                #[cfg(feature = "native")]
+                gl,
+            )),
             _ => panic!("Unknown media type"),
         };
         let mut paths = Vec::new();
@@ -226,7 +233,7 @@ impl State {
             self.next(ctx);
         }
 
-        let locale = &locale::get().ui.view;
+        let locale = &locale::get();
 
         egui::Window::new("playlist")
             .resizable(true)
@@ -238,6 +245,7 @@ impl State {
                     ui,
                     ctx,
                     &mut config::get().write().expect("Cannot get config lock"),
+                    locale,
                     Some(self.index),
                     self.media_player.as_ref(),
                 )
@@ -329,7 +337,7 @@ impl State {
                     ));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
                         if ui
-                            .button(gen_rich_text(ctx, locale.home.as_str(), Body, None))
+                            .button(gen_rich_text(ctx, locale.ui.view.home.as_str(), Body, None))
                             .clicked()
                         {
                             self.home = true;

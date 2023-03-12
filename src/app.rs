@@ -1,6 +1,9 @@
 mod config;
 pub mod view;
 
+#[cfg(feature = "native")]
+use std::sync::Arc;
+
 use eframe::egui;
 
 enum State {
@@ -10,6 +13,9 @@ enum State {
 
 pub struct App {
     state: State,
+
+    #[cfg(feature = "native")]
+    gl: Arc<glow::Context>,
 }
 
 impl App {
@@ -17,6 +23,8 @@ impl App {
         crate::font::init(&cc.egui_ctx);
         Self {
             state: State::Config(Box::new(config::State::new(&cc.egui_ctx))),
+            #[cfg(feature = "native")]
+            gl: cc.gl.clone().expect("gl context should be availble"),
         }
     }
 }
@@ -33,7 +41,12 @@ impl eframe::App for App {
 
                 if should_go {
                     next_state.replace(State::View(view::TimedState::new(
-                        view::State::new(ctx, state.playlist.as_ref()),
+                        view::State::new(
+                            ctx,
+                            state.playlist.as_ref(),
+                            #[cfg(feature = "native")]
+                            self.gl.clone(),
+                        ),
                         ctx.clone(),
                     )));
                 }

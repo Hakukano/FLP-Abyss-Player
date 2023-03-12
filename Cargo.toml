@@ -1,6 +1,6 @@
 [package]
 name = "flp-abyss-player"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media player that sees all"
@@ -31,3 +31,16 @@ serde_json = "1.0"
 sys-locale = "0.2"
 tokio = { version = "1", features = ["full"] }
 walkdir = "2.3"
+
+# native
+egui_glow = { version = "0.21", optional = true }
+glow = { version = "0.12", optional = true }
+
+# gstreamer
+glib = { version = "0.17", optional = true }
+gstreamer = { version = "0.20", optional = true }
+gstreamer-app = { version = "0.20", optional = true }
+gstreamer-video = { version = "0.20", optional = true }
+
+[features]
+native = ["egui_glow", "glow", "glib", "gstreamer", "gstreamer-app", "gstreamer-video"]

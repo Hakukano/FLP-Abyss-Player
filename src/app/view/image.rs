@@ -3,23 +3,12 @@ use eframe::egui;
 use crate::helper::scale_fit_all;
 
 pub struct MediaPlayer {
-    support_extensions: Vec<String>,
-
     texture: Option<egui::TextureHandle>,
 }
 
 impl MediaPlayer {
     pub fn new() -> Self {
-        Self {
-            support_extensions: vec![
-                "bmp".to_string(),
-                "gif".to_string(),
-                "jpeg".to_string(),
-                "jpg".to_string(),
-                "png".to_string(),
-            ],
-            texture: None,
-        }
+        Self { texture: None }
     }
 }
 
@@ -32,8 +21,8 @@ impl super::MediaPlayer for MediaPlayer {
         true
     }
 
-    fn support_extensions(&self) -> &[String] {
-        self.support_extensions.as_slice()
+    fn support_extensions(&self) -> &[&str] {
+        &["bmp", "gif", "jpeg", "jpg", "png"]
     }
 
     fn reload(&mut self, path: &dyn AsRef<std::path::Path>, ctx: &egui::Context) {

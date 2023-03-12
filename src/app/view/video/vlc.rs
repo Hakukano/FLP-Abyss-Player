@@ -231,6 +231,11 @@ impl Drop for VideoPlayer {
 }
 
 impl super::VideoPlayer for VideoPlayer {
+    fn is_paused(&self) -> bool {
+        self.played.load(Ordering::Acquire)
+            && self.status.read().expect("Cannot get status lock").state == "paused"
+    }
+
     fn is_end(&self) -> bool {
         self.played.load(Ordering::Acquire)
             && self.status.read().expect("Cannot get status lock").state == "stopped"
@@ -318,6 +323,11 @@ impl super::VideoPlayer for VideoPlayer {
         Ok(())
     }
 
+    fn resume(&mut self) -> Result<()> {
+        self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
+        Ok(())
+    }
+
     fn pause(&mut self) -> Result<()> {
         self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
         Ok(())
@@ -327,6 +337,14 @@ impl super::VideoPlayer for VideoPlayer {
         if let Some(mut child) = self.child.take() {
             child.kill()?;
         }
+        Ok(())
+    }
+
+    fn seek(&mut self, seconds: u32) -> Result<()> {
+        self.send_status_get_request(vec![
+            ("command".to_string(), "seek".to_string()),
+            ("val".to_string(), format!("{seconds}")),
+        ]);
         Ok(())
     }
 

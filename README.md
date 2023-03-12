@@ -9,7 +9,7 @@ This is a media player that allows you go through the entire folder of media rec
 - Download `scripts.zip` from release page
 - Go to `windows`
 - Run `Set-ExecutionPolicy -ExecutionPolicy ByPass -Scope Process`
-- Run `install.ps1`
+- Run `install.ps1 [-native]`
 
 Use `uninstall.ps1` to uninstall that version.
 
@@ -27,6 +27,14 @@ Use `uninstall.ps1` to uninstall that version.
 
 Run with `--help`
 
+# Features
+
+## GStreamer
+
+You need to install gstreamer package and build with `native` feature! It gives this player ability to play video/audio natively.
+
+Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gstreamer-rs/stable/latest/docs/gstreamer/#installation)
+
 # Supported Media
 
 ## Images
@@ -38,9 +46,13 @@ Run with `--help`
 
 ## Video
 
-- whatever vlc supports
+- avi
+- mkv
+- mov
+- mp4
+- webm
 
-# locale
+# Locale
 
 Current supported locale:
 

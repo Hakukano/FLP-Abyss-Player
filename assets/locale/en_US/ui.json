@@ -22,7 +22,7 @@
     "video_player": {
       "label": "Video Player",
       "unset": "Please select a video player",
-      "qtp": "QuickTime Player",
+      "native": "Native Player",
       "vlc": "VLC"
     },
     "video_player_path": {
