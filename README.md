@@ -46,8 +46,7 @@ Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gs
 
 ## Video
 
-- gstreamer
-- vlc
+- mp4
 
 # Locale
 

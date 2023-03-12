@@ -189,15 +189,7 @@ impl Playlist {
                                 && state.can_change()
                             {
                                 if let Some(mut paths) = rfd::FileDialog::new()
-                                    .add_filter(
-                                        "Media",
-                                        media_player
-                                            .support_extensions()
-                                            .iter()
-                                            .map(|s| s.as_str())
-                                            .collect::<Vec<_>>()
-                                            .as_slice(),
-                                    )
+                                    .add_filter("Media", media_player.support_extensions())
                                     .pick_files()
                                 {
                                     state.paths.append(&mut paths);

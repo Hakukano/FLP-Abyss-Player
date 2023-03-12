@@ -25,8 +25,6 @@ pub trait VideoPlayer: Send + Sync {
 }
 
 pub struct MediaPlayer {
-    support_extensions: Vec<String>,
-
     video_player: Option<Box<dyn VideoPlayer>>,
 
     error: VecDeque<String>,
@@ -38,12 +36,6 @@ pub struct MediaPlayer {
 impl MediaPlayer {
     pub fn new(#[cfg(feature = "native")] gl: Arc<glow::Context>) -> Self {
         Self {
-            support_extensions: vec![
-                "avi".to_string(),
-                "mov".to_string(),
-                "mp4".to_string(),
-                "wmv".to_string(),
-            ],
             video_player: None,
             error: VecDeque::new(),
             #[cfg(feature = "native")]
@@ -53,8 +45,8 @@ impl MediaPlayer {
 }
 
 impl super::MediaPlayer for MediaPlayer {
-    fn support_extensions(&self) -> &[String] {
-        self.support_extensions.as_slice()
+    fn support_extensions(&self) -> &[&str] {
+        &["mp4"]
     }
 
     fn is_loaded(&self) -> bool {

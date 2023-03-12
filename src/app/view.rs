@@ -60,7 +60,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
 pub trait MediaPlayer: Send + Sync {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
-    fn support_extensions(&self) -> &[String];
+    fn support_extensions(&self) -> &[&str];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
 
