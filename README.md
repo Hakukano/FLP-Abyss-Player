@@ -9,7 +9,7 @@ This is a media player that allows you go through the entire folder of media rec
 - Download `scripts.zip` from release page
 - Go to `windows`
 - Run `Set-ExecutionPolicy -ExecutionPolicy ByPass -Scope Process`
-- Run `install.ps1`
+- Run `install.ps1 [-native]`
 
 Use `uninstall.ps1` to uninstall that version.
 

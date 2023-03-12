@@ -1,3 +1,7 @@
+ param (
+   [switch]$native = $false,
+ )
+
 $ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 try {
     . ("$ScriptDirectory\common.ps1")
@@ -9,7 +13,11 @@ catch {
 # Install binary
 rm -ErrorAction Ignore -Recurse -Force $bin_dir
 md -Force $bin_dir
-& $cargo install --version $version --root $bin_dir $package
+if ($native) {
+  & $cargo install --version $version --features native --root $bin_dir $package
+} else {
+  & $cargo install --version $version --root $bin_dir $package
+}
 
 # Create app data
 rm -ErrorAction Ignore -Recurse -Force $data_dir
@@ -36,18 +44,38 @@ $obj_short_cut.Save()
 if (!(Test-Path $hkcr)) {
   New-PSDrive -PSProvider registry -Root HKEY_CLASSES_ROOT -Name HKCR
 }
+# Top
+if (Test-Path $reg_top) {
+  Remove-Item -Path $reg_top -Recurse
+}
+New-Item -Path $reg_shell -Name $reg_top_name
+Set-ItemProperty -Path $reg_top -Name 'MUIVerb' -Value "$reg_top_name"
+Set-ItemProperty -Path $reg_top -Name 'subcommands' -Value ""
+if (Test-Path $reg_top_shell) {
+  Remove-Item -Path $reg_top_shell -Recurse
+}
+New-Item -Path $reg_top -Name $reg_top_shell_name
 # Image
 if (Test-Path $reg_image) {
   Remove-Item -Path $reg_image -Recurse
 }
-New-Item -Path $reg_shell -Name $reg_image_name
+New-Item -Path $reg_top_shell -Name $reg_image_name
 New-Item -Path $reg_image -Name $reg_image_command_name
 Set-ItemProperty -Path $reg_image_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"image`" --root-path `"%V`""
+if ($native) {
+# Video Native
+  if (Test-Path $reg_video_native) {
+    Remove-Item -Path $reg_video_native -Recurse
+  }
+  New-Item -Path $reg_top_shell -Name $reg_video_native_name
+  New-Item -Path $reg_video_native -Name $reg_video_native_command_name
+  Set-ItemProperty -Path $reg_video_native_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"video`" --root-path `"%V`" --video-player `"native`""
+}
 # VLC
 if (Test-Path $reg_vlc) {
   Remove-Item -Path $reg_vlc -Recurse
 }
-New-Item -Path $reg_shell -Name $reg_vlc_name
+New-Item -Path $reg_top_shell -Name $reg_vlc_name
 New-Item -Path $reg_vlc -Name $reg_vlc_command_name
 Set-ItemProperty -Path $reg_vlc_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"video`" --root-path `"%V`" --video-player `"vlc`" --video-player-path `"$vlc_bin_path`""
 

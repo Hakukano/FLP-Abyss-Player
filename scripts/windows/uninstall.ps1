@@ -14,11 +14,8 @@ cmd /c assoc $playlist_extension=
 if (!(Test-Path $hkcr)) {
   New-PSDrive -PSProvider registry -Root HKEY_CLASSES_ROOT -Name HKCR
 }
-if (Test-Path $reg_vlc) {
-  Remove-Item -Path $reg_vlc -Recurse
-}
-if (Test-Path $reg_image) {
-  Remove-Item -Path $reg_image -Recurse
+if (Test-Path $reg_top) {
+  Remove-Item -Path $reg_top -Recurse
 }
 
 # Remove shortcut from start menu

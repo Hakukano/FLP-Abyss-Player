@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "flp-abyss-player"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1047,7 +1047,6 @@ dependencies = [
  "glow",
  "gstreamer",
  "gstreamer-app",
- "gstreamer-audio",
  "gstreamer-video",
  "image",
  "nom",
@@ -1516,36 +1515,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7cb5375aa8c23012ec5fadde1a37b972e87680776772669d2628772867056e2"
 dependencies = [
  "glib-sys 0.17.2",
- "gstreamer-base-sys",
- "gstreamer-sys",
- "libc",
- "system-deps",
-]
-
-[[package]]
-name = "gstreamer-audio"
-version = "0.20.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ca6d26ab15835a268939e2367ed4ddb1e7157b03d0bb56ba4a0b036c1ac8393"
-dependencies = [
- "bitflags",
- "cfg-if",
- "glib",
- "gstreamer",
- "gstreamer-audio-sys",
- "gstreamer-base",
- "libc",
- "once_cell",
-]
-
-[[package]]
-name = "gstreamer-audio-sys"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d4001b779e4707b32acd6ec0960e327b926369c1a34f7c41d477ac42b2670e8"
-dependencies = [
- "glib-sys 0.17.2",
- "gobject-sys 0.17.0",
  "gstreamer-base-sys",
  "gstreamer-sys",
  "libc",
