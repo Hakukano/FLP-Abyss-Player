@@ -46,7 +46,7 @@ impl MediaPlayer {
 
 impl super::MediaPlayer for MediaPlayer {
     fn support_extensions(&self) -> &[&str] {
-        &["mp4"]
+        &["mp4", "mov"]
     }
 
     fn is_loaded(&self) -> bool {

@@ -46,6 +46,7 @@ Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gs
 
 ## Video
 
+- mov
 - mp4
 
 # Locale
