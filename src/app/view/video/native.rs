@@ -164,7 +164,7 @@ impl VideoElements {
                 .name("video_sink")
                 .caps(
                     &gst_video::VideoCapsBuilder::new()
-                        .format(gst_video::VideoFormat::Rgba)
+                        .format(gst_video::VideoFormat::Rgbx)
                         .build(),
                 )
                 .build(),
