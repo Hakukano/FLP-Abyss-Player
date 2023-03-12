@@ -77,16 +77,26 @@ struct SourceElements {
 
 impl SourceElements {
     fn new(video_path: impl AsRef<Path>) -> Self {
+        let extension = video_path
+            .as_ref()
+            .extension()
+            .expect("No file extension found")
+            .to_str()
+            .expect("Invalid file extension");
         Self {
             source: gst::ElementFactory::make("filesrc")
                 .name("source")
                 .property("location", video_path.as_ref().display().to_string())
                 .build()
                 .expect("Cannot build source"),
-            demux: gst::ElementFactory::make("qtdemux")
-                .name("demux")
-                .build()
-                .expect("Cannot build demux"),
+            demux: gst::ElementFactory::make(match extension {
+                "avi" => "avidemux",
+                "mkv" | "webm" => "matroskademux",
+                _ => "qtdemux",
+            })
+            .name("demux")
+            .build()
+            .expect("Cannot build demux"),
         }
     }
 

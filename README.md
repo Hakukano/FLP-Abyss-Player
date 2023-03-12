@@ -46,8 +46,11 @@ Follow [GStreamer Installation Guide](https://gstreamer.pages.freedesktop.org/gs
 
 ## Video
 
+- avi
+- mkv
 - mov
 - mp4
+- webm
 
 # Locale
 
