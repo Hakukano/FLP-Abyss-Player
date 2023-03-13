@@ -1,4 +1,5 @@
  param (
+   [switch]$build = $false,
    [switch]$native = $false
  )
 
@@ -13,10 +14,15 @@ catch {
 # Install binary
 rm -ErrorAction Ignore -Recurse -Force $bin_dir
 md -Force $bin_dir
-if ($native) {
-  & $cargo install --version $version --features native --root $bin_dir $package
+if ($build) {
+  if ($native) {
+    & $cargo install --version $version --features native --root $bin_dir $package
+  } else {
+    & $cargo install --version $version --root $bin_dir $package
+  }
 } else {
-  & $cargo install --version $version --root $bin_dir $package
+  md -Force "$bin_dir\bin"
+  wget -Uri $bin_url -OutFile $bin_path
 }
 
 # Create app data

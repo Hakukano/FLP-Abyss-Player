@@ -9,13 +9,16 @@ $org = "FLProject"
 $package = "flp-abyss-player"
 $package_display_name = "FLP Abyss Player"
 $version = "0.6.0"
+$download_url = "https://github.com/Hakukano/FLP-Abyss-Player/releases/download/v$version"
 
+$bin_file = "$package.exe"
+$bin_url = "$download_url/$bin_file"
 $bin_dir = "$env:PROGRAMFILES\$org\$package\$version"
-$bin_path = "$bin_dir\bin\$package.exe"
+$bin_path = "$bin_dir\bin\$bin_file"
 
 $data_dir = "$env:LOCALAPPDATA\$org\$package\$version"
 
-$assets_url = "https://github.com/Hakukano/FLP-Abyss-Player/releases/download/v$version/assets.zip"
+$assets_url = "$download_url/assets.zip"
 $assets_zip = "$data_dir\assets.zip"
 $assets_dir = "$data_dir\assets"
 
