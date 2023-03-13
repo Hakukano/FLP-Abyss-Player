@@ -113,6 +113,7 @@ impl State {
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new(
+                ctx,
                 #[cfg(feature = "native")]
                 gl,
             )),

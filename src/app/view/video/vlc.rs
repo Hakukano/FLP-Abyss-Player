@@ -16,13 +16,9 @@ use eframe::{
 };
 use passwords::PasswordGenerator;
 use reqwest::{Client, Method};
-use serde::Serialize;
 use tokio::runtime;
 
-use crate::{
-    font::gen_rich_text,
-    helper::{find_available_port, seconds_to_h_m_s},
-};
+use crate::{font::gen_rich_text, helper::find_available_port};
 
 const VLC_HTTP_HOST: &str = "127.0.0.1";
 const VLC_HTTP_STATUS: &str = "/status.xml";
@@ -38,9 +34,9 @@ fn gen_vlc_http_request_url_base(port: u16, extra_path: impl Display) -> String 
 mod status {
     use std::collections::VecDeque;
 
-    use serde::{Deserialize, Serialize};
+    use serde::Deserialize;
 
-    #[derive(Default, Serialize, Deserialize)]
+    #[derive(Default, Deserialize)]
     #[serde(rename = "info")]
     pub struct Info {
         #[serde(rename = "@name")]
@@ -49,7 +45,7 @@ mod status {
         pub value: String,
     }
 
-    #[derive(Default, Serialize, Deserialize)]
+    #[derive(Default, Deserialize)]
     #[serde(rename = "category")]
     pub struct Category {
         #[serde(rename = "@name")]
@@ -58,14 +54,14 @@ mod status {
         pub info: Vec<Info>,
     }
 
-    #[derive(Default, Serialize, Deserialize)]
+    #[derive(Default, Deserialize)]
     #[serde(rename = "information")]
     pub struct Information {
         #[serde(default)]
         pub category: Vec<Category>,
     }
 
-    #[derive(Default, Serialize, Deserialize)]
+    #[derive(Default, Deserialize)]
     #[serde(rename = "root")]
     pub struct Root {
         #[serde(skip_deserializing)]
@@ -241,6 +237,18 @@ impl super::VideoPlayer for VideoPlayer {
             && self.status.read().expect("Cannot get status lock").state == "stopped"
     }
 
+    fn position(&self) -> u32 {
+        self.status.read().unwrap().time
+    }
+
+    fn duration(&self) -> u32 {
+        self.status.read().unwrap().length
+    }
+
+    fn volume(&self) -> u8 {
+        ((self.status.read().unwrap().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
+    }
+
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let status = self.status.read().expect("Cannot get status read lock");
 
@@ -284,36 +292,6 @@ impl super::VideoPlayer for VideoPlayer {
                 None,
             ));
         });
-
-        let (time_h, time_m, time_s) = seconds_to_h_m_s(status.time);
-        let (length_h, length_m, length_s) = seconds_to_h_m_s(status.length);
-        ui.horizontal(|ui| {
-            ui.add_space(10.0);
-            ui.label(gen_rich_text(
-                ctx,
-                format!(
-                    "Time: {:02}:{:02}:{:02} / {:02}:{:02}:{:02}",
-                    time_h, time_m, time_s, length_h, length_m, length_s
-                ),
-                TextStyle::Body,
-                None,
-            ));
-        });
-
-        let mut xml_serializer = quick_xml::se::Serializer::new(String::new());
-        xml_serializer.indent(' ', 2);
-        let information = status
-            .serialize(xml_serializer)
-            .expect("Cannot serialize information");
-        ui.with_layout(
-            egui::Layout::left_to_right(egui::Align::TOP).with_cross_justify(true),
-            |ui| {
-                ui.add_space(10.0);
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.label(information.as_str());
-                });
-            },
-        );
     }
 
     fn start(&mut self) -> Result<()> {
@@ -337,6 +315,14 @@ impl super::VideoPlayer for VideoPlayer {
         if let Some(mut child) = self.child.take() {
             child.kill()?;
         }
+        Ok(())
+    }
+
+    fn set_volume(&mut self, percent: u8) -> Result<()> {
+        self.send_status_get_request(vec![
+            ("command".to_string(), "volume".to_string()),
+            ("val".to_string(), format!("{percent}%")),
+        ]);
         Ok(())
     }
 

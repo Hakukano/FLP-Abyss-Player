@@ -16,3 +16,4 @@
 - <a href="https://www.flaticon.com/free-icons/ui" title="ui icons">Ui icons created by Bharat Icons - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/up-arrow" title="up arrow icons">Up arrow icons created by gungyoga04 - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/user-interface" title="user interface icons">User interface icons created by Any Icon - Flaticon</a>
+- <a href="https://www.flaticon.com/free-icons/volume" title="volume icons">Volume icons created by apien - Flaticon</a>

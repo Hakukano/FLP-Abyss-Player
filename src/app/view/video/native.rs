@@ -5,20 +5,15 @@ use std::{
 };
 
 use anyhow::Result;
-use eframe::{
-    egui::{self, Layout, TextStyle},
-    emath::Align,
-    epaint::Vec2,
-};
+use eframe::{egui, epaint::Vec2};
 use gst::prelude::*;
 use gstreamer::{self as gst, element_error};
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
-use crate::{
-    font::gen_rich_text,
-    helper::{scale_fit_all, seconds_to_h_m_s},
-};
+use crate::helper::scale_fit_all;
+
+use super::CONTROLLER_HEIGHT;
 
 macro_rules! gl_strict {
     ($gl:expr, $stmt:stmt) => {
@@ -290,6 +285,7 @@ struct AudioElements {
     decode: gst::Element,
     convert: gst::Element,
     resample: gst::Element,
+    volume: gst::Element,
     sink: gst::Element,
 }
 
@@ -312,6 +308,11 @@ impl AudioElements {
                 .name("audio_resample")
                 .build()
                 .expect("Cannot build audioresample"),
+            volume: gst::ElementFactory::make("volume")
+                .name("audio_volume")
+                .property("volume", 1.0)
+                .build()
+                .expect("Cannot build audio sink"),
             sink: gst::ElementFactory::make("autoaudiosink")
                 .name("audio_sink")
                 .build()
@@ -326,6 +327,7 @@ impl AudioElements {
                 &self.decode,
                 &self.convert,
                 &self.resample,
+                &self.volume,
                 &self.sink,
             ])
             .expect("Cannot add audio elements to pipeline");
@@ -333,7 +335,7 @@ impl AudioElements {
 
     fn link(&self) {
         gst::Element::link_many(&[&self.queue, &self.decode]).expect("Cannot link audio elements");
-        gst::Element::link_many(&[&self.convert, &self.resample, &self.sink])
+        gst::Element::link_many(&[&self.convert, &self.resample, &self.volume, &self.sink])
             .expect("Cannot link audio elements");
 
         let convert = self.convert.clone();
@@ -676,6 +678,7 @@ impl Drop for VideoFrame {
 }
 
 pub struct VideoPlayer {
+    audio_volume: Arc<RwLock<Option<gst::Element>>>,
     pipeline: Arc<RwLock<Option<gst::Pipeline>>>,
     state: Arc<RwLock<gst::State>>,
 
@@ -685,12 +688,14 @@ pub struct VideoPlayer {
 impl VideoPlayer {
     pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: egui::Context) -> Self {
         let video_player = Self {
+            audio_volume: Arc::new(RwLock::new(None)),
             pipeline: Arc::new(RwLock::new(None)),
             state: Arc::new(RwLock::new(gst::State::Playing)),
             video_frame: Arc::new(RwLock::new(VideoFrame::new(gl))),
         };
 
         let video_path = video_path.as_ref().to_path_buf();
+        let audio_volume = video_player.audio_volume.clone();
         let pipeline = video_player.pipeline.clone();
         let state = video_player.state.clone();
         let video_frame = video_player.video_frame.clone();
@@ -701,6 +706,10 @@ impl VideoPlayer {
             let video_elements = VideoElements::new();
             let audio_elements = AudioElements::new();
 
+            audio_volume
+                .write()
+                .unwrap()
+                .replace(audio_elements.volume.clone());
             pipeline.write().unwrap().replace(gst::Pipeline::default());
 
             let bus = {
@@ -758,6 +767,7 @@ impl VideoPlayer {
                 }
             }
 
+            audio_volume.write().unwrap().take();
             pipeline
                 .read()
                 .unwrap()
@@ -790,14 +800,46 @@ impl super::VideoPlayer for VideoPlayer {
         *self.state.read().unwrap() == gst::State::Null
     }
 
-    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let bar_height = ui.text_style_height(&TextStyle::Body);
+    fn position(&self) -> u32 {
+        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+            pipeline
+                .query_position::<gst::ClockTime>()
+                .map(|c| c.seconds())
+                .unwrap_or(0) as u32
+        } else {
+            0
+        }
+    }
+
+    fn duration(&self) -> u32 {
+        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+            pipeline
+                .query_duration::<gst::ClockTime>()
+                .map(|c| c.seconds())
+                .unwrap_or(0) as u32
+        } else {
+            0
+        }
+    }
+
+    fn volume(&self) -> u8 {
+        if let Some(audio_volume) = self.audio_volume.read().unwrap().as_ref() {
+            (audio_volume.property::<f64>("volume").max(0.0) * 100.0).min(u8::MAX as f64) as u8
+        } else {
+            0
+        }
+    }
+
+    fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let max_size = {
                 let video_frame_guard = self.video_frame.read().unwrap();
                 if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
                     scale_fit_all(
-                        Vec2::new(ui.available_width(), ui.available_height() - bar_height),
+                        Vec2::new(
+                            ui.available_width(),
+                            ui.available_height() - CONTROLLER_HEIGHT,
+                        ),
                         Vec2::new(
                             video_frame_guard.width as f32,
                             video_frame_guard.height as f32,
@@ -826,49 +868,6 @@ impl super::VideoPlayer for VideoPlayer {
             };
             ui.painter().add(callback);
         });
-
-        ui.with_layout(
-            Layout::left_to_right(Align::TOP).with_main_justify(true),
-            |ui| {
-                ui.set_height(bar_height);
-                ui.spacing_mut().slider_width = ui.available_width() - 150.0;
-                let (mut position, duration) = {
-                    if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
-                        (
-                            pipeline
-                                .query_position::<gst::ClockTime>()
-                                .map(|c| c.seconds())
-                                .unwrap_or(0) as u32,
-                            pipeline
-                                .query_duration::<gst::ClockTime>()
-                                .map(|c| c.seconds())
-                                .unwrap_or(0) as u32,
-                        )
-                    } else {
-                        (0, 0)
-                    }
-                };
-                if ui
-                    .add(egui::Slider::new(&mut position, 0..=duration).show_value(false))
-                    .changed()
-                {
-                    let _ = self.seek(position);
-                }
-                ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
-                    let (position_h, position_m, position_s) = seconds_to_h_m_s(position);
-                    let (duration_h, duration_m, duration_s) = seconds_to_h_m_s(duration);
-                    ui.label(gen_rich_text(
-                        ctx,
-                        format!(
-                            "{:02}:{:02}:{:02} / {:02}:{:02}:{:02}",
-                            position_h, position_m, position_s, duration_h, duration_m, duration_s
-                        ),
-                        TextStyle::Body,
-                        None,
-                    ));
-                });
-            },
-        );
     }
 
     fn start(&mut self) -> Result<()> {
@@ -895,6 +894,13 @@ impl super::VideoPlayer for VideoPlayer {
     fn stop(&mut self) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
             pipeline.set_state(gst::State::Null)?;
+        }
+        Ok(())
+    }
+
+    fn set_volume(&mut self, percent: u8) -> Result<()> {
+        if let Some(audio_volume) = self.audio_volume.read().unwrap().as_ref() {
+            audio_volume.set_property("volume", percent as f64 / 100.0);
         }
         Ok(())
     }
