@@ -47,7 +47,10 @@ $reg_vlc_name = "Play Videos With VLC"
 $reg_vlc = "$reg_top_shell\$reg_vlc_name"
 $reg_vlc_command_name = "command"
 $reg_vlc_command = "$reg_vlc\$reg_vlc_command_name"
-$vlc_bin_path = where.exe vlc
+$vlc_bin_path = Get-Command vlc.exe -ErrorAction SilentlyContinue
+if ($vlc_bin_path -eq $null) {
+  $vlc_bin_path = ""
+}
 
 $playlist_filetype = "FLPAPPL"
 $playlist_extension = ".fappl"
