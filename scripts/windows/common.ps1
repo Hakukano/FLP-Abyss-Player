@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $cargo = "cargo.exe"
 if ((Get-Command "$cargo" -ErrorAction SilentlyContinue) -eq $null) { 
-   throw "Unable to find $cargo in your PATH"
+   Write-Host "Unable to find $cargo in your PATH"
 }
 
 $org = "FLProject"
