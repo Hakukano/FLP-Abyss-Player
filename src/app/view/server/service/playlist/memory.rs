@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
@@ -15,22 +15,21 @@ pub struct Playlist {
 
 #[async_trait]
 impl super::Playlist for Playlist {
-    async fn read(&self, req: read::Request) -> Result<read::Response> {
-        Ok(read::Response::builder()
-            .id(req.id)
-            .path(
-                self.paths
-                    .read()
-                    .unwrap()
-                    .get(req.id as usize)
-                    .ok_or_else(|| anyhow!("Path not found"))?
-                    .display()
-                    .to_string(),
-            )
-            .build()?)
+    async fn read(&self, query: read::Query) -> Result<Option<read::Response>> {
+        let path_guard = self.paths.read().unwrap();
+        let path = path_guard.get(query.id as usize);
+        if let Some(path) = path {
+            Ok(read::Response::builder()
+                .id(query.id)
+                .path(path.display().to_string())
+                .build()
+                .ok())
+        } else {
+            Ok(None)
+        }
     }
 
-    async fn list(&self, req: list::Request) -> Result<list::Response> {
+    async fn list(&self, query: list::Query) -> Result<list::Response> {
         let matcher = SkimMatcherV2::default();
         let data = self
             .paths
@@ -40,9 +39,9 @@ impl super::Playlist for Playlist {
             .enumerate()
             .filter_map(|(i, p)| {
                 let p = p.display().to_string();
-                if req.search.is_empty()
+                if query.search.is_empty()
                     || matcher
-                        .fuzzy_match(p.as_str(), req.search.as_str())
+                        .fuzzy_match(p.as_str(), query.search.as_str())
                         .is_some()
                 {
                     DataBuilder::default().id(i as u32).path(p).build().ok()
@@ -50,8 +49,8 @@ impl super::Playlist for Playlist {
                     None
                 }
             })
-            .skip(req.offset as usize)
-            .take(req.length as usize)
+            .skip(query.offset as usize)
+            .take(query.length as usize)
             .collect();
         Ok(list::Response::builder()
             .data(data)

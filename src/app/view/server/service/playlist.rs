@@ -21,25 +21,25 @@ pub mod read {
     use derive_builder::Builder;
     use serde::{Deserialize, Serialize};
     #[derive(Deserialize, Serialize, Builder)]
-    pub struct Request {
+    pub struct Query {
         pub id: u32,
     }
-    impl Request {
-        pub fn builder() -> RequestBuilder {
-            RequestBuilder::default()
+    impl Query {
+        pub fn builder() -> QueryBuilder {
+            QueryBuilder::default()
         }
     }
     pub type Response = super::Data;
 }
 
 pub mod list {
-    use crate::app::view::server::service::{ListRequest, ListResponse};
-    pub type Request = ListRequest;
+    use crate::app::view::server::service::{ListQuery, ListResponse};
+    pub type Query = ListQuery;
     pub type Response = ListResponse<super::Data>;
 }
 
 #[async_trait]
-pub trait Playlist {
-    async fn read(&self, req: read::Request) -> Result<read::Response>;
-    async fn list(&self, req: list::Request) -> Result<list::Response>;
+pub trait Playlist: Send + Sync {
+    async fn read(&self, query: read::Query) -> Result<Option<read::Response>>;
+    async fn list(&self, query: list::Query) -> Result<list::Response>;
 }

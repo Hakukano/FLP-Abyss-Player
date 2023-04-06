@@ -5,12 +5,14 @@ use std::{
 
 use tokio::runtime::{self, Runtime};
 
-use self::service::playlist::memory::Playlist;
+use crate::helper::find_available_port;
+
+use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};
 
 mod client;
 mod service;
 
-const BIND_HTTP_HOST: &str = "127.0.0.1";
+const BIND_HOST: &str = "0.0.0.0";
 const RUNTIME_THREADS: usize = 4;
 const RUNTIME_THREAD_NAME: &str = "server_player";
 const RUNTIME_THREAD_STACK_SIZE: usize = 3 * 1024 * 1024;
@@ -38,6 +40,14 @@ impl MediaPlayer {
         let paths = slf.paths.clone();
         slf.runtime.spawn(async move {
             let playlist = Arc::new(Playlist { paths });
+
+            let http_server = HttpServer { playlist };
+            http_server
+                .run(
+                    BIND_HOST,
+                    find_available_port().expect("Cannot find available port"),
+                )
+                .await
         });
         slf
     }
@@ -67,9 +77,9 @@ impl super::MediaPlayer for MediaPlayer {
 
     fn show_central_panel(
         &mut self,
-        ui: &mut eframe::egui::Ui,
-        ctx: &eframe::egui::Context,
-        can_input: bool,
+        _ui: &mut eframe::egui::Ui,
+        _ctx: &eframe::egui::Context,
+        _can_input: bool,
     ) {
     }
 }
