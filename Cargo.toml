@@ -14,8 +14,11 @@ exclude = ["/assets", "/out", "/scripts", "/deny.toml"]
 
 [dependencies]
 anyhow = "1.0"
+async-trait = "0.1"
+axum = { version = "0.6", features = ["multipart", "ws"] }
 chrono = "0.4"
 clap = { version = "4.1", features = ["derive"] }
+derive_builder = "0.12"
 eframe = "0.21"
 fuzzy-matcher = "0.3"
 image = "0.24"

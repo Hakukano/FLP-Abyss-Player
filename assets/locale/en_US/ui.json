@@ -11,6 +11,7 @@
     "media_type": {
       "label": "Media type",
       "unset": "Please select a media type to play",
+      "server": "Server",
       "image": "Image",
       "video": "Video"
     },

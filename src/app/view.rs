@@ -1,4 +1,5 @@
 mod image;
+mod server;
 mod video;
 
 use std::{
@@ -62,6 +63,7 @@ pub trait MediaPlayer: Send + Sync {
     fn is_end(&self) -> bool;
     fn support_extensions(&self) -> &[&str];
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
+    fn sync(&mut self, paths: &[PathBuf]);
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
 
     fn get_all_matched_paths(&self, root_path: &dyn AsRef<Path>) -> Vec<PathBuf> {
@@ -111,6 +113,7 @@ impl State {
                 .media_type
         };
         let mut media_player: Box<dyn MediaPlayer> = match media_type {
+            MediaType::Server => Box::new(server::MediaPlayer::new()),
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new(
                 ctx,
@@ -133,6 +136,7 @@ impl State {
             };
             paths = media_player.get_all_matched_paths(&root_path.as_str());
         }
+        media_player.sync(&paths);
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
         let icon_path = Path::new(get_cli().assets_path.as_str())
             .join("image")
@@ -224,6 +228,7 @@ impl State {
             .map(|ps| ps.to_vec())
         {
             self.paths = paths;
+            self.media_player.sync(&self.paths);
         }
         if let Some(index) = self.playlist_state.consume_index_change() {
             self.set_index(index, ctx);

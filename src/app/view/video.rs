@@ -4,7 +4,10 @@ mod vlc;
 
 #[cfg(feature = "native")]
 use std::sync::Arc;
-use std::{collections::VecDeque, path::Path};
+use std::{
+    collections::VecDeque,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use eframe::{
@@ -110,6 +113,8 @@ impl super::MediaPlayer for MediaPlayer {
         }
         self.video_player.replace(video_player);
     }
+
+    fn sync(&mut self, _paths: &[PathBuf]) {}
 
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
         if let Some(video_player) = self.video_player.as_mut() {

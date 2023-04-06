@@ -47,6 +47,11 @@ impl ConfigMediaType {
             );
             ui.selectable_value(
                 media_type,
+                MediaType::Server,
+                gen_rich_text(ctx, locale.media_type.server.as_str(), Body, None),
+            );
+            ui.selectable_value(
+                media_type,
                 MediaType::Image,
                 gen_rich_text(ctx, locale.media_type.image.as_str(), Body, None),
             );
