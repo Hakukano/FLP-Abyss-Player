@@ -12,14 +12,14 @@ export default function Page() {
 
   return (
     <main className='flex flex-col w-full h-full items-center justify-between p-8'>
-      <div className='grid grid-rows-1 grid-cols-3 grid-flow-col gap-4'>
-        <div className='col-span-2'>
+      <div className='grid grid-rows-1 grid-cols-12 grid-flow-col gap-4'>
+        <div className='col-span-7'>
           <Playlists
             playlist={playlist}
             setPlaylistData={setPlaylistData}
           />
         </div>
-        <div className='col-span-1'>
+        <div className='col-span-5'>
           {
             playlistData
               ? playlistData.mime_type.startsWith('image/')

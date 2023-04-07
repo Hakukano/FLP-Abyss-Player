@@ -3,9 +3,10 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use eframe::{egui::TextStyle, epaint::Color32};
 use tokio::runtime::{self, Runtime};
 
-use crate::helper::find_available_port;
+use crate::{font::gen_rich_text, helper::find_available_port};
 
 use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};
 
@@ -19,6 +20,8 @@ const RUNTIME_THREAD_STACK_SIZE: usize = 3 * 1024 * 1024;
 
 pub struct MediaPlayer {
     paths: Arc<RwLock<Vec<PathBuf>>>,
+
+    bind_port: u16,
 
     runtime: Runtime,
 }
@@ -34,20 +37,17 @@ impl MediaPlayer {
             .expect("Cannot build tokio runtime");
         let slf = Self {
             paths: Arc::new(RwLock::new(Vec::new())),
+            bind_port: find_available_port().expect("Cannot find available port"),
             runtime,
         };
 
         let paths = slf.paths.clone();
+        let bind_port = slf.bind_port;
         slf.runtime.spawn(async move {
             let playlist = Arc::new(Playlist { paths });
 
             let http_server = HttpServer { playlist };
-            http_server
-                .run(
-                    BIND_HOST,
-                    find_available_port().expect("Cannot find available port"),
-                )
-                .await
+            http_server.run(BIND_HOST, bind_port).await
         });
         slf
     }
@@ -76,9 +76,15 @@ impl super::MediaPlayer for MediaPlayer {
 
     fn show_central_panel(
         &mut self,
-        _ui: &mut eframe::egui::Ui,
-        _ctx: &eframe::egui::Context,
+        ui: &mut eframe::egui::Ui,
+        ctx: &eframe::egui::Context,
         _can_input: bool,
     ) {
+        ui.label(gen_rich_text(
+            ctx,
+            format!("Listening on: {}:{}", BIND_HOST, self.bind_port),
+            TextStyle::Body,
+            Some(Color32::LIGHT_YELLOW),
+        ));
     }
 }

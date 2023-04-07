@@ -1,6 +1,6 @@
 [package]
 name = "flp-abyss-player"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media player that sees all"
