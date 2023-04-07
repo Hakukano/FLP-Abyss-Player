@@ -4,11 +4,11 @@ import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon'
 
 import PlaylistRemote from '@/components/playlist_remote'
 import Toolbar from '@/components/toolbar'
-import Playlist from '@/service/playlist/fetch'
-import { Data } from '@/service/playlist'
+import ServicePlaylistRemote from '@/service/playlist_remote/fetch'
+import { Data } from '@/service/playlist_remote'
 
 export default function Page() {
-  const playlist = new Playlist
+  const playlistRemote = new ServicePlaylistRemote
 
   const [playlistData, setPlaylistData] = useState(null as Data | null)
 
@@ -57,7 +57,7 @@ export default function Page() {
                   {/*body*/}
                   <div className="relative p-2 flex-auto">
                     <PlaylistRemote
-                      playlist={playlist}
+                      playlistRemote={playlistRemote}
                       setPlaylistData={setPlaylistData}
                     />
                   </div>

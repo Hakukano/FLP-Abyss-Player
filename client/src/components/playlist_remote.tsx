@@ -1,9 +1,9 @@
-import { Data, Playlist } from '@/service/playlist'
+import { Data, PlaylistRemote } from '@/service/playlist_remote'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import DataTable, { TableColumn } from 'react-data-table-component'
 
 export default function Component(props: {
-  playlist: Playlist,
+  playlistRemote: PlaylistRemote,
   setPlaylistData: Dispatch<SetStateAction<Data | null>>,
 }) {
   const [search, setSearch] = useState('')
@@ -27,7 +27,7 @@ export default function Component(props: {
         onClick={async () => {
           setLoading(true)
           try {
-            const res = await props.playlist.read({ id: row.id })
+            const res = await props.playlistRemote.read({ id: row.id })
             props.setPlaylistData(res)
           } finally {
             setLoading(false)
@@ -47,7 +47,7 @@ export default function Component(props: {
   const fetchData = async (page: number, length: number) => {
     setLoading(true)
     try {
-      const res = await props.playlist.list({
+      const res = await props.playlistRemote.list({
         search,
         filter: [],
         offset: (page - 1) * length,

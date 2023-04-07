@@ -23,7 +23,7 @@ export namespace List {
   export type Response = ListResponse<Data>
 }
 
-export interface Playlist {
+export interface PlaylistRemote{
   read(path: Read.Path): Promise<Read.Response>
   list(query: List.Query): Promise<List.Response>
 }
