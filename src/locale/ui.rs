@@ -11,6 +11,7 @@ pub struct PlaylistPath {
 pub struct MediaType {
     pub label: String,
     pub unset: String,
+    pub server: String,
     pub image: String,
     pub video: String,
 }

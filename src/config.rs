@@ -15,6 +15,7 @@ pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
 pub enum MediaType {
     Unset,
+    Server,
     Image,
     Video,
 }
@@ -36,6 +37,7 @@ impl ToString for MediaType {
         let media_type = &locale::get().ui.config.media_type;
         match self {
             Self::Unset => "--".to_string(),
+            Self::Server => media_type.server.clone(),
             Self::Image => media_type.image.clone(),
             Self::Video => media_type.video.clone(),
         }
@@ -45,6 +47,7 @@ impl ToString for MediaType {
 impl From<u8> for MediaType {
     fn from(n: u8) -> Self {
         match n {
+            255 => Self::Server,
             1 => Self::Image,
             2 => Self::Video,
             _ => Self::Unset,
@@ -55,6 +58,7 @@ impl From<u8> for MediaType {
 impl From<MediaType> for u8 {
     fn from(media_type: MediaType) -> Self {
         match media_type {
+            MediaType::Server => 255,
             MediaType::Image => 1,
             MediaType::Video => 2,
             _ => 0,

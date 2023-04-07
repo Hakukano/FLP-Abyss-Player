@@ -56,6 +56,7 @@ impl State {
     fn try_go(&mut self, config: &mut Config, locale: &locale::ui::Config) -> bool {
         let path_set = config.root_path.is_some();
         let other_set = match config.media_type {
+            MediaType::Server => true,
             MediaType::Image => true,
             MediaType::Video => match config.video_player {
                 VideoPlayer::Unset => false,

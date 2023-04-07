@@ -61,6 +61,13 @@ if (Test-Path $reg_top_shell) {
   Remove-Item -Path $reg_top_shell -Recurse
 }
 New-Item -Path $reg_top -Name $reg_top_shell_name
+# Server
+if (Test-Path $reg_server) {
+  Remove-Item -Path $reg_server -Recurse
+}
+New-Item -Path $reg_top_shell -Name $reg_server_name
+New-Item -Path $reg_server -Name $reg_server_command_name
+Set-ItemProperty -Path $reg_server_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"server`" --root-path `"%V`""
 # Image
 if (Test-Path $reg_image) {
   Remove-Item -Path $reg_image -Recurse

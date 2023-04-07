@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use eframe::egui;
 
 use crate::helper::scale_fit_all;
@@ -42,6 +44,8 @@ impl super::MediaPlayer for MediaPlayer {
             Default::default(),
         ));
     }
+
+    fn sync(&mut self, _paths: &[PathBuf]) {}
 
     fn show_central_panel(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context, _can_input: bool) {
         if let Some(texture) = self.texture.as_ref() {
