@@ -64,8 +64,7 @@ impl super::MediaPlayer for MediaPlayer {
 
     fn support_extensions(&self) -> &[&str] {
         &[
-            "bmp", "gif", "jpeg", "jpg", "png", "avi", "mkv", "mov", "mp4", "webm", "mp3", "wav",
-            "flac",
+            "bmp", "gif", "jpeg", "jpg", "png", "avi", "mp4", "webm", "mp3", "wav",
         ]
     }
 
