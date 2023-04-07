@@ -7,7 +7,7 @@ export default function Component(props: {
   setPlaylistData: Dispatch<SetStateAction<Data | null>>,
 }) {
   const [search, setSearch] = useState('')
-  const [length, setLength] = useState(20)
+  const [length, setLength] = useState(5)
   const [data, setData] = useState([] as Data[])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -74,7 +74,7 @@ export default function Component(props: {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className='flex flex-col space-y-4'>
+    <div className='flex flex-col space-y-1'>
       <input
         className='w-full'
         type='text'
@@ -98,6 +98,7 @@ export default function Component(props: {
         paginationServer
         paginationPerPage={length}
         paginationTotalRows={count}
+        paginationRowsPerPageOptions={[5, 10, 15, 20]}
         onChangeRowsPerPage={handlePerRowsChange}
         onChangePage={handlePageChange}
       />

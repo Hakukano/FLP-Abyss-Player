@@ -7,7 +7,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
-use super::{list, read, DataBuilder};
+use super::{list, read, Data, DataBuilder};
 
 pub struct Playlist {
     pub paths: Arc<RwLock<Vec<PathBuf>>>,
@@ -49,12 +49,16 @@ impl super::Playlist for Playlist {
                     None
                 }
             })
+            .collect::<Vec<Data>>();
+        let count = data.len();
+        let data = data
+            .into_iter()
             .skip(query.offset as usize)
             .take(query.length as usize)
             .collect();
         Ok(list::Response::builder()
             .data(data)
-            .count(self.paths.read().unwrap().len() as u32)
+            .count(count as u32)
             .build()?)
     }
 }
