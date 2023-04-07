@@ -33,6 +33,11 @@ $reg_top = "$reg_shell\$reg_top_name"
 $reg_top_shell_name = "shell"
 $reg_top_shell = "$reg_top\$reg_top_shell_name"
 
+$reg_server_name = "Start Server"
+$reg_server = "$reg_top_shell\$reg_server_name"
+$reg_server_command_name = "command"
+$reg_server_command = "$reg_server\$reg_server_command_name"
+
 $reg_image_name = "Play Images"
 $reg_image = "$reg_top_shell\$reg_image_name"
 $reg_image_command_name = "command"
