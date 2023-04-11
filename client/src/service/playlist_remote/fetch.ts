@@ -1,7 +1,7 @@
 import { listQueryToParams } from "@/service"
-import * as Super from "../playlist"
+import * as Super from "../playlist_remote"
 
-export default class Playlist implements Super.Playlist {
+export default class PlaylistRemote implements Super.PlaylistRemote {
   async read(path: Super.Read.Path): Promise<Super.Read.Response> {
     const res = await fetch(`/playlists/${path.id}`)
     if (res.ok) {
