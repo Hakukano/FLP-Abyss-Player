@@ -34,12 +34,21 @@ export namespace Delete {
     id?: number,
     remote_id?: number,
   }
-  export type Response = Data
+  export type Response = void
 }
 
 export namespace List {
   export type Query = ListQuery
   export type Response = ListResponse<Data>
+}
+
+export namespace Step {
+  export interface Query {
+    // current REMOTE id
+    current: number
+    step: number
+  }
+  export type Response = Data
 }
 
 export interface PlaylistLocal {
@@ -49,4 +58,5 @@ export interface PlaylistLocal {
   list(query: List.Query): Promise<List.Response>
   count(): Promise<number>
   purge(): Promise<void>
+  step(query: Step.Query): Promise<Step.Response>
 }
