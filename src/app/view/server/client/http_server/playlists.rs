@@ -104,15 +104,15 @@ async fn stream(
                 )
                     .into_response())
             } else if res.mime_type.starts_with("video/") || res.mime_type.starts_with("audio/") {
-                let start = *ranges
+                let range = ranges
                     .ok_or((StatusCode::BAD_REQUEST, "Range is needed").into_response())?
                     .validate(meta.len())
                     .map_err(|err| (StatusCode::BAD_REQUEST, err.to_string()).into_response())?
                     .first()
                     .ok_or((StatusCode::BAD_REQUEST, "Range is needed").into_response())?
-                    .clone()
-                    .start();
-                let end = (meta.len() - 1).min(start + 999_999);
+                    .clone();
+                let start = *range.start();
+                let end = (*range.end()).min(meta.len() - 1).min(start + 999_999);
                 let content_length = end - start + 1;
                 let content_range = format!("bytes {start}-{end}/{}", meta.len());
                 file.seek(SeekFrom::Start(start)).await.map_err(|err| {

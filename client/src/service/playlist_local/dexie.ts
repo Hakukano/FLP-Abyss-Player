@@ -1,4 +1,5 @@
 import Fuse from 'fuse.js'
+import { arrayMoveMutable } from 'array-move'
 
 import { db } from '../db/dexie'
 import * as Super from '../playlist_local'
@@ -163,5 +164,17 @@ export default class PlaylistLocal implements Super.PlaylistLocal {
       mime_type: data.mime_type,
       remote_id: data.remote_id,
     }
+  }
+
+  async move(query: Super.Move.Query): Promise<Super.Move.Response> {
+    const table = await db.playlist_locals.get(1)
+    if (!table) {
+      throw {
+        cause: 'db',
+        message: 'not found',
+      } as Super.Error
+    }
+    arrayMoveMutable(table.data, query.id, Math.min(Math.max(query.id + query.step, 0), table.data.length - 1))
+    await db.playlist_locals.put(table, 1)
   }
 }
