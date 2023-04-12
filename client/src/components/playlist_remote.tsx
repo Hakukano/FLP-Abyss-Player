@@ -127,21 +127,61 @@ export default function Component(props: {
 
   return (
     <div className='w-full h-full flex flex-col space-y-1'>
-      <input
-        className='w-full'
-        type='text'
-        placeholder='Press ENTER to search...'
-        value={search}
-        style={{
-          color: '#222',
-        }}
-        onChange={event => setSearch(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter') {
-            fetchData(page, length)
-          }
-        }}
-      />
+      <div className='w-full h-6 grid grid-rows-1 grid-cols-12'>
+        <input
+          className='col-span-11'
+          type='text'
+          placeholder='Press ENTER to search...'
+          value={search}
+          style={{ color: '#222' }}
+          onChange={event => setSearch(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter') {
+              fetchData(page, length)
+            }
+          }}
+        />
+        <div className='col-span-1 grid grid-rows-1 grid-cols-2'>
+          <MinusIcon
+            className='h-full col-span-1'
+            style={{
+              color: '#222',
+              backgroundColor: '#ee2222',
+            }}
+            onClick={async () => {
+              for (const d of data) {
+                try {
+                  await props.playlistLocal.delete({ remote_id: d.id })
+                } catch (_) { }
+              }
+              await fetchData(page, length)
+            }}
+          />
+          <PlusIcon
+            className='h-full col-span-1'
+            style={{
+              color: '#222',
+              backgroundColor: '#22ee22',
+            }}
+            onClick={async () => {
+              for (const d of data) {
+                try {
+                  try {
+                    await props.playlistLocal.read({ remote_id: d.id })
+                  } catch (_) {
+                    await props.playlistLocal.create({
+                      path: d.path,
+                      mime_type: d.mime_type,
+                      remote_id: d.id,
+                    })
+                  }
+                } catch (_) { }
+              }
+              await fetchData(page, length)
+            }}
+          />
+        </div>
+      </div>
       <div
         id='scrollable-pl-remote'
         className='h-full flex overflow-auto flex-col'

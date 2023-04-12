@@ -1,5 +1,7 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import InfiniteScroll from 'react-infinite-scroll-component'
+import ChevronUpIcon from '@heroicons/react/24/outline/ChevronUpIcon'
+import ChevronDownIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import MinusIcon from '@heroicons/react/24/outline/MinusIcon'
 
 import { Data, PlaylistLocal } from '@/service/playlist_local'
@@ -43,7 +45,7 @@ export default function Component(props: {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className='h-full flex flex-col space-y-1'>
+    <div className='w-full h-full flex flex-col space-y-1'>
       <input
         className='w-full'
         type='text'
@@ -61,10 +63,10 @@ export default function Component(props: {
       />
       <div
         id='scrollable-pl-local'
-        className='h-full flex overflow-auto flex-col'
+        className='w-full h-full flex overflow-auto flex-col'
       >
         <InfiniteScroll
-          className='flex flex-col'
+          className='w-full flex flex-col'
           next={() => {
             fetchData(data.length + LOAD_MORE)
           }}
@@ -76,7 +78,7 @@ export default function Component(props: {
           {data.map((d, i) => (
             <div
               key={i}
-              className='grid grid-rows-1 grid-cols-12 gap-1'
+              className='w-full grid grid-rows-1 grid-cols-12 gap-1'
             >
               <button
                 className='m-0.5 border border-solid border-black text-left col-span-11'
@@ -87,16 +89,38 @@ export default function Component(props: {
               >
                 {d.path}
               </button>
-              <MinusIcon
-                className='w-full col-span-1'
-                style={{ color: '#222' }}
-                onClick={async () => {
-                  try {
-                    await props.playlistLocal.delete({ id: d.id })
-                    await fetchData(data.length)
-                  } catch (_) { }
-                }}
-              />
+              <div className='col-span-1 grid grid-rows-3 grid-cols-1'>
+                <ChevronUpIcon
+                  className='row-span-1 text-center max-h-8'
+                  style={{ color: '#222' }}
+                  onClick={async () => {
+                    try {
+                      await props.playlistLocal.move({ id: d.id, step: -1 })
+                      await fetchData(data.length)
+                    } catch (_) { }
+                  }}
+                />
+                <MinusIcon
+                  className='row-span-1 text-center max-h-8'
+                  style={{ color: '#222' }}
+                  onClick={async () => {
+                    try {
+                      await props.playlistLocal.delete({ id: d.id })
+                      await fetchData(data.length)
+                    } catch (_) { }
+                  }}
+                />
+                <ChevronDownIcon
+                  className='row-span-1 text-center max-h-8'
+                  style={{ color: '#222' }}
+                  onClick={async () => {
+                    try {
+                      await props.playlistLocal.move({ id: d.id, step: 1 })
+                      await fetchData(data.length)
+                    } catch (_) { }
+                  }}
+                />
+              </div>
 
             </div>
           ))}

@@ -51,6 +51,14 @@ export namespace Step {
   export type Response = Data
 }
 
+export namespace Move {
+  export interface Query {
+    id: number
+    step: number
+  }
+  export type Response = void
+}
+
 export interface PlaylistLocal {
   create(body: Create.Body): Promise<Create.Response>
   read(query: Read.Query): Promise<Read.Response>
@@ -59,4 +67,5 @@ export interface PlaylistLocal {
   count(): Promise<number>
   purge(): Promise<void>
   step(query: Step.Query): Promise<Step.Response>
+  move(query: Move.Query): Promise<Move.Response>
 }

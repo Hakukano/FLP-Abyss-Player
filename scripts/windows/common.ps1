@@ -8,7 +8,7 @@ if ((Get-Command "$cargo" -ErrorAction SilentlyContinue) -eq $null) {
 $org = "FLProject"
 $package = "flp-abyss-player"
 $package_display_name = "FLP Abyss Player"
-$version = "0.7.2"
+$version = "0.7.3"
 $download_url = "https://github.com/Hakukano/FLP-Abyss-Player/releases/download/v$version"
 
 $bin_file = "$package.exe"
