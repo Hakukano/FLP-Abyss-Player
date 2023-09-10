@@ -4,6 +4,7 @@ pub mod view;
 #[cfg(feature = "native")]
 use std::sync::Arc;
 
+use crate::config::CONFIG;
 use eframe::egui;
 
 enum State {
@@ -63,7 +64,7 @@ impl eframe::App for App {
                     .expect("Cannot get view state lock")
                     .should_home()
                 {
-                    crate::config::get()
+                    CONFIG
                         .write()
                         .expect("Cannot get config lock")
                         .playlist_path

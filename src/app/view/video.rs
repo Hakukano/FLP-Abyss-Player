@@ -17,7 +17,8 @@ use eframe::{
 };
 
 use crate::{
-    config, font::gen_rich_text, get_cli, helper::seconds_to_h_m_s, widget::button_icon::ButtonIcon,
+    config, config::CONFIG, font::gen_rich_text, helper::seconds_to_h_m_s,
+    widget::button_icon::ButtonIcon, CLI,
 };
 
 const CONTROLLER_HEIGHT: f32 = 20.0;
@@ -52,11 +53,10 @@ pub struct MediaPlayer {
 
 impl MediaPlayer {
     pub fn new(ctx: &egui::Context, #[cfg(feature = "native")] gl: Arc<glow::Context>) -> Self {
-        let cli = get_cli();
         Self {
             volume_icon: ButtonIcon::from_rgba_image_files(
                 "volume",
-                Path::new(cli.assets_path.as_str())
+                Path::new(CLI.assets_path.as_str())
                     .join("image")
                     .join("icon")
                     .join("volume.png"),
@@ -71,10 +71,6 @@ impl MediaPlayer {
 }
 
 impl super::MediaPlayer for MediaPlayer {
-    fn support_extensions(&self) -> &[&str] {
-        &["avi", "mkv", "mov", "mp4", "webm"]
-    }
-
     fn is_loaded(&self) -> bool {
         self.video_player.is_some()
     }
@@ -86,9 +82,13 @@ impl super::MediaPlayer for MediaPlayer {
             .unwrap_or(false)
     }
 
+    fn support_extensions(&self) -> &[&str] {
+        &["avi", "mkv", "mov", "mp4", "webm"]
+    }
+
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
         let (player, player_path) = {
-            let config = config::get().read().expect("Cannot get config lock");
+            let config = CONFIG.read().expect("Cannot get config lock");
             (config.video_player, config.video_player_path.clone())
         };
         if let Some(mut video_player) = self.video_player.take() {

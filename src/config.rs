@@ -3,12 +3,11 @@ pub mod json;
 
 use std::{ops::RangeInclusive, sync::RwLock};
 
+use crate::CLI;
 use anyhow::{anyhow, Result};
 use clap::ValueEnum;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
-
-use crate::{get_cli, locale};
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
@@ -34,12 +33,11 @@ impl Default for MediaType {
 
 impl ToString for MediaType {
     fn to_string(&self) -> String {
-        let media_type = &locale::get().ui.config.media_type;
         match self {
             Self::Unset => "--".to_string(),
-            Self::Server => media_type.server.clone(),
-            Self::Image => media_type.image.clone(),
-            Self::Video => media_type.video.clone(),
+            Self::Server => t!("ui.config.media_type.server"),
+            Self::Image => t!("ui.config.media_type.image"),
+            Self::Video => t!("ui.config.media_type.video"),
         }
     }
 }
@@ -88,12 +86,11 @@ impl Default for VideoPlayer {
 
 impl ToString for VideoPlayer {
     fn to_string(&self) -> String {
-        let video_player = &locale::get().ui.config.video_player;
         match self {
             Self::Unset => "--".to_string(),
             #[cfg(feature = "native")]
-            Self::Native => video_player.native.clone(),
-            Self::Vlc => video_player.vlc.clone(),
+            Self::Native => t!("ui.config.video_player.native"),
+            Self::Vlc => t!("ui.config.video_player.vlc"),
         }
     }
 }
@@ -122,6 +119,8 @@ impl From<VideoPlayer> for u8 {
 
 #[derive(Default, Deserialize)]
 pub struct Config {
+    pub locale: String,
+
     pub repeat: bool,
     pub auto: bool,
     pub auto_interval: u32,
@@ -150,20 +149,16 @@ impl Config {
     }
 }
 
-pub fn get() -> &'static RwLock<Config> {
-    static CONFIG: OnceCell<RwLock<Config>> = OnceCell::new();
-    CONFIG.get_or_init(|| {
-        let cli = get_cli();
-        let config = match (
-            cli.playlist_path.as_ref(),
-            cli.config_file.as_ref(),
-            cli.media_type,
-            cli.root_path.as_ref(),
-            cli.video_player,
-        ) {
-            (None, Some(config_file), _, _, _) => json::new(config_file),
-            _ => args::new(cli),
-        };
-        RwLock::new(config)
-    })
-}
+pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
+    let config = match (
+        CLI.playlist_path.as_ref(),
+        CLI.config_file.as_ref(),
+        CLI.media_type,
+        CLI.root_path.as_ref(),
+        CLI.video_player,
+    ) {
+        (None, Some(config_file), _, _, _) => json::new(config_file),
+        _ => args::new(),
+    };
+    RwLock::new(config)
+});

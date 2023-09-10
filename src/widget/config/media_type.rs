@@ -5,18 +5,18 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{config::MediaType, font::gen_rich_text, locale, widget::button_icon::ButtonIcon, Cli};
+use crate::{config::MediaType, font::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
 
 pub struct ConfigMediaType {
     checkmark: ButtonIcon,
 }
 
 impl ConfigMediaType {
-    pub fn new(ctx: &egui::Context, cli: &Cli) -> Self {
+    pub fn new(ctx: &egui::Context) -> Self {
         Self {
             checkmark: ButtonIcon::from_rgba_image_files(
                 "media_type_checkmark",
-                Path::new(cli.assets_path.as_str())
+                Path::new(CLI.assets_path.as_str())
                     .join("image")
                     .join("icon")
                     .join("checkmark.png"),
@@ -25,16 +25,10 @@ impl ConfigMediaType {
         }
     }
 
-    pub fn show_config(
-        &self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        locale: &locale::ui::Config,
-        media_type: &mut MediaType,
-    ) {
+    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &mut MediaType) {
         egui::ComboBox::from_label(gen_rich_text(
             ctx,
-            locale.media_type.label.as_str(),
+            t!("ui.config.media_type.label"),
             Body,
             None,
         ))
@@ -48,32 +42,26 @@ impl ConfigMediaType {
             ui.selectable_value(
                 media_type,
                 MediaType::Server,
-                gen_rich_text(ctx, locale.media_type.server.as_str(), Body, None),
+                gen_rich_text(ctx, t!("ui.config.media_type.server"), Body, None),
             );
             ui.selectable_value(
                 media_type,
                 MediaType::Image,
-                gen_rich_text(ctx, locale.media_type.image.as_str(), Body, None),
+                gen_rich_text(ctx, t!("ui.config.media_type.image"), Body, None),
             );
             ui.selectable_value(
                 media_type,
                 MediaType::Video,
-                gen_rich_text(ctx, locale.media_type.video.as_str(), Body, None),
+                gen_rich_text(ctx, t!("ui.config.media_type.video"), Body, None),
             );
         });
     }
 
-    pub fn show_hint(
-        &self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        locale: &locale::ui::Config,
-        media_type: &MediaType,
-    ) {
+    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &MediaType) {
         if media_type.is_unset() {
             ui.label(gen_rich_text(
                 ctx,
-                locale.media_type.unset.as_str(),
+                t!("ui.config.media_type.unset"),
                 Body,
                 Some(Color32::LIGHT_RED),
             ));

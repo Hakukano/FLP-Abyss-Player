@@ -11,11 +11,11 @@ use eframe::{
     epaint::Color32,
 };
 
-use crate::get_cli;
+use crate::CLI;
 
 pub fn init(ctx: &egui::Context) {
     let mut fd = egui::FontDefinitions::default();
-    let assets_path = get_cli().assets_path.as_str();
+    let assets_path = CLI.assets_path.as_str();
     let font_path = Path::new(assets_path).join("font");
     for (i, entry) in read_dir(font_path)
         .expect("Cannot read font directory")

@@ -4,7 +4,7 @@ use eframe::{egui, epaint::Vec2};
 
 use crate::{
     config::{self, AUTO_INTERVAL_RANGE},
-    get_cli,
+    CLI,
 };
 
 use super::toggle_icon::ToggleIcon;
@@ -18,7 +18,7 @@ pub struct PlayerBar {
 
 impl PlayerBar {
     pub fn new(ctx: &egui::Context) -> Self {
-        let icon_path = Path::new(get_cli().assets_path.as_str())
+        let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
         Self {

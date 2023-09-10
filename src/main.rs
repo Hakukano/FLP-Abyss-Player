@@ -1,20 +1,26 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+#[macro_use]
+extern crate rust_i18n;
+
 mod app;
 mod config;
 mod font;
 mod helper;
-mod locale;
 mod playlist;
 mod widget;
 
 use clap::Parser;
 use eframe::egui;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
+
+use crate::config::CONFIG;
 
 const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
 const VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
+
+i18n!(fallback = "en_US");
 
 fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
     let auto_interval = s.parse::<u32>().map_err(|err| err.to_string())?;
@@ -85,14 +91,11 @@ pub struct Cli {
     pub video_player_path: Option<String>,
 }
 
-fn get_cli() -> &'static Cli {
-    static INSTANCE: OnceCell<Cli> = OnceCell::new();
-    INSTANCE.get_or_init(Cli::parse)
-}
+static CLI: Lazy<Cli> = Lazy::new(Cli::parse);
 
 fn main() -> eframe::Result<()> {
-    // Init and validate cli
-    let _ = get_cli();
+    // Init locale
+    rust_i18n::set_locale(CONFIG.read().unwrap().locale.as_str());
 
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(1600.0, 900.0)),
@@ -103,7 +106,7 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        locale::get().ui.app_name.as_str(),
+        t!("ui.app_name").as_str(),
         options,
         Box::new(|cc| Box::new(app::App::new(cc))),
     )

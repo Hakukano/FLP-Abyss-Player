@@ -5,18 +5,18 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{font::gen_rich_text, locale, widget::button_icon::ButtonIcon, Cli};
+use crate::{font::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
 
 pub struct ConfigVideoPlayerPath {
     checkmark: ButtonIcon,
 }
 
 impl ConfigVideoPlayerPath {
-    pub fn new(ctx: &egui::Context, cli: &Cli) -> Self {
+    pub fn new(ctx: &egui::Context) -> Self {
         Self {
             checkmark: ButtonIcon::from_rgba_image_files(
                 "video_player_path_checkmark",
-                Path::new(cli.assets_path.as_str())
+                Path::new(CLI.assets_path.as_str())
                     .join("image")
                     .join("icon")
                     .join("checkmark.png"),
@@ -29,13 +29,12 @@ impl ConfigVideoPlayerPath {
         &self,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
-        locale: &locale::ui::Config,
         video_player_path: &mut Option<String>,
     ) {
         if ui
             .button(gen_rich_text(
                 ctx,
-                locale.video_player_path.label.as_str(),
+                t!("ui.config.video_player_path.label"),
                 Body,
                 None,
             ))
@@ -51,7 +50,6 @@ impl ConfigVideoPlayerPath {
         &self,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
-        locale: &locale::ui::Config,
         video_player_path: &Option<String>,
     ) {
         if let Some(video_player_path) = &video_player_path {
@@ -61,7 +59,7 @@ impl ConfigVideoPlayerPath {
                 ctx,
                 format!(
                     "{}: {video_player_path}",
-                    locale.video_player_path.set.as_str()
+                    t!("ui.config.video_player_path.set")
                 ),
                 Body,
                 None,
@@ -69,7 +67,7 @@ impl ConfigVideoPlayerPath {
         } else {
             ui.label(gen_rich_text(
                 ctx,
-                locale.video_player_path.unset.as_str(),
+                t!("ui.config.video_player_path.unset"),
                 Body,
                 Some(Color32::RED),
             ));

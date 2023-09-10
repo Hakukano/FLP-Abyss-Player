@@ -5,20 +5,18 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{
-    config::VideoPlayer, font::gen_rich_text, locale, widget::button_icon::ButtonIcon, Cli,
-};
+use crate::{config::VideoPlayer, font::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
 
 pub struct ConfigVideoPlayer {
     checkmark: ButtonIcon,
 }
 
 impl ConfigVideoPlayer {
-    pub fn new(ctx: &egui::Context, cli: &Cli) -> Self {
+    pub fn new(ctx: &egui::Context) -> Self {
         Self {
             checkmark: ButtonIcon::from_rgba_image_files(
                 "video_player_checkmark",
-                Path::new(cli.assets_path.as_str())
+                Path::new(CLI.assets_path.as_str())
                     .join("image")
                     .join("icon")
                     .join("checkmark.png"),
@@ -31,12 +29,11 @@ impl ConfigVideoPlayer {
         &self,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
-        locale: &locale::ui::Config,
         video_player: &mut VideoPlayer,
     ) {
         egui::ComboBox::from_label(gen_rich_text(
             ctx,
-            locale.video_player.label.as_str(),
+            t!("ui.config.video_player.label"),
             Body,
             None,
         ))
@@ -51,27 +48,21 @@ impl ConfigVideoPlayer {
             ui.selectable_value(
                 video_player,
                 VideoPlayer::Native,
-                gen_rich_text(ctx, locale.video_player.native.as_str(), Body, None),
+                gen_rich_text(ctx, t!("ui.config.video_player.native"), Body, None),
             );
             ui.selectable_value(
                 video_player,
                 VideoPlayer::Vlc,
-                gen_rich_text(ctx, locale.video_player.vlc.as_str(), Body, None),
+                gen_rich_text(ctx, t!("ui.config.video_player.vlc"), Body, None),
             );
         });
     }
 
-    pub fn show_hint(
-        &self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        locale: &locale::ui::Config,
-        video_player: &VideoPlayer,
-    ) {
+    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context, video_player: &VideoPlayer) {
         if video_player.is_unset() {
             ui.label(gen_rich_text(
                 ctx,
-                locale.video_player.unset.as_str(),
+                t!("ui.config.video_player.unset"),
                 Body,
                 Some(Color32::LIGHT_RED),
             ));

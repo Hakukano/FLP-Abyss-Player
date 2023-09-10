@@ -1,19 +1,27 @@
-use crate::Cli;
+use crate::CLI;
 
-pub fn new(cli: &Cli) -> super::Config {
+pub fn new() -> super::Config {
     super::Config {
-        repeat: cli.repeat,
-        auto: cli.auto,
-        auto_interval: cli.auto_interval,
-        lop: cli.lop,
+        locale: if let Some(locale) = CLI.locale.as_ref() {
+            locale.clone()
+        } else {
+            sys_locale::get_locale()
+                .map(|l| l.replace('-', "_"))
+                .unwrap_or_else(|| "en_US".to_string())
+        },
 
-        playlist_path: cli.playlist_path.clone(),
+        repeat: CLI.repeat,
+        auto: CLI.auto,
+        auto_interval: CLI.auto_interval,
+        lop: CLI.lop,
 
-        media_type: cli.media_type,
-        root_path: cli.root_path.clone(),
-        random: cli.random,
-        video_player: cli.video_player,
-        video_player_path: cli.video_player_path.clone(),
+        playlist_path: CLI.playlist_path.clone(),
+
+        media_type: CLI.media_type,
+        root_path: CLI.root_path.clone(),
+        random: CLI.random,
+        video_player: CLI.video_player,
+        video_player_path: CLI.video_player_path.clone(),
     }
     .validate()
     .unwrap()

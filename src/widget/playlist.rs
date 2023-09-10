@@ -16,10 +16,9 @@ use crate::{
     app::view::MediaPlayer,
     config::{self, MediaType},
     font::gen_rich_text,
-    get_cli,
     helper::message_dialog_error,
-    locale::Locale,
     playlist::{self, Body, Header},
+    CLI,
 };
 
 use super::{
@@ -93,8 +92,7 @@ pub struct Playlist {
 
 impl Playlist {
     pub fn new(ctx: &egui::Context) -> Self {
-        let cli = get_cli();
-        let icon_path = Path::new(cli.assets_path.as_str())
+        let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
         Self {
@@ -123,8 +121,8 @@ impl Playlist {
             save_icon: ButtonIcon::from_rgba_image_files("save", icon_path.join("save.png"), ctx),
             load_icon: ButtonIcon::from_rgba_image_files("load", icon_path.join("load.png"), ctx),
 
-            config_video_player: ConfigVideoPlayer::new(ctx, cli),
-            config_video_player_path: ConfigVideoPlayerPath::new(ctx, cli),
+            config_video_player: ConfigVideoPlayer::new(ctx),
+            config_video_player_path: ConfigVideoPlayerPath::new(ctx),
         }
     }
 
@@ -134,7 +132,6 @@ impl Playlist {
         ui: &mut egui::Ui,
         ctx: &egui::Context,
         config: &mut config::Config,
-        locale: &Locale,
         current_index: Option<usize>,
         media_player: &dyn MediaPlayer,
     ) {
@@ -399,8 +396,6 @@ impl Playlist {
                         .spacing(Vec2::new(8.0, 8.0))
                         .striped(true)
                         .show(ui, |ui| {
-                            let locale = &locale.ui.config;
-
                             ui.label(gen_rich_text(
                                 ctx,
                                 header.version.to_string(),
@@ -418,7 +413,7 @@ impl Playlist {
 
                             ui.label(gen_rich_text(
                                 ctx,
-                                locale.media_type.label.as_str(),
+                                t!("ui.config.media_type.label"),
                                 TextStyle::Body,
                                 None,
                             ));
@@ -434,7 +429,7 @@ impl Playlist {
                             if header.media_type == MediaType::Video {
                                 ui.label(gen_rich_text(
                                     ctx,
-                                    locale.video_player.label.as_str(),
+                                    t!("ui.config.video_player.label"),
                                     TextStyle::Body,
                                     if header.video_player != config.video_player {
                                         Some(Color32::LIGHT_RED)
@@ -445,15 +440,10 @@ impl Playlist {
                                 self.config_video_player.show_config(
                                     ui,
                                     ctx,
-                                    locale,
                                     &mut header.video_player,
                                 );
-                                self.config_video_player.show_hint(
-                                    ui,
-                                    ctx,
-                                    locale,
-                                    &header.video_player,
-                                );
+                                self.config_video_player
+                                    .show_hint(ui, ctx, &header.video_player);
                                 ui.end_row();
 
                                 match header.video_player {
@@ -462,7 +452,7 @@ impl Playlist {
                                     _ => {
                                         ui.label(gen_rich_text(
                                             ctx,
-                                            locale.video_player_path.label.as_str(),
+                                            t!("ui.config.video_player_path.label"),
                                             TextStyle::Body,
                                             if header.video_player_path != config.video_player_path
                                             {
@@ -474,13 +464,11 @@ impl Playlist {
                                         self.config_video_player_path.show_config(
                                             ui,
                                             ctx,
-                                            locale,
                                             &mut header.video_player_path,
                                         );
                                         self.config_video_player_path.show_hint(
                                             ui,
                                             ctx,
-                                            locale,
                                             &header.video_player_path,
                                         );
                                         ui.end_row();
