@@ -6,7 +6,7 @@ use std::{
 use eframe::{egui::TextStyle, epaint::Color32};
 use tokio::runtime::{self, Runtime};
 
-use crate::{font::gen_rich_text, helper::find_available_port};
+use crate::library::{fonts::gen_rich_text, helper::find_available_port};
 
 use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};
 

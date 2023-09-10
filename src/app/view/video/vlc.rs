@@ -18,7 +18,7 @@ use passwords::PasswordGenerator;
 use reqwest::{Client, Method};
 use tokio::runtime;
 
-use crate::{font::gen_rich_text, helper::find_available_port};
+use crate::library::{fonts::gen_rich_text, helper::find_available_port};
 
 const VLC_HTTP_HOST: &str = "127.0.0.1";
 const VLC_HTTP_STATUS: &str = "/status.xml";

@@ -15,9 +15,11 @@ use crate::config::VideoPlayer;
 use crate::{
     app::view::MediaPlayer,
     config::{self, MediaType},
-    font::gen_rich_text,
-    helper::message_dialog_error,
-    playlist::{self, Body, Header},
+    library::{
+        fonts::gen_rich_text,
+        helper::message_dialog_error,
+        playlist::{self, Body, Header},
+    },
     CLI,
 };
 

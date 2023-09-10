@@ -5,9 +5,7 @@ extern crate rust_i18n;
 
 mod app;
 mod config;
-mod font;
-mod helper;
-mod playlist;
+mod library;
 mod widget;
 
 use clap::Parser;

@@ -5,9 +5,7 @@ use eframe::{
 
 use crate::{
     config::*,
-    font::gen_rich_text,
-    helper::message_dialog_error,
-    playlist,
+    library::{fonts::gen_rich_text, helper::message_dialog_error, playlist},
     widget::{
         config::{
             media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,

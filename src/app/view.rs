@@ -20,8 +20,7 @@ use walkdir::DirEntry;
 
 use crate::{
     config::{MediaType, CONFIG},
-    font::gen_rich_text,
-    playlist,
+    library::{fonts::gen_rich_text, playlist},
     widget::{
         button_icon::ButtonIcon,
         player_bar::PlayerBar,

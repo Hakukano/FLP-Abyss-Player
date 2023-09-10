@@ -17,8 +17,11 @@ use eframe::{
 };
 
 use crate::{
-    config, config::CONFIG, font::gen_rich_text, helper::seconds_to_h_m_s,
-    widget::button_icon::ButtonIcon, CLI,
+    config,
+    config::CONFIG,
+    library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
+    widget::button_icon::ButtonIcon,
+    CLI,
 };
 
 const CONTROLLER_HEIGHT: f32 = 20.0;

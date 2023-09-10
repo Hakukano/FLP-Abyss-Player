@@ -11,7 +11,7 @@ use gstreamer::{self as gst, element_error};
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
-use crate::helper::scale_fit_all;
+use crate::library::helper::scale_fit_all;
 
 use super::CONTROLLER_HEIGHT;
 

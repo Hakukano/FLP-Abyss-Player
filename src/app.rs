@@ -4,7 +4,7 @@ pub mod view;
 #[cfg(feature = "native")]
 use std::sync::Arc;
 
-use crate::config::CONFIG;
+use crate::{config::CONFIG, library};
 use eframe::egui;
 
 enum State {
@@ -21,7 +21,7 @@ pub struct App {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        crate::font::init(&cc.egui_ctx);
+        library::fonts::init(&cc.egui_ctx);
         Self {
             state: State::Config(Box::new(config::State::new(&cc.egui_ctx))),
             #[cfg(feature = "native")]

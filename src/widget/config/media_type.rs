@@ -5,7 +5,9 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{config::MediaType, font::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
+use crate::{
+    config::MediaType, library::fonts::gen_rich_text, widget::button_icon::ButtonIcon, CLI,
+};
 
 pub struct ConfigMediaType {
     checkmark: ButtonIcon,

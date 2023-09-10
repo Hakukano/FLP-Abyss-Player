@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use eframe::egui;
 
-use crate::helper::scale_fit_all;
+use crate::library::helper::scale_fit_all;
 
 pub struct MediaPlayer {
     texture: Option<egui::TextureHandle>,

@@ -5,7 +5,7 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{font::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
+use crate::{library::fonts::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
 
 pub struct ConfigVideoPlayerPath {
     checkmark: ButtonIcon,
