@@ -17,9 +17,8 @@ use eframe::{
 };
 
 use crate::{
-    config,
-    config::CONFIG,
     library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
+    model::{config, config::Config},
     widget::button_icon::ButtonIcon,
     CLI,
 };
@@ -90,10 +89,8 @@ impl super::MediaPlayer for MediaPlayer {
     }
 
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
-        let (player, player_path) = {
-            let config = CONFIG.read().expect("Cannot get config lock");
-            (config.video_player, config.video_player_path.clone())
-        };
+        let player = Config::video_player();
+        let player_path = Config::video_player_path();
         if let Some(mut video_player) = self.video_player.take() {
             if let Err(err) = video_player.stop() {
                 self.error.push_back(err.to_string());

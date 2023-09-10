@@ -5,7 +5,9 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{config::Config, library::fonts::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
+use crate::{
+    library::fonts::gen_rich_text, model::config::Config, widget::button_icon::ButtonIcon, CLI,
+};
 
 pub struct ConfigRootPath {
     checkmark: ButtonIcon,
@@ -25,7 +27,7 @@ impl ConfigRootPath {
         }
     }
 
-    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context, config: &mut Config) {
+    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
         if ui
             .button(gen_rich_text(
                 ctx,
@@ -36,13 +38,13 @@ impl ConfigRootPath {
             .clicked()
         {
             if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                config.root_path.replace(path.display().to_string());
+                Config::set_root_path(Some(path.display().to_string()));
             }
         }
     }
 
-    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context, config: &Config) {
-        if let Some(root_path) = &config.root_path {
+    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        if let Some(root_path) = Config::root_path() {
             let max_height = ui.text_style_height(&Body);
             self.checkmark.show(Vec2::new(max_height, max_height), ui);
             ui.label(gen_rich_text(

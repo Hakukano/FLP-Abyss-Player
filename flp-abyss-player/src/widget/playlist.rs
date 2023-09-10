@@ -11,15 +11,15 @@ use eframe::{
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
 #[cfg(feature = "native")]
-use crate::config::VideoPlayer;
+use crate::model::config::VideoPlayer;
 use crate::{
     app::view::MediaPlayer,
-    config::{self, MediaType},
     library::{
         fonts::gen_rich_text,
         helper::message_dialog_error,
         playlist::{self, Body, Header},
     },
+    model::config::{Config, MediaType},
     CLI,
 };
 
@@ -133,7 +133,6 @@ impl Playlist {
         state: &mut PlaylistState,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
-        config: &mut config::Config,
         current_index: Option<usize>,
         media_player: &dyn MediaPlayer,
     ) {
@@ -336,7 +335,7 @@ impl Playlist {
                             .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
                             .save_file()
                         {
-                            let mut new_header = Header::from_config(config);
+                            let mut new_header = Header::from_config();
                             if let Some(header) = state.header.as_ref() {
                                 new_header.video_player = header.video_player;
                                 new_header.video_player_path = header.video_player_path.clone();
@@ -373,7 +372,7 @@ impl Playlist {
                                             message_dialog_error(err);
                                         }
                                         Ok(body) => {
-                                            if header.media_type != config.media_type {
+                                            if header.media_type != Config::media_type() {
                                                 message_dialog_error(
                                                     "This playlist has a different media type!",
                                                 );
@@ -433,19 +432,14 @@ impl Playlist {
                                     ctx,
                                     t!("ui.config.video_player.label"),
                                     TextStyle::Body,
-                                    if header.video_player != config.video_player {
+                                    if header.video_player != Config::video_player() {
                                         Some(Color32::LIGHT_RED)
                                     } else {
                                         None
                                     },
                                 ));
-                                self.config_video_player.show_config(
-                                    ui,
-                                    ctx,
-                                    &mut header.video_player,
-                                );
-                                self.config_video_player
-                                    .show_hint(ui, ctx, &header.video_player);
+                                self.config_video_player.show_config(ui, ctx);
+                                self.config_video_player.show_hint(ui, ctx);
                                 ui.end_row();
 
                                 match header.video_player {
@@ -456,23 +450,16 @@ impl Playlist {
                                             ctx,
                                             t!("ui.config.video_player_path.label"),
                                             TextStyle::Body,
-                                            if header.video_player_path != config.video_player_path
+                                            if header.video_player_path
+                                                != Config::video_player_path()
                                             {
                                                 Some(Color32::LIGHT_RED)
                                             } else {
                                                 None
                                             },
                                         ));
-                                        self.config_video_player_path.show_config(
-                                            ui,
-                                            ctx,
-                                            &mut header.video_player_path,
-                                        );
-                                        self.config_video_player_path.show_hint(
-                                            ui,
-                                            ctx,
-                                            &header.video_player_path,
-                                        );
+                                        self.config_video_player_path.show_config(ui, ctx);
+                                        self.config_video_player_path.show_hint(ui, ctx);
                                         ui.end_row();
                                     }
                                 }

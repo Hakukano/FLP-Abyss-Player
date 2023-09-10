@@ -4,15 +4,13 @@
 extern crate rust_i18n;
 
 mod app;
-mod config;
 mod library;
+mod model;
 mod widget;
 
 use clap::Parser;
 use eframe::egui;
 use once_cell::sync::Lazy;
-
-use crate::config::CONFIG;
 
 const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
@@ -22,12 +20,12 @@ i18n!(fallback = "en_US");
 
 fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
     let auto_interval = s.parse::<u32>().map_err(|err| err.to_string())?;
-    if config::AUTO_INTERVAL_RANGE.contains(&auto_interval) {
+    if model::config::AUTO_INTERVAL_RANGE.contains(&auto_interval) {
         Ok(auto_interval)
     } else {
         Err(format!(
             "auto_interval should be in the range of {:?} but found {}",
-            config::AUTO_INTERVAL_RANGE,
+            model::config::AUTO_INTERVAL_RANGE,
             auto_interval
         ))
     }
@@ -73,16 +71,16 @@ pub struct Cli {
     pub playlist_path: Option<String>,
 
     /// [Naviation] The media type to be played
-    #[arg(long, value_enum, default_value_t = config::MediaType::Unset)]
-    pub media_type: config::MediaType,
+    #[arg(long, value_enum, default_value_t = model::config::MediaType::Unset)]
+    pub media_type: model::config::MediaType,
 
     /// [Naviation] The root path
     #[arg(long)]
     pub root_path: Option<String>,
 
     /// [Naviation] The video player to use for playing videos
-    #[arg(long, value_enum, default_value_t = config::VideoPlayer::Unset)]
-    pub video_player: config::VideoPlayer,
+    #[arg(long, value_enum, default_value_t = model::config::VideoPlayer::Unset)]
+    pub video_player: model::config::VideoPlayer,
 
     /// [Naviation] The video player executable path
     #[arg(long)]
@@ -93,7 +91,7 @@ static CLI: Lazy<Cli> = Lazy::new(Cli::parse);
 
 fn main() -> eframe::Result<()> {
     // Init locale
-    rust_i18n::set_locale(CONFIG.read().unwrap().locale.as_str());
+    rust_i18n::set_locale(model::config::Config::locale().as_str());
 
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(1600.0, 900.0)),

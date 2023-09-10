@@ -4,8 +4,8 @@ use eframe::{
 };
 
 use crate::{
-    config::*,
     library::{fonts::gen_rich_text, helper::message_dialog_error, playlist},
+    model::config::*,
     widget::{
         config::{
             media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,
@@ -50,20 +50,20 @@ impl State {
         self.go
     }
 
-    fn try_go(&mut self, config: &mut Config) -> bool {
-        let path_set = config.root_path.is_some();
-        let other_set = match config.media_type {
+    fn try_go(&mut self) -> bool {
+        let path_set = Config::root_path().is_some();
+        let other_set = match Config::media_type() {
             MediaType::Server => true,
             MediaType::Image => true,
-            MediaType::Video => match config.video_player {
+            MediaType::Video => match Config::video_player() {
                 VideoPlayer::Unset => false,
                 #[cfg(feature = "native")]
                 VideoPlayer::Native => true,
-                _ => config.video_player_path.is_some(),
+                _ => Config::video_player_path().is_some(),
             },
             _ => false,
         };
-        if let Some(playlist_path) = config.playlist_path.clone() {
+        if let Some(playlist_path) = Config::playlist_path() {
             match playlist::Header::load(playlist_path) {
                 Err(err) => {
                     message_dialog_error(err.to_string());
@@ -75,7 +75,7 @@ impl State {
                         false
                     }
                     Ok(body) => {
-                        header.writer_config(config);
+                        header.writer_config();
                         self.playlist.replace((header, body));
                         self.go = true;
                         true
@@ -92,12 +92,7 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
-        let mut config = CONFIG.write().expect("Cannot get config lock");
-
-        if CLI.playlist_path.is_some()
-            && config.playlist_path.is_some()
-            && !self.try_go(&mut config)
-        {
+        if CLI.playlist_path.is_some() && Config::playlist_path().is_some() && !self.try_go() {
             panic!("Broken playlist file");
         }
 
@@ -126,7 +121,7 @@ impl State {
                         .button(gen_rich_text(ctx, t!("ui.config.go"), Button, None))
                         .clicked()
                     {
-                        self.try_go(&mut config);
+                        self.try_go();
                     }
                 });
             });
@@ -145,51 +140,39 @@ impl State {
                     |ui| {
                         let max_height = 20.0;
                         ui.set_height(max_height);
-                        self.player_bar.show(max_height, &mut config, ui);
+                        self.player_bar.show(max_height, ui);
                     },
                 );
 
                 ui.horizontal(|ui| {
-                    self.config_playlist_path.show_config(ui, ctx, &mut config);
-                    self.config_playlist_path.show_hint(ui, ctx, &config);
+                    self.config_playlist_path.show_config(ui, ctx);
+                    self.config_playlist_path.show_hint(ui, ctx);
                 });
 
-                if config.playlist_path.is_none() {
+                if Config::playlist_path().is_none() {
                     ui.horizontal(|ui| {
-                        self.config_media_type
-                            .show_config(ui, ctx, &mut config.media_type);
-                        self.config_media_type
-                            .show_hint(ui, ctx, &config.media_type);
+                        self.config_media_type.show_config(ui, ctx);
+                        self.config_media_type.show_hint(ui, ctx);
                     });
 
                     ui.horizontal(|ui| {
-                        self.config_root_path.show_config(ui, ctx, &mut config);
-                        self.config_root_path.show_hint(ui, ctx, &config);
+                        self.config_root_path.show_config(ui, ctx);
+                        self.config_root_path.show_hint(ui, ctx);
                     });
 
-                    if config.media_type == MediaType::Video {
+                    if Config::media_type() == MediaType::Video {
                         ui.horizontal(|ui| {
-                            self.config_video_player
-                                .show_config(ui, ctx, &mut config.video_player);
-                            self.config_video_player
-                                .show_hint(ui, ctx, &config.video_player);
+                            self.config_video_player.show_config(ui, ctx);
+                            self.config_video_player.show_hint(ui, ctx);
                         });
 
-                        match config.video_player {
+                        match Config::video_player() {
                             #[cfg(feature = "native")]
                             VideoPlayer::Native => {}
                             _ => {
                                 ui.horizontal(|ui| {
-                                    self.config_video_player_path.show_config(
-                                        ui,
-                                        ctx,
-                                        &mut config.video_player_path,
-                                    );
-                                    self.config_video_player_path.show_hint(
-                                        ui,
-                                        ctx,
-                                        &config.video_player_path,
-                                    );
+                                    self.config_video_player_path.show_config(ui, ctx);
+                                    self.config_video_player_path.show_hint(ui, ctx);
                                 });
                             }
                         }

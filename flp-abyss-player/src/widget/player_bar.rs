@@ -3,7 +3,7 @@ use std::path::Path;
 use eframe::{egui, epaint::Vec2};
 
 use crate::{
-    config::{self, AUTO_INTERVAL_RANGE},
+    model::config::{Config, AUTO_INTERVAL_RANGE},
     CLI,
 };
 
@@ -49,25 +49,25 @@ impl PlayerBar {
         }
     }
 
-    pub fn show(&mut self, max_cross: f32, config: &mut config::Config, ui: &mut egui::Ui) {
+    pub fn show(&mut self, max_cross: f32, ui: &mut egui::Ui) {
         ui.spacing_mut().item_spacing = Vec2::new(1.0, 1.0);
         let spacing = max_cross / 4.0;
         let max_icon_size = Vec2::new(max_cross, max_cross);
 
-        let mut repeat = config.repeat;
+        let mut repeat = Config::repeat();
         if self
             .repeat_icon
             .show(max_icon_size, ui, &mut repeat)
             .changed()
         {
-            config.repeat = repeat;
+            Config::set_repeat(repeat);
         }
         ui.add_space(spacing);
-        let mut auto = config.auto;
+        let mut auto = Config::auto();
         if self.auto_icon.show(max_icon_size, ui, &mut auto).changed() {
-            config.auto = auto;
+            Config::set_auto(auto);
         }
-        let mut auto_interval = config.auto_interval;
+        let mut auto_interval = Config::auto_interval();
         if ui
             .add(
                 egui::DragValue::new(&mut auto_interval)
@@ -77,21 +77,21 @@ impl PlayerBar {
             )
             .changed()
         {
-            config.auto_interval = auto_interval;
+            Config::set_auto_interval(auto_interval);
         }
         ui.add_space(spacing);
-        let mut lop = config.lop;
+        let mut lop = Config::lop();
         if self.loop_icon.show(max_icon_size, ui, &mut lop).changed() {
-            config.lop = lop;
+            Config::set_lop(lop);
         }
         ui.add_space(spacing);
-        let mut random = config.random;
+        let mut random = Config::random();
         if self
             .random_icon
             .show(max_icon_size, ui, &mut random)
             .changed()
         {
-            config.random = random;
+            Config::set_random(random);
         }
     }
 }

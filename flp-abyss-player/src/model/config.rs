@@ -1,13 +1,15 @@
-pub mod args;
-pub mod json;
+mod args;
+mod json;
 
 use std::{ops::RangeInclusive, sync::RwLock};
 
-use crate::CLI;
 use anyhow::{anyhow, Result};
 use clap::ValueEnum;
+use flp_abyss_player_derive::AccessibleModel;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
+
+use crate::CLI;
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
@@ -117,7 +119,8 @@ impl From<VideoPlayer> for u8 {
     }
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, AccessibleModel)]
+#[accessible_model(singleton = CONFIG, rw_lock)]
 pub struct Config {
     pub locale: String,
 
@@ -149,7 +152,7 @@ impl Config {
     }
 }
 
-pub static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
+static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
     let config = match (
         CLI.playlist_path.as_ref(),
         CLI.config_file.as_ref(),

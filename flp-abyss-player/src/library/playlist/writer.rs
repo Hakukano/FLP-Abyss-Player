@@ -1,6 +1,6 @@
 use chrono::Utc;
 
-use crate::config::{MediaType, VideoPlayer};
+use crate::model::config::{MediaType, VideoPlayer};
 
 use super::{Body, Header, Version, APPL, FLP};
 

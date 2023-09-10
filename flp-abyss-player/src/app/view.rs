@@ -19,8 +19,8 @@ use tokio::runtime::{self, Runtime};
 use walkdir::DirEntry;
 
 use crate::{
-    config::{MediaType, CONFIG},
     library::{fonts::gen_rich_text, playlist},
+    model::config::{Config, MediaType},
     widget::{
         button_icon::ButtonIcon,
         player_bar::PlayerBar,
@@ -106,8 +106,7 @@ impl State {
         playlist: Option<&(playlist::Header, playlist::Body)>,
         #[cfg(feature = "native")] gl: Arc<glow::Context>,
     ) -> Self {
-        let media_type = { CONFIG.read().expect("Cannot get config lock").media_type };
-        let mut media_player: Box<dyn MediaPlayer> = match media_type {
+        let mut media_player: Box<dyn MediaPlayer> = match Config::media_type() {
             MediaType::Server => Box::new(server::MediaPlayer::new()),
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new(
@@ -121,15 +120,8 @@ impl State {
         if let Some((_, playlist_body)) = playlist {
             playlist_body.write_paths(&mut paths);
         } else {
-            let root_path = {
-                CONFIG
-                    .read()
-                    .expect("Cannot get config lock")
-                    .root_path
-                    .clone()
-                    .expect("There must be a root path at this point")
-            };
-            paths = media_player.get_all_matched_paths(&root_path.as_str());
+            let root_path = Config::root_path().expect("There must be a root path at this point");
+            paths = media_player.get_all_matched_paths(&root_path);
         }
         media_player.sync(&paths);
         media_player.reload(paths.get(0).expect("Empty paths"), ctx);
@@ -177,19 +169,15 @@ impl State {
     }
 
     pub fn next(&mut self, ctx: &egui::Context) {
-        let (repeat, random, lop) = {
-            let config = CONFIG.read().expect("Cannot get config lock");
-            (config.repeat, config.random, config.lop)
-        };
-        if repeat {
+        if Config::repeat() {
             self.set_index(self.index, ctx);
             return;
         }
-        if random {
+        if Config::random() {
             self.random(ctx);
             return;
         }
-        if self.index == self.paths.len() - 1 && lop {
+        if self.index == self.paths.len() - 1 && Config::lop() {
             self.set_index(0, ctx);
         } else if self.index < self.paths.len() - 1 {
             self.set_index(self.index + 1, ctx);
@@ -197,19 +185,15 @@ impl State {
     }
 
     pub fn prev(&mut self, ctx: &egui::Context) {
-        let (repeat, random, lop) = {
-            let config = CONFIG.read().expect("Cannot get config lock");
-            (config.repeat, config.random, config.lop)
-        };
-        if repeat {
+        if Config::repeat() {
             self.set_index(self.index, ctx);
             return;
         }
-        if random {
+        if Config::random() {
             self.random(ctx);
             return;
         }
-        if self.index == 0 && lop {
+        if self.index == 0 && Config::lop() {
             self.set_index(self.paths.len() - 1, ctx);
         } else if self.index > 0 {
             self.set_index(self.index - 1, ctx);
@@ -243,7 +227,6 @@ impl State {
                     &mut self.playlist_state,
                     ui,
                     ctx,
-                    &mut CONFIG.write().expect("Cannot get config lock"),
                     Some(self.index),
                     self.media_player.as_ref(),
                 )
@@ -264,14 +247,11 @@ impl State {
                             let max_height = 20.0;
                             ui.set_height(max_height);
                             ui.style_mut().drag_value_text_style = Body;
-                            {
-                                let mut config = CONFIG.write().expect("Cannot get config lock");
-                                self.player_bar.show(max_height, &mut config, ui);
-                            }
+                            self.player_bar.show(max_height, ui);
                         },
                     );
                     ui.with_layout(
-                        egui::Layout::right_to_left(egui::Align::TOP).with_cross_justify(true),
+                        Layout::right_to_left(Align::TOP).with_cross_justify(true),
                         |ui| {
                             ui.add_space(10.0);
                             ui.spacing_mut().item_spacing = Vec2::new(8.0, 8.0);
@@ -332,7 +312,7 @@ impl State {
                         Body,
                         None,
                     ));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                         if ui
                             .button(gen_rich_text(ctx, t!("ui.view.home"), Body, None))
                             .clicked()
@@ -369,20 +349,16 @@ impl State {
                 self.random(ctx);
             }
             if ctx.input(|i| i.key_pressed(Key::Num1)) {
-                let mut config = CONFIG.write().expect("Cannot get config lock");
-                config.repeat = !config.repeat
+                Config::set_repeat(!Config::repeat());
             }
             if ctx.input(|i| i.key_pressed(Key::Num2)) {
-                let mut config = CONFIG.write().expect("Cannot get config lock");
-                config.auto = !config.auto
+                Config::set_auto(!Config::auto());
             }
             if ctx.input(|i| i.key_pressed(Key::Num3)) {
-                let mut config = CONFIG.write().expect("Cannot get config lock");
-                config.lop = !config.lop
+                Config::set_lop(!Config::lop());
             }
             if ctx.input(|i| i.key_pressed(Key::Num4)) {
-                let mut config = CONFIG.write().expect("Cannot get config lock");
-                config.random = !config.random
+                Config::set_random(!Config::random());
             }
         }
     }
@@ -416,11 +392,7 @@ impl TimedState {
                 tokio::time::interval(std::time::Duration::from_millis(STATUS_SYNC_INTERVAL_MS));
             loop {
                 timer.tick().await;
-                let (auto, auto_interval) = {
-                    let config = CONFIG.read().expect("Cannot get config lock");
-                    (config.auto, config.auto_interval)
-                };
-                if !auto {
+                if !Config::auto() {
                     end_time.write().expect("Cannot get end time lock").take();
                     continue;
                 }
@@ -435,7 +407,8 @@ impl TimedState {
                             .write()
                             .expect("Cannot get end time lock")
                             .get_or_insert_with(Utc::now);
-                    let is_timed_out = duration_after_end.num_seconds() >= auto_interval as i64;
+                    let is_timed_out =
+                        duration_after_end.num_seconds() >= Config::auto_interval() as i64;
                     if is_timed_out {
                         end_time.write().expect("Cannot get end time lock").take();
                         state.write().expect("Cannot get view state lock").next = true;

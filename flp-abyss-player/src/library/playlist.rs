@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
 use crate::{
-    config::{Config, MediaType, VideoPlayer},
+    model::config::{Config, MediaType, VideoPlayer},
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH,
 };
 
@@ -58,20 +58,20 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn from_config(config: &Config) -> Self {
+    pub fn from_config() -> Self {
         Self {
             version: Version::new(),
             time: Utc::now(),
-            media_type: config.media_type,
-            video_player: config.video_player,
-            video_player_path: config.video_player_path.clone(),
+            media_type: Config::media_type(),
+            video_player: Config::video_player(),
+            video_player_path: Config::video_player_path(),
         }
     }
 
-    pub fn writer_config(&self, config: &mut Config) {
-        config.media_type = self.media_type;
-        config.video_player = self.video_player;
-        config.video_player_path = self.video_player_path.clone();
+    pub fn writer_config(&self) {
+        Config::set_media_type(self.media_type);
+        Config::set_video_player(self.video_player);
+        Config::set_video_player_path(self.video_player_path.clone());
     }
 
     pub fn load(path: impl AsRef<Path>) -> Result<(Vec<u8>, Self)> {
