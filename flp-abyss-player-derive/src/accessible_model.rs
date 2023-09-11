@@ -53,6 +53,14 @@ pub fn handle(token: TokenStream) -> TokenStream {
     let output = quote! {
         impl #struct_name {
             #(#accessors)*
+
+            pub fn all() -> #struct_name {
+                (*#singleton.read().unwrap()).clone()
+            }
+
+            pub fn set_all(value: #struct_name) {
+                *#singleton.write().unwrap() = value;
+            }
         }
     };
     output.into()

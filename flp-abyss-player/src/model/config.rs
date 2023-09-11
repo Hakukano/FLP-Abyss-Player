@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use clap::ValueEnum;
 use flp_abyss_player_derive::AccessibleModel;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::CLI;
 
@@ -119,7 +119,7 @@ impl From<VideoPlayer> for u8 {
     }
 }
 
-#[derive(Default, Deserialize, AccessibleModel)]
+#[derive(Clone, Default, Deserialize, Serialize, AccessibleModel)]
 #[accessible_model(singleton = CONFIG, rw_lock)]
 pub struct Config {
     pub locale: String,

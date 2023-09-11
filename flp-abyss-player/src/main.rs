@@ -4,13 +4,15 @@
 extern crate rust_i18n;
 
 mod app;
+mod controller;
 mod library;
 mod model;
+mod view;
 mod widget;
 
 use clap::Parser;
-use eframe::egui;
 use once_cell::sync::Lazy;
+use std::sync::mpsc::channel;
 
 const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
@@ -89,21 +91,16 @@ pub struct Cli {
 
 static CLI: Lazy<Cli> = Lazy::new(Cli::parse);
 
-fn main() -> eframe::Result<()> {
+fn main() {
     // Init locale
     rust_i18n::set_locale(model::config::Config::locale().as_str());
 
-    let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(1600.0, 900.0)),
-        #[cfg(feature = "native")]
-        multisampling: 4,
-        #[cfg(feature = "native")]
-        renderer: eframe::Renderer::Glow,
-        ..Default::default()
-    };
-    eframe::run_native(
-        t!("ui.app_name").as_str(),
-        options,
-        Box::new(|cc| Box::new(app::App::new(cc))),
-    )
+    let (command_tx, command_rx) = channel::<controller::Command>();
+    let (packet_tx, packet_rx) = channel::<view::Packet>();
+
+    let controller_task = controller::Task::run(command_rx, packet_tx.clone());
+    let view_task = view::Task::run(packet_rx, packet_tx, command_tx);
+
+    view_task.join();
+    controller_task.join();
 }
