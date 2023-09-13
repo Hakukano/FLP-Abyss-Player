@@ -1,8 +1,8 @@
-use eframe::{
-    egui,
-    egui::{Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel},
+use eframe::egui::{
+    Align, CentralPanel, Context, DragValue, Frame, Key, Layout, Margin, TextStyle::*,
+    TopBottomPanel, Ui, Vec2, Window,
 };
-use serde_json::Value;
+use rand::Rng;
 use std::{
     path::{Path, PathBuf},
     sync::{mpsc::Sender, Arc},
@@ -12,59 +12,64 @@ use crate::{
     controller::{Command, CommandName, ControllerType},
     library::fonts::gen_rich_text,
     model::{
-        config::{Config, MediaType, VideoPlayer},
+        config::{Config, MediaType},
         player::Player,
     },
     view::{
-        widget::{
-            config::{
-                media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,
-                root_path::ConfigRootPath, video_player::ConfigVideoPlayer,
-                video_player_path::ConfigVideoPlayerPath,
-            },
-            player_bar::PlayerBar,
-        },
-        Packet, PacketName,
+        widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
+        Packet, PacketName, ViewType,
     },
-    widget::button_icon::ButtonIcon,
     CLI,
 };
+
+mod image;
+mod server;
+mod video;
 
 pub trait MediaPlayer: Send + Sync {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
-    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
-    fn sync(&mut self, paths: &[PathBuf]);
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
+    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &Context, state: &Player);
+    fn sync(&mut self, state: &Player);
+    fn show_central_panel(&mut self, ui: &mut Ui, ctx: &Context, can_input: bool);
 }
 
 pub struct View {
+    packet_tx: Sender<Packet>,
     command_tx: Sender<Command>,
 
-    state: Option<Player>,
-    state_buffer: Option<Player>,
+    state: Player,
+    state_buffer: Player,
+    index: usize,
+    index_buffer: usize,
+
+    search: bool,
+    search_str: String,
+    filtered_paths: Vec<(usize, String)>,
+
+    save: Option<PathBuf>,
+    load: Option<PathBuf>,
 
     player_bar: PlayerBar,
     prev_icon: ButtonIcon,
     next_icon: ButtonIcon,
     playlist_icon: ButtonIcon,
+    playlist: Playlist,
 
     show_playlist: bool,
-    home: bool,
-
-    index: usize,
-    next: bool,
 
     media_player: Box<dyn MediaPlayer>,
 }
 
 impl View {
     pub fn new(
+        player: Player,
+        packet_tx: Sender<Packet>,
         command_tx: Sender<Command>,
         ctx: &Context,
         #[cfg(feature = "native")] gl: Arc<glow::Context>,
     ) -> Self {
-        let mut media_player: Box<dyn MediaPlayer> = match Config::media_type() {
+        let mut media_player: Box<dyn MediaPlayer> = match player.playlist.header.media_type {
             MediaType::Server => Box::new(server::MediaPlayer::new()),
             MediaType::Image => Box::new(image::MediaPlayer::new()),
             MediaType::Video => Box::new(video::MediaPlayer::new(
@@ -74,14 +79,41 @@ impl View {
             )),
             _ => panic!("Unknown media type"),
         };
+        media_player.reload(
+            player
+                .playlist
+                .body
+                .item_paths
+                .get(0)
+                .expect("Out of bound: paths"),
+            ctx,
+            &player,
+        );
         let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
         Self {
+            packet_tx,
             command_tx,
 
-            state: None,
-            state_buffer: None,
+            state: player.clone(),
+            state_buffer: player.clone(),
+            index: 0,
+            index_buffer: 0,
+
+            search: false,
+            search_str: String::new(),
+            filtered_paths: player
+                .playlist
+                .body
+                .item_paths
+                .iter()
+                .enumerate()
+                .map(|(i, p)| (i, p.clone()))
+                .collect(),
+
+            save: None,
+            load: None,
 
             player_bar: PlayerBar::new(ctx),
             prev_icon: ButtonIcon::from_rgba_image_files("prev", icon_path.join("prev.png"), ctx),
@@ -91,13 +123,71 @@ impl View {
                 icon_path.join("playlist.png"),
                 ctx,
             ),
+            playlist: Playlist::new(ctx),
 
             show_playlist: false,
-            home: false,
 
-            index: 0,
-            next: false,
             media_player,
+        }
+    }
+
+    fn can_input(&self) -> bool {
+        !self.show_playlist
+    }
+
+    pub fn item_paths(&self) -> &[String] {
+        self.state.playlist.body.item_paths.as_slice()
+    }
+
+    pub fn set_index(&mut self, index: usize, ctx: &Context) {
+        self.index = index;
+        self.index_buffer = index;
+        self.media_player.reload(
+            self.state
+                .playlist
+                .body
+                .item_paths
+                .get(index)
+                .expect("Out of bound: paths"),
+            ctx,
+            &self.state,
+        );
+    }
+
+    pub fn random(&mut self) -> usize {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(0..self.item_paths().len())
+    }
+
+    pub fn next(&mut self) -> usize {
+        if self.state.repeat {
+            return self.index;
+        }
+        if self.state.random {
+            return self.random();
+        }
+        if self.index == self.item_paths().len() - 1 && self.state.lop {
+            0
+        } else if self.index < self.item_paths().len() - 1 {
+            self.index + 1
+        } else {
+            self.index
+        }
+    }
+
+    pub fn prev(&mut self) -> usize {
+        if self.state.repeat {
+            return self.index;
+        }
+        if self.state.random {
+            return self.random();
+        }
+        if self.index == 0 && self.state.lop {
+            self.item_paths().len() - 1
+        } else if self.index > 0 {
+            self.index - 1
+        } else {
+            self.index
         }
     }
 }
@@ -106,175 +196,221 @@ impl super::View for View {
     fn handle(&mut self, packet: Packet) {
         match packet.name {
             PacketName::Update => {
-                let config: Config = serde_json::from_value(packet.data).unwrap();
-                self.can_play = config.can_play();
-                self.state.replace(config.clone());
-                self.state_buffer.replace(config);
+                let player: Player = serde_json::from_value(packet.data).unwrap();
+                self.state = player;
+                self.state_buffer = self.state.clone();
+                self.media_player.sync(&self.state);
+            }
+            PacketName::Filter => {
+                self.filtered_paths = serde_json::from_value(packet.data).unwrap();
             }
             _ => {}
         }
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        if let (Some(state), Some(state_buffer)) = (self.state.as_ref(), self.state_buffer.as_mut())
-        {
-            TopBottomPanel::top("title")
-                .frame(Frame::none().inner_margin(Margin {
-                    top: 10.0,
-                    bottom: 10.0,
-                    ..Default::default()
-                }))
-                .show(ctx, |ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label(gen_rich_text(ctx, t!("ui.config.title"), Heading, None))
-                    });
-                });
+        Window::new("playlist")
+            .resizable(true)
+            .default_size(Vec2::new(600.0, 600.0))
+            .open(&mut self.show_playlist)
+            .show(ctx, |ui| {
+                self.playlist.show(
+                    ui,
+                    ctx,
+                    &mut self.state_buffer,
+                    &mut self.index_buffer,
+                    &mut self.search,
+                    &mut self.search_str,
+                    &self.filtered_paths,
+                    &mut self.save,
+                    &mut self.load,
+                );
+            });
 
-            TopBottomPanel::bottom("go")
-                .frame(Frame::none().inner_margin(Margin {
-                    top: 10.0,
-                    bottom: 10.0,
-                    right: 10.0,
-                    ..Default::default()
-                }))
-                .show(ctx, |ui| {
-                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
-                        if ui
-                            .button(gen_rich_text(ctx, t!("ui.config.go"), Button, None))
-                            .clicked()
-                            && self.can_play
-                        {
-                            self.command_tx
-                                .send(Command::new(
-                                    ControllerType::Player,
-                                    CommandName::Reload,
-                                    Value::Null,
-                                ))
-                                .unwrap();
-                        }
-                    });
-                });
-
-            CentralPanel::default()
-                .frame(Frame::menu(ctx.style().as_ref()))
-                .show(ctx, |ui| {
-                    ui.spacing_mut().item_spacing.y = 10.0;
+        TopBottomPanel::top("title")
+            .frame(Frame::none().inner_margin(Margin {
+                top: 10.0,
+                bottom: 10.0,
+                ..Default::default()
+            }))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(10.0);
                     ui.with_layout(
                         Layout::left_to_right(Align::TOP).with_cross_justify(true),
                         |ui| {
                             let max_height = 20.0;
                             ui.set_height(max_height);
+                            ui.style_mut().drag_value_text_style = Body;
                             self.player_bar.show(
                                 max_height,
                                 ui,
-                                &mut state_buffer.repeat,
-                                &mut state_buffer.auto,
-                                &mut state_buffer.auto_interval,
-                                &mut state_buffer.lop,
-                                &mut state_buffer.random,
+                                &mut self.state_buffer.repeat,
+                                &mut self.state_buffer.auto,
+                                &mut self.state_buffer.auto_interval,
+                                &mut self.state_buffer.lop,
+                                &mut self.state_buffer.random,
                             );
                         },
                     );
-
-                    ui.horizontal(|ui| {
-                        self.config_playlist_path.show_config(
-                            ui,
-                            ctx,
-                            &mut state_buffer.playlist_path,
-                        );
-                        self.config_playlist_path
-                            .show_hint(ui, ctx, &state.playlist_path);
-                    });
-
-                    if state.playlist_path.is_none() {
-                        ui.horizontal(|ui| {
-                            self.config_media_type.show_config(
-                                ui,
-                                ctx,
-                                &mut state_buffer.media_type,
-                            );
-                            self.config_media_type.show_hint(ui, ctx, &state.media_type);
-                        });
-
-                        ui.horizontal(|ui| {
-                            self.config_root_path
-                                .show_config(ui, ctx, &mut state_buffer.root_path);
-                            self.config_root_path.show_hint(ui, ctx, &state.root_path);
-                        });
-
-                        if state.media_type == MediaType::Video {
-                            ui.horizontal(|ui| {
-                                self.config_video_player.show_config(
-                                    ui,
-                                    ctx,
-                                    &mut state_buffer.video_player,
-                                );
-                                self.config_video_player
-                                    .show_hint(ui, ctx, &state.video_player);
-                            });
-
-                            match state.video_player {
-                                #[cfg(feature = "native")]
-                                VideoPlayer::Native => {}
-                                _ => {
-                                    ui.horizontal(|ui| {
-                                        self.config_video_player_path.show_config(
-                                            ui,
-                                            ctx,
-                                            &mut state_buffer.video_player_path,
-                                        );
-                                        self.config_video_player_path.show_hint(
-                                            ui,
-                                            ctx,
-                                            &state.video_player_path,
-                                        );
-                                    });
-                                }
+                    ui.with_layout(
+                        Layout::right_to_left(Align::TOP).with_cross_justify(true),
+                        |ui| {
+                            ui.add_space(10.0);
+                            ui.spacing_mut().item_spacing = Vec2::new(8.0, 8.0);
+                            ui.style_mut().drag_value_text_style = Body;
+                            let max_size = Vec2::new(20.0, 20.0);
+                            if self.playlist_icon.show(max_size, ui).clicked() {
+                                self.show_playlist = true;
                             }
-                        }
-                    }
+                            if self.next_icon.show(max_size, ui).clicked() {
+                                self.index_buffer = self.next();
+                            }
+                            ui.label(gen_rich_text(
+                                ctx,
+                                format!("/{}", self.item_paths().len()),
+                                Body,
+                                None,
+                            ));
+                            let mut idx = self.index;
+                            if ui
+                                .add(
+                                    DragValue::new(&mut idx)
+                                        .speed(1)
+                                        .clamp_range(0..=(self.item_paths().len() - 1))
+                                        .custom_formatter(|n, _| (n as usize + 1).to_string())
+                                        .custom_parser(|s| {
+                                            s.parse::<usize>().map(|n| (n - 1) as f64).ok()
+                                        }),
+                                )
+                                .changed()
+                            {
+                                self.index_buffer = idx;
+                            }
+                            if self.prev_icon.show(max_size, ui).clicked() {
+                                self.index_buffer = self.prev();
+                            }
+                        },
+                    );
+                });
+            });
 
-                    ui.horizontal(|ui| {
+        TopBottomPanel::bottom("home")
+            .frame(Frame::none().inner_margin(Margin {
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
+                ..Default::default()
+            }))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(10.0);
+                    ui.label(gen_rich_text(
+                        ctx,
+                        self.state
+                            .playlist
+                            .body
+                            .item_paths
+                            .get(self.index)
+                            .expect("Out of bound: paths"),
+                        Body,
+                        None,
+                    ));
+                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                         if ui
-                            .button(gen_rich_text(ctx, t!("ui.config.reset"), Button, None))
+                            .button(gen_rich_text(ctx, t!("ui.view.home"), Body, None))
                             .clicked()
                         {
-                            *state_buffer = state.clone();
-                        }
-                        if let Some(diff) = state.diff(state_buffer) {
-                            if ui
-                                .button(gen_rich_text(ctx, t!("ui.config.apply"), Button, None))
-                                .clicked()
-                            {
-                                self.command_tx
-                                    .send(Command::new(
-                                        ControllerType::Config,
-                                        CommandName::Update,
-                                        diff,
-                                    ))
-                                    .unwrap();
-                            }
-                        } else {
-                            ui.add_enabled(
-                                false,
-                                egui::Button::new(gen_rich_text(
-                                    ctx,
-                                    t!("ui.config.apply"),
-                                    Button,
-                                    None,
-                                )),
-                            );
+                            self.packet_tx
+                                .send(Packet::new(
+                                    PacketName::ChangeView(ViewType::Config),
+                                    serde_json::to_value(Config::all()).unwrap(),
+                                ))
+                                .unwrap();
                         }
                     });
-                });
-        } else {
+                })
+            });
+
+        CentralPanel::default()
+            .frame(Frame::none().inner_margin(Margin {
+                top: 10.0,
+                bottom: 10.0,
+                right: 10.0,
+                left: 10.0,
+            }))
+            .show(ctx, |ui| {
+                if self.item_paths().is_empty() {
+                    return;
+                }
+                self.media_player
+                    .show_central_panel(ui, ctx, self.can_input());
+            });
+
+        if self.can_input() {
+            if ctx.input(|i| i.key_pressed(Key::J)) {
+                self.index_buffer = self.next();
+            }
+            if ctx.input(|i| i.key_pressed(Key::K)) {
+                self.index_buffer = self.prev();
+            }
+            if ctx.input(|i| i.key_pressed(Key::R)) {
+                self.index_buffer = self.random();
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num1)) {
+                self.state_buffer.repeat = !self.state_buffer.repeat;
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num2)) {
+                self.state_buffer.auto = !self.state_buffer.auto;
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num3)) {
+                self.state_buffer.lop = !self.state_buffer.lop;
+            }
+            if ctx.input(|i| i.key_pressed(Key::Num4)) {
+                self.state_buffer.random = !self.state_buffer.random;
+            }
+        }
+
+        // Cleanup Phase
+        if let Some(diff) = self.state.diff(&self.state_buffer) {
             self.command_tx
                 .send(Command::new(
-                    ControllerType::Config,
-                    CommandName::Read,
-                    Value::Null,
+                    ControllerType::Player,
+                    CommandName::Update,
+                    diff,
                 ))
-                .expect("Cannot send command");
+                .unwrap();
+        }
+        if self.index != self.index_buffer {
+            self.set_index(self.index_buffer, ctx);
+        }
+        if self.search {
+            self.command_tx
+                .send(Command::new(
+                    ControllerType::Player,
+                    CommandName::Search,
+                    serde_json::to_value(self.search_str.as_str()).unwrap(),
+                ))
+                .unwrap();
+            self.search = false;
+        }
+        if let Some(path) = self.save.take() {
+            self.command_tx
+                .send(Command::new(
+                    ControllerType::Player,
+                    CommandName::Save,
+                    serde_json::to_value(path.to_str().unwrap()).unwrap(),
+                ))
+                .unwrap();
+        }
+        if let Some(path) = self.load.take() {
+            self.command_tx
+                .send(Command::new(
+                    ControllerType::Player,
+                    CommandName::Load,
+                    serde_json::to_value(path.to_str().unwrap()).unwrap(),
+                ))
+                .unwrap();
         }
     }
 }

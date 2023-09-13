@@ -20,9 +20,11 @@ pub enum ControllerType {
 #[derive(Eq, PartialEq)]
 pub enum CommandName {
     Terminate,
-    Read,
     Update,
     Reload,
+    Search,
+    Save,
+    Load,
 }
 
 pub struct Command {

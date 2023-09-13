@@ -4,10 +4,7 @@ mod vlc;
 
 #[cfg(feature = "native")]
 use std::sync::Arc;
-use std::{
-    collections::VecDeque,
-    path::{Path, PathBuf},
-};
+use std::{collections::VecDeque, path::Path};
 
 use anyhow::Result;
 use eframe::{
@@ -18,8 +15,8 @@ use eframe::{
 
 use crate::{
     library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
-    model::{config, config::Config},
-    widget::button_icon::ButtonIcon,
+    model::{config, player::Player},
+    view::widget::button_icon::ButtonIcon,
     CLI,
 };
 
@@ -84,13 +81,9 @@ impl super::MediaPlayer for MediaPlayer {
             .unwrap_or(false)
     }
 
-    fn support_extensions(&self) -> &[&str] {
-        &["avi", "mkv", "mov", "mp4", "webm"]
-    }
-
-    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context) {
-        let player = Config::video_player();
-        let player_path = Config::video_player_path();
+    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context, state: &Player) {
+        let player = &state.playlist.header.video_player;
+        let player_path = &state.playlist.header.video_player_path;
         if let Some(mut video_player) = self.video_player.take() {
             if let Err(err) = video_player.stop() {
                 self.error.push_back(err.to_string());
@@ -102,11 +95,13 @@ impl super::MediaPlayer for MediaPlayer {
                 Box::new(native::VideoPlayer::new(path, self.gl.clone(), ctx.clone()))
             }
             config::VideoPlayer::Vlc => Box::new(vlc::VideoPlayer::new(
-                player_path.expect("Player path should be availalbe at this point"),
+                player_path
+                    .as_ref()
+                    .expect("Player path should be available at this point"),
                 path,
                 ctx.clone(),
             )),
-            _ => panic!("Unknow video player: {:?}", player),
+            _ => panic!("Unknown video player: {:?}", player),
         };
         if let Err(err) = video_player.start() {
             self.error.push_back(err.to_string());
@@ -114,7 +109,7 @@ impl super::MediaPlayer for MediaPlayer {
         self.video_player.replace(video_player);
     }
 
-    fn sync(&mut self, _paths: &[PathBuf]) {}
+    fn sync(&mut self, _paths: &Player) {}
 
     fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
         if let Some(video_player) = self.video_player.as_mut() {

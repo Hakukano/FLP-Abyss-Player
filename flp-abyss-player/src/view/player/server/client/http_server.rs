@@ -4,7 +4,7 @@ use anyhow::Result;
 use axum::{Extension, Router};
 use tower_http::services::{ServeDir, ServeFile};
 
-use crate::{app::view::server::service::playlist::Playlist, CLI};
+use crate::{view::player::server::service::playlist::Playlist, CLI};
 
 mod playlists;
 

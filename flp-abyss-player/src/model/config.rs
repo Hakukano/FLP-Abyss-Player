@@ -1,7 +1,12 @@
 mod args;
 mod json;
 
-use std::{ops::RangeInclusive, sync::RwLock};
+use std::{
+    ffi::OsStr,
+    ops::RangeInclusive,
+    path::{Path, PathBuf},
+    sync::RwLock,
+};
 
 use clap::ValueEnum;
 use flp_abyss_player_derive::{AccessibleModel, Differ};
@@ -23,6 +28,36 @@ pub enum MediaType {
 impl MediaType {
     pub fn is_unset(&self) -> bool {
         matches!(self, Self::Unset)
+    }
+
+    pub fn supported_extensions(&self) -> &[&str] {
+        match self {
+            MediaType::Image => &["bmp", "gif", "jpeg", "jpg", "png"],
+            MediaType::Server => &[
+                "bmp", "gif", "jpeg", "jpg", "png", "avi", "mp4", "webm", "mp3", "wav",
+            ],
+            MediaType::Video => &["avi", "mkv", "mov", "mp4", "webm"],
+            _ => &[],
+        }
+    }
+
+    pub fn find_all_paths(&self, path: impl AsRef<Path>) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+        for entry in walkdir::WalkDir::new(path)
+            .into_iter()
+            .filter_entry(|e| {
+                e.file_name()
+                    .to_str()
+                    .map(|s| !s.starts_with('.'))
+                    .unwrap_or(false)
+            })
+            .filter_map(|e| e.ok())
+        {
+            if entry.path().has_extension(self.supported_extensions()) {
+                paths.push(entry.path().to_path_buf());
+            }
+        }
+        paths
     }
 }
 
@@ -142,28 +177,25 @@ impl Config {
         if self.playlist_path.is_some() {
             return true;
         }
-        match (
-            self.media_type,
-            self.video_player,
-            self.video_player_path.as_ref(),
-        ) {
+        matches!(
+            (
+                self.media_type,
+                self.video_player,
+                self.video_player_path.as_ref(),
+            ),
             (MediaType::Server, _, _)
-            | (MediaType::Image, _, _)
-            | (MediaType::Video, VideoPlayer::Native, _)
-            | (MediaType::Video, _, Some(_)) => true,
-            _ => false,
-        }
+                | (MediaType::Image, _, _)
+                | (MediaType::Video, VideoPlayer::Native, _)
+                | (MediaType::Video, _, Some(_))
+        )
     }
 
-    pub fn supported_extensions(&self) -> &[&str] {
-        match self.media_type {
-            MediaType::Image => &["bmp", "gif", "jpeg", "jpg", "png"],
-            MediaType::Server => &[
-                "bmp", "gif", "jpeg", "jpg", "png", "avi", "mp4", "webm", "mp3", "wav",
-            ],
-            MediaType::Video => &["avi", "mkv", "mov", "mp4", "webm"],
-            _ => &[],
-        }
+    pub fn find_all_paths(&self) -> Vec<PathBuf> {
+        self.media_type.find_all_paths(
+            self.root_path
+                .as_ref()
+                .expect("Root path should be available atm"),
+        )
     }
 }
 
@@ -177,4 +209,23 @@ impl Default for Config {
     }
 }
 
-static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| RwLock::default());
+static CONFIG: Lazy<RwLock<Config>> = Lazy::new(RwLock::default);
+
+trait FileExtension {
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
+}
+
+impl<P> FileExtension for P
+where
+    P: AsRef<Path>,
+{
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
+        if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
+            return extensions
+                .iter()
+                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
+        }
+
+        false
+    }
+}

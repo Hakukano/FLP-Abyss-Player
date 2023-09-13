@@ -1,3 +1,5 @@
+#![allow(clippy::single_match)]
+
 use std::sync::mpsc::Sender;
 
 use crate::{
@@ -28,9 +30,6 @@ impl Controller {
 impl super::Controller for Controller {
     fn handle(&mut self, command: Command) {
         match command.name {
-            CommandName::Read => {
-                self.send_update_packet();
-            }
             CommandName::Update => {
                 let mut config = Config::all();
                 config.apply_diff(command.arguments);

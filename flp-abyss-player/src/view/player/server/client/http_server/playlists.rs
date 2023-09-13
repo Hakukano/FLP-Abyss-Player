@@ -16,7 +16,7 @@ use tokio::{
 };
 use tokio_util::io::ReaderStream;
 
-use crate::app::view::server::service::playlist;
+use crate::view::player::server::service::playlist;
 
 struct RangesHeader(ParsedRanges);
 

@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsStr,
     fmt::Display,
     fs::File,
     io::{BufWriter, Read, Write},
@@ -86,7 +85,7 @@ impl Header {
 
 #[derive(Clone, Default, Deserialize, Serialize, Differ)]
 pub struct Body {
-    item_paths: Vec<String>,
+    pub item_paths: Vec<String>,
 }
 
 impl Body {
@@ -97,10 +96,6 @@ impl Body {
                 .map(|p| p.to_str().expect("Invalid path").to_string())
                 .collect(),
         }
-    }
-
-    pub fn write_paths(&self, paths: &mut Vec<PathBuf>) {
-        *paths = self.item_paths.iter().map(|p| p.into()).collect();
     }
 
     pub fn load(data: impl AsRef<[u8]>) -> Result<Self> {
@@ -118,8 +113,8 @@ impl Body {
 
 #[derive(Clone, Default, Deserialize, Serialize, Differ)]
 pub struct Playlist {
-    header: Header,
-    body: Body,
+    pub header: Header,
+    pub body: Body,
 }
 
 impl Playlist {
@@ -137,45 +132,6 @@ impl Playlist {
 
     pub fn set_from_config(&mut self, config: &Config) {
         self.header = Header::from_config(config);
-
-        let mut paths = Vec::new();
-        for entry in walkdir::WalkDir::new(
-            config
-                .root_path
-                .expect("Playlist cannot be set without root_path"),
-        )
-        .into_iter()
-        .filter_entry(|e| {
-            e.file_name()
-                .to_str()
-                .map(|s| !s.starts_with('.'))
-                .unwrap_or(false)
-        })
-        .filter_map(|e| e.ok())
-        {
-            if entry.path().has_extension(config.supported_extensions()) {
-                paths.push(entry.path().to_path_buf());
-            }
-        }
-        self.body = Body::from_paths(paths.as_slice());
-    }
-}
-
-trait FileExtension {
-    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
-}
-
-impl<P> FileExtension for P
-where
-    P: AsRef<Path>,
-{
-    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
-        if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
-            return extensions
-                .iter()
-                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
-        }
-
-        false
+        self.body = Body::from_paths(config.find_all_paths().as_slice());
     }
 }

@@ -7,7 +7,6 @@ mod controller;
 mod library;
 mod model;
 mod view;
-mod widget;
 
 use clap::Parser;
 use once_cell::sync::Lazy;

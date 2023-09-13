@@ -1,5 +1,5 @@
 use std::{
-    mem::size_of,
+    mem::{size_of, size_of_val},
     path::Path,
     sync::{Arc, RwLock},
 };
@@ -439,10 +439,8 @@ impl VideoFrame {
 
             let vertex_buffer = gl.create_buffer().expect("Cannot create buffer");
             gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer)));
-            let data = std::slice::from_raw_parts(
-                VERTICES.as_ptr() as *const u8,
-                VERTICES.len() * std::mem::size_of::<f32>(),
-            );
+            let data =
+                std::slice::from_raw_parts(VERTICES.as_ptr() as *const u8, size_of_val(VERTICES));
             gl_strict!(
                 gl,
                 gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, data, glow::STATIC_DRAW)
@@ -455,7 +453,7 @@ impl VideoFrame {
             );
             let data = std::slice::from_raw_parts(
                 INDICES.as_ptr() as *const u8,
-                INDICES.len() * std::mem::size_of::<usize>(),
+                INDICES.len() * size_of::<usize>(),
             );
             gl_strict!(
                 gl,
@@ -859,11 +857,9 @@ impl super::VideoPlayer for VideoPlayer {
             }
             let video_frame = self.video_frame.clone();
             let callback = egui::PaintCallback {
-                callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
-                    move |_info, _painter| {
-                        video_frame.write().unwrap().paint();
-                    },
-                )),
+                callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
+                    video_frame.write().unwrap().paint();
+                })),
                 rect,
             };
             ui.painter().add(callback);

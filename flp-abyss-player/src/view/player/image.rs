@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-
 use eframe::egui;
 
-use crate::library::helper::scale_fit_all;
+use crate::{library::helper::scale_fit_all, model::player::Player};
 
 pub struct MediaPlayer {
     texture: Option<egui::TextureHandle>,
@@ -23,11 +21,7 @@ impl super::MediaPlayer for MediaPlayer {
         true
     }
 
-    fn support_extensions(&self) -> &[&str] {
-        &["bmp", "gif", "jpeg", "jpg", "png"]
-    }
-
-    fn reload(&mut self, path: &dyn AsRef<std::path::Path>, ctx: &egui::Context) {
+    fn reload(&mut self, path: &dyn AsRef<std::path::Path>, ctx: &egui::Context, _state: &Player) {
         let image = image::io::Reader::open(path)
             .expect("Cannot open image file")
             .with_guessed_format()
@@ -45,7 +39,7 @@ impl super::MediaPlayer for MediaPlayer {
         ));
     }
 
-    fn sync(&mut self, _paths: &[PathBuf]) {}
+    fn sync(&mut self, _state: &Player) {}
 
     fn show_central_panel(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context, _can_input: bool) {
         if let Some(texture) = self.texture.as_ref() {

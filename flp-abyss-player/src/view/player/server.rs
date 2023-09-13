@@ -6,7 +6,10 @@ use std::{
 use eframe::{egui::TextStyle, epaint::Color32};
 use tokio::runtime::{self, Runtime};
 
-use crate::library::{fonts::gen_rich_text, helper::find_available_port};
+use crate::{
+    library::{fonts::gen_rich_text, helper::find_available_port},
+    model::player::Player,
+};
 
 use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};
 
@@ -62,16 +65,22 @@ impl super::MediaPlayer for MediaPlayer {
         false
     }
 
-    fn support_extensions(&self) -> &[&str] {
-        &[
-            "bmp", "gif", "jpeg", "jpg", "png", "avi", "mp4", "webm", "mp3", "wav",
-        ]
+    fn reload(
+        &mut self,
+        _path: &dyn AsRef<std::path::Path>,
+        _ctx: &eframe::egui::Context,
+        _state: &Player,
+    ) {
     }
 
-    fn reload(&mut self, _path: &dyn AsRef<std::path::Path>, _ctx: &eframe::egui::Context) {}
-
-    fn sync(&mut self, paths: &[PathBuf]) {
-        *self.paths.write().unwrap() = paths.to_vec();
+    fn sync(&mut self, state: &Player) {
+        *self.paths.write().unwrap() = state
+            .playlist
+            .body
+            .item_paths
+            .iter()
+            .map(PathBuf::from)
+            .collect();
     }
 
     fn show_central_panel(

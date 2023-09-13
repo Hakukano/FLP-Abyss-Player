@@ -11,7 +11,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use crate::{controller::Command, library};
+use crate::{controller::Command, library, model::config::Config};
 
 mod config;
 mod player;
@@ -25,8 +25,9 @@ pub enum ViewType {
 
 #[derive(Eq, PartialEq)]
 pub enum PacketName {
-    ChangeView,
+    ChangeView(ViewType),
     Update,
+    Filter,
 }
 
 pub struct Packet {
@@ -65,7 +66,11 @@ impl Task {
     ) -> Self {
         library::fonts::init(&cc.egui_ctx);
         Self {
-            view: Box::new(config::View::new(command_tx.clone(), &cc.egui_ctx)),
+            view: Box::new(config::View::new(
+                Config::all(),
+                command_tx.clone(),
+                &cc.egui_ctx,
+            )),
             packet_rx,
             packet_tx,
             command_tx,
@@ -105,14 +110,23 @@ impl eframe::App for Task {
         match self.packet_rx.try_recv() {
             Err(TryRecvError::Disconnected) => exit(500),
             Ok(packet) => {
-                if packet.name == PacketName::ChangeView {
-                    let new_view: ViewType = serde_json::from_value(packet.data).unwrap();
-                    match new_view {
+                if let PacketName::ChangeView(view) = packet.name {
+                    match view {
                         ViewType::Config => {
-                            self.view = Box::new(config::View::new(self.command_tx.clone(), ctx))
+                            self.view = Box::new(config::View::new(
+                                serde_json::from_value(packet.data).unwrap(),
+                                self.command_tx.clone(),
+                                ctx,
+                            ))
                         }
                         ViewType::Player => {
-                            self.view = Box::new(player::View::new(self.command_tx.clone(), ctx))
+                            self.view = Box::new(player::View::new(
+                                serde_json::from_value(packet.data).unwrap(),
+                                self.packet_tx.clone(),
+                                self.command_tx.clone(),
+                                ctx,
+                                self.gl.clone(),
+                            ))
                         }
                     }
                     return;

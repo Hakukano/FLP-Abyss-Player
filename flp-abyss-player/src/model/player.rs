@@ -20,7 +20,7 @@ pub struct Player {
 impl Player {
     pub fn reload() {
         let config = Config::all();
-        let lock = PLAYER.write().unwrap();
+        let mut lock = PLAYER.write().unwrap();
         lock.repeat = config.repeat;
         lock.auto = config.auto;
         lock.auto_interval = config.auto_interval;
