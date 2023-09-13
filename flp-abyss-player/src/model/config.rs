@@ -9,11 +9,10 @@ use std::{
 };
 
 use clap::ValueEnum;
-use flp_abyss_player_derive::{AccessibleModel, Differ};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::CLI;
+use crate::{impl_differ_simple, library::differ::Differ, CLI};
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
@@ -100,6 +99,8 @@ impl From<MediaType> for u8 {
     }
 }
 
+impl_differ_simple!(MediaType);
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
 pub enum VideoPlayer {
     Unset,
@@ -152,6 +153,8 @@ impl From<VideoPlayer> for u8 {
         }
     }
 }
+
+impl_differ_simple!(VideoPlayer);
 
 #[derive(Clone, Deserialize, Serialize, AccessibleModel, Differ)]
 #[accessible_model(singleton = CONFIG, rw_lock)]

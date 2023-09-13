@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     controller::{Command, CommandName, ControllerType},
-    library::fonts::gen_rich_text,
+    library::{differ::Differ, fonts::gen_rich_text},
     model::{
         config::{Config, MediaType},
         player::Player,

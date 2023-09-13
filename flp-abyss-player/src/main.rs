@@ -3,6 +3,9 @@
 #[macro_use]
 extern crate rust_i18n;
 
+#[macro_use]
+extern crate flp_abyss_player_derive;
+
 mod controller;
 mod library;
 mod model;

@@ -4,6 +4,7 @@ use std::sync::mpsc::Sender;
 
 use crate::{
     controller::{Command, CommandName},
+    library::differ::Differ,
     model::config::Config,
     view::{Packet, PacketName},
 };
