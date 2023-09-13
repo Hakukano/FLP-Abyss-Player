@@ -5,9 +5,7 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{
-    library::fonts::gen_rich_text, model::config::Config, widget::button_icon::ButtonIcon, CLI,
-};
+use crate::{library::fonts::gen_rich_text, widget::button_icon::ButtonIcon, CLI};
 
 pub struct ConfigVideoPlayerPath {
     checkmark: ButtonIcon,
@@ -27,7 +25,12 @@ impl ConfigVideoPlayerPath {
         }
     }
 
-    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    pub fn show_config(
+        &self,
+        ui: &mut egui::Ui,
+        ctx: &egui::Context,
+        video_player_path: &mut Option<String>,
+    ) {
         if ui
             .button(gen_rich_text(
                 ctx,
@@ -38,13 +41,18 @@ impl ConfigVideoPlayerPath {
             .clicked()
         {
             if let Some(path) = rfd::FileDialog::new().pick_file() {
-                Config::set_video_player_path(Some(path.display().to_string()));
+                video_player_path.replace(path.display().to_string());
             }
         }
     }
 
-    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        if let Some(video_player_path) = Config::video_player_path() {
+    pub fn show_hint(
+        &self,
+        ui: &mut egui::Ui,
+        ctx: &egui::Context,
+        video_player_path: &Option<String>,
+    ) {
+        if let Some(video_player_path) = video_player_path {
             let max_height = ui.text_style_height(&Body);
             self.checkmark.show(Vec2::new(max_height, max_height), ui);
             ui.label(gen_rich_text(

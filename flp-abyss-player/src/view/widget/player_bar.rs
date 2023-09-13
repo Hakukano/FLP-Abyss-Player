@@ -2,10 +2,7 @@ use std::path::Path;
 
 use eframe::{egui, epaint::Vec2};
 
-use crate::{
-    model::config::{Config, AUTO_INTERVAL_RANGE},
-    CLI,
-};
+use crate::{model::config::AUTO_INTERVAL_RANGE, CLI};
 
 use super::toggle_icon::ToggleIcon;
 
@@ -49,49 +46,38 @@ impl PlayerBar {
         }
     }
 
-    pub fn show(&mut self, max_cross: f32, ui: &mut egui::Ui) {
+    pub fn show(
+        &mut self,
+        max_cross: f32,
+        ui: &mut egui::Ui,
+        repeat: &mut bool,
+        auto: &mut bool,
+        auto_interval: &mut u32,
+        lop: &mut bool,
+        random: &mut bool,
+    ) {
         ui.spacing_mut().item_spacing = Vec2::new(1.0, 1.0);
         let spacing = max_cross / 4.0;
         let max_icon_size = Vec2::new(max_cross, max_cross);
 
-        let mut repeat = Config::repeat();
-        if self
-            .repeat_icon
-            .show(max_icon_size, ui, &mut repeat)
-            .changed()
-        {
-            Config::set_repeat(repeat);
-        }
+        self.repeat_icon.show(max_icon_size, ui, repeat);
+
         ui.add_space(spacing);
-        let mut auto = Config::auto();
-        if self.auto_icon.show(max_icon_size, ui, &mut auto).changed() {
-            Config::set_auto(auto);
-        }
-        let mut auto_interval = Config::auto_interval();
-        if ui
-            .add(
-                egui::DragValue::new(&mut auto_interval)
-                    .speed(1)
-                    .clamp_range(AUTO_INTERVAL_RANGE)
-                    .suffix("s"),
-            )
-            .changed()
-        {
-            Config::set_auto_interval(auto_interval);
-        }
+
+        self.auto_icon.show(max_icon_size, ui, auto);
+        ui.add(
+            egui::DragValue::new(auto_interval)
+                .speed(1)
+                .clamp_range(AUTO_INTERVAL_RANGE)
+                .suffix("s"),
+        );
+
         ui.add_space(spacing);
-        let mut lop = Config::lop();
-        if self.loop_icon.show(max_icon_size, ui, &mut lop).changed() {
-            Config::set_lop(lop);
-        }
+
+        self.loop_icon.show(max_icon_size, ui, lop);
+
         ui.add_space(spacing);
-        let mut random = Config::random();
-        if self
-            .random_icon
-            .show(max_icon_size, ui, &mut random)
-            .changed()
-        {
-            Config::set_random(random);
-        }
+
+        self.random_icon.show(max_icon_size, ui, random);
     }
 }

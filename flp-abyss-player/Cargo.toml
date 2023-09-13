@@ -18,7 +18,7 @@ flp-abyss-player-derive = { version = "0.1", path = "../flp-abyss-player-derive"
 anyhow = "1.0"
 async-trait = "0.1"
 axum = { version = "0.6", features = ["multipart", "ws", "headers"] }
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.1", features = ["derive"] }
 derive_builder = "0.12"
 eframe = "0.21"

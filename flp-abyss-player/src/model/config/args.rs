@@ -14,15 +14,13 @@ pub fn new() -> super::Config {
         auto: CLI.auto,
         auto_interval: CLI.auto_interval,
         lop: CLI.lop,
+        random: CLI.random,
 
         playlist_path: CLI.playlist_path.clone(),
 
         media_type: CLI.media_type,
         root_path: CLI.root_path.clone(),
-        random: CLI.random,
         video_player: CLI.video_player,
         video_player_path: CLI.video_player_path.clone(),
     }
-    .validate()
-    .unwrap()
 }

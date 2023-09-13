@@ -6,10 +6,7 @@ use eframe::{
 };
 
 use crate::{
-    library::fonts::gen_rich_text,
-    model::config::{Config, MediaType},
-    widget::button_icon::ButtonIcon,
-    CLI,
+    library::fonts::gen_rich_text, model::config::MediaType, widget::button_icon::ButtonIcon, CLI,
 };
 
 pub struct ConfigMediaType {
@@ -30,9 +27,8 @@ impl ConfigMediaType {
         }
     }
 
-    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let mut media_type = Config::media_type();
-        let response = egui::ComboBox::from_label(gen_rich_text(
+    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &mut MediaType) {
+        egui::ComboBox::from_label(gen_rich_text(
             ctx,
             t!("ui.config.media_type.label"),
             Body,
@@ -41,34 +37,30 @@ impl ConfigMediaType {
         .selected_text(gen_rich_text(ctx, media_type.to_string(), Body, None))
         .show_ui(ui, |ui| {
             ui.selectable_value(
-                &mut media_type,
+                media_type,
                 MediaType::Unset,
                 gen_rich_text(ctx, "--", Body, None),
             );
             ui.selectable_value(
-                &mut media_type,
+                media_type,
                 MediaType::Server,
                 gen_rich_text(ctx, t!("ui.config.media_type.server"), Body, None),
             );
             ui.selectable_value(
-                &mut media_type,
+                media_type,
                 MediaType::Image,
                 gen_rich_text(ctx, t!("ui.config.media_type.image"), Body, None),
             );
             ui.selectable_value(
-                &mut media_type,
+                media_type,
                 MediaType::Video,
                 gen_rich_text(ctx, t!("ui.config.media_type.video"), Body, None),
             );
-        })
-        .response;
-        if response.changed() {
-            Config::set_media_type(media_type);
-        }
+        });
     }
 
-    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        if Config::media_type().is_unset() {
+    pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &MediaType) {
+        if media_type.is_unset() {
             ui.label(gen_rich_text(
                 ctx,
                 t!("ui.config.media_type.unset"),

@@ -14,10 +14,8 @@ use std::{
 use crate::{controller::Command, library};
 
 mod config;
+mod player;
 mod widget;
-
-pub const PACKET_NAME_CHANGE_VIEW: &str = "change_view";
-pub const PACKET_NAME_INDEX: &str = "index";
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub enum ViewType {
@@ -25,13 +23,19 @@ pub enum ViewType {
     Player,
 }
 
+#[derive(Eq, PartialEq)]
+pub enum PacketName {
+    ChangeView,
+    Update,
+}
+
 pub struct Packet {
-    pub name: String,
+    pub name: PacketName,
     pub data: Value,
 }
 
 impl Packet {
-    pub fn new(name: String, data: Value) -> Self {
+    pub fn new(name: PacketName, data: Value) -> Self {
         Self { name, data }
     }
 }
@@ -44,6 +48,8 @@ trait View: Send + Sync {
 
 pub struct Task {
     packet_rx: Receiver<Packet>,
+    packet_tx: Sender<Packet>,
+    command_tx: Sender<Command>,
     view: Box<dyn View>,
 
     #[cfg(feature = "native")]
@@ -59,10 +65,12 @@ impl Task {
     ) -> Self {
         library::fonts::init(&cc.egui_ctx);
         Self {
+            view: Box::new(config::View::new(command_tx.clone(), &cc.egui_ctx)),
             packet_rx,
-            view: Box::new(config::View::new(packet_tx, command_tx, &cc.egui_ctx)),
+            packet_tx,
+            command_tx,
             #[cfg(feature = "native")]
-            gl: cc.gl.clone().expect("gl context should be availble"),
+            gl: cc.gl.clone().expect("gl context should be available"),
         }
     }
 
@@ -97,11 +105,15 @@ impl eframe::App for Task {
         match self.packet_rx.try_recv() {
             Err(TryRecvError::Disconnected) => exit(500),
             Ok(packet) => {
-                if packet.name == PACKET_NAME_CHANGE_VIEW {
+                if packet.name == PacketName::ChangeView {
                     let new_view: ViewType = serde_json::from_value(packet.data).unwrap();
                     match new_view {
-                        ViewType::Config => self.view = Box::new(config::View::new()),
-                        ViewType::Player => {}
+                        ViewType::Config => {
+                            self.view = Box::new(config::View::new(self.command_tx.clone(), ctx))
+                        }
+                        ViewType::Player => {
+                            self.view = Box::new(player::View::new(self.command_tx.clone(), ctx))
+                        }
                     }
                     return;
                 }

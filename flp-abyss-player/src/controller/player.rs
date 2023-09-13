@@ -2,8 +2,8 @@ use std::sync::mpsc::Sender;
 
 use crate::{
     controller::{Command, CommandName},
-    model::config::Config,
-    view::{Packet, PacketName},
+    model::player::Player,
+    view::{Packet, PacketName, ViewType},
 };
 
 pub struct Controller {
@@ -19,7 +19,7 @@ impl Controller {
         self.packet_tx
             .send(Packet::new(
                 PacketName::Update,
-                serde_json::to_value(Config::all()).unwrap(),
+                serde_json::to_value(Player::all()).unwrap(),
             ))
             .unwrap();
     }
@@ -32,10 +32,19 @@ impl super::Controller for Controller {
                 self.send_update_packet();
             }
             CommandName::Update => {
-                let mut config = Config::all();
-                config.apply_diff(command.arguments);
-                Config::set_all(config);
+                let mut player = Player::all();
+                player.apply_diff(command.arguments);
+                Player::set_all(player);
                 self.send_update_packet();
+            }
+            CommandName::Reload => {
+                Player::reload();
+                self.packet_tx
+                    .send(Packet::new(
+                        PacketName::ChangeView,
+                        serde_json::to_value(ViewType::Player).unwrap(),
+                    ))
+                    .unwrap();
             }
             _ => {}
         }

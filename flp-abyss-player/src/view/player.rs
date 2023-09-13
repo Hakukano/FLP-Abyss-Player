@@ -3,12 +3,18 @@ use eframe::{
     egui::{Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel},
 };
 use serde_json::Value;
-use std::sync::mpsc::Sender;
+use std::{
+    path::{Path, PathBuf},
+    sync::{mpsc::Sender, Arc},
+};
 
 use crate::{
     controller::{Command, CommandName, ControllerType},
     library::fonts::gen_rich_text,
-    model::config::{Config, MediaType, VideoPlayer},
+    model::{
+        config::{Config, MediaType, VideoPlayer},
+        player::Player,
+    },
     view::{
         widget::{
             config::{
@@ -20,40 +26,78 @@ use crate::{
         },
         Packet, PacketName,
     },
+    widget::button_icon::ButtonIcon,
+    CLI,
 };
+
+pub trait MediaPlayer: Send + Sync {
+    fn is_loaded(&self) -> bool;
+    fn is_end(&self) -> bool;
+    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context);
+    fn sync(&mut self, paths: &[PathBuf]);
+    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool);
+}
 
 pub struct View {
     command_tx: Sender<Command>,
 
-    state: Option<Config>,
-    state_buffer: Option<Config>,
-
-    can_play: bool,
+    state: Option<Player>,
+    state_buffer: Option<Player>,
 
     player_bar: PlayerBar,
-    config_playlist_path: ConfigPlaylistPath,
-    config_media_type: ConfigMediaType,
-    config_root_path: ConfigRootPath,
-    config_video_player: ConfigVideoPlayer,
-    config_video_player_path: ConfigVideoPlayerPath,
+    prev_icon: ButtonIcon,
+    next_icon: ButtonIcon,
+    playlist_icon: ButtonIcon,
+
+    show_playlist: bool,
+    home: bool,
+
+    index: usize,
+    next: bool,
+
+    media_player: Box<dyn MediaPlayer>,
 }
 
 impl View {
-    pub fn new(command_tx: Sender<Command>, ctx: &Context) -> Self {
+    pub fn new(
+        command_tx: Sender<Command>,
+        ctx: &Context,
+        #[cfg(feature = "native")] gl: Arc<glow::Context>,
+    ) -> Self {
+        let mut media_player: Box<dyn MediaPlayer> = match Config::media_type() {
+            MediaType::Server => Box::new(server::MediaPlayer::new()),
+            MediaType::Image => Box::new(image::MediaPlayer::new()),
+            MediaType::Video => Box::new(video::MediaPlayer::new(
+                ctx,
+                #[cfg(feature = "native")]
+                gl,
+            )),
+            _ => panic!("Unknown media type"),
+        };
+        let icon_path = Path::new(CLI.assets_path.as_str())
+            .join("image")
+            .join("icon");
         Self {
             command_tx,
 
             state: None,
             state_buffer: None,
 
-            can_play: false,
-
             player_bar: PlayerBar::new(ctx),
-            config_playlist_path: ConfigPlaylistPath::new(ctx),
-            config_media_type: ConfigMediaType::new(ctx),
-            config_root_path: ConfigRootPath::new(ctx),
-            config_video_player: ConfigVideoPlayer::new(ctx),
-            config_video_player_path: ConfigVideoPlayerPath::new(ctx),
+            prev_icon: ButtonIcon::from_rgba_image_files("prev", icon_path.join("prev.png"), ctx),
+            next_icon: ButtonIcon::from_rgba_image_files("next", icon_path.join("next.png"), ctx),
+            playlist_icon: ButtonIcon::from_rgba_image_files(
+                "playlist",
+                icon_path.join("playlist.png"),
+                ctx,
+            ),
+
+            show_playlist: false,
+            home: false,
+
+            index: 0,
+            next: false,
+            media_player,
         }
     }
 }

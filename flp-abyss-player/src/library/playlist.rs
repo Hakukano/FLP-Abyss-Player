@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsStr,
     fmt::Display,
     fs::File,
     io::{BufWriter, Read, Write},
@@ -7,6 +8,8 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
+use flp_abyss_player_derive::Differ;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     model::config::{Config, MediaType, VideoPlayer},
@@ -21,7 +24,7 @@ pub const EXTENSION: &str = "fappl";
 const FLP: &[u8] = b"FLP";
 const APPL: &[u8] = b"APPL";
 
-#[derive(Clone)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct Version {
     major: u8,
     minor: u8,
@@ -48,7 +51,7 @@ impl Display for Version {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default, Deserialize, Serialize, Differ)]
 pub struct Header {
     pub version: Version,
     pub time: DateTime<Utc>,
@@ -58,20 +61,14 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn from_config() -> Self {
+    pub fn from_config(config: &Config) -> Self {
         Self {
             version: Version::new(),
             time: Utc::now(),
-            media_type: Config::media_type(),
-            video_player: Config::video_player(),
-            video_player_path: Config::video_player_path(),
+            media_type: config.media_type,
+            video_player: config.video_player,
+            video_player_path: config.video_player_path.clone(),
         }
-    }
-
-    pub fn writer_config(&self) {
-        Config::set_media_type(self.media_type);
-        Config::set_video_player(self.video_player);
-        Config::set_video_player_path(self.video_player_path.clone());
     }
 
     pub fn load(path: impl AsRef<Path>) -> Result<(Vec<u8>, Self)> {
@@ -87,6 +84,7 @@ impl Header {
     }
 }
 
+#[derive(Clone, Default, Deserialize, Serialize, Differ)]
 pub struct Body {
     item_paths: Vec<String>,
 }
@@ -115,5 +113,69 @@ impl Body {
         let bytes = writer::body(buffer, self);
         BufWriter::new(File::create(path)?).write_all(bytes.as_slice())?;
         Ok(())
+    }
+}
+
+#[derive(Clone, Default, Deserialize, Serialize, Differ)]
+pub struct Playlist {
+    header: Header,
+    body: Body,
+}
+
+impl Playlist {
+    pub fn load(&mut self, path: impl AsRef<Path>) -> Result<()> {
+        let (rest, header) = Header::load(path)?;
+        self.header = header;
+        self.body = Body::load(rest)?;
+        Ok(())
+    }
+
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
+        let buffer = self.header.save();
+        self.body.save(buffer, path)
+    }
+
+    pub fn set_from_config(&mut self, config: &Config) {
+        self.header = Header::from_config(config);
+
+        let mut paths = Vec::new();
+        for entry in walkdir::WalkDir::new(
+            config
+                .root_path
+                .expect("Playlist cannot be set without root_path"),
+        )
+        .into_iter()
+        .filter_entry(|e| {
+            e.file_name()
+                .to_str()
+                .map(|s| !s.starts_with('.'))
+                .unwrap_or(false)
+        })
+        .filter_map(|e| e.ok())
+        {
+            if entry.path().has_extension(config.supported_extensions()) {
+                paths.push(entry.path().to_path_buf());
+            }
+        }
+        self.body = Body::from_paths(paths.as_slice());
+    }
+}
+
+trait FileExtension {
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
+}
+
+impl<P> FileExtension for P
+where
+    P: AsRef<Path>,
+{
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
+        if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
+            return extensions
+                .iter()
+                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
+        }
+
+        false
     }
 }

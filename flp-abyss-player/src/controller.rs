@@ -9,23 +9,30 @@ use std::{
 use crate::view::Packet;
 
 mod config;
-
-pub const COMMAND_NAME_TERMINATE: &str = "terminate";
-pub const COMMAND_NAME_INDEX: &str = "index";
+mod player;
 
 #[derive(Eq, PartialEq, Hash)]
 pub enum ControllerType {
     Config,
+    Player,
+}
+
+#[derive(Eq, PartialEq)]
+pub enum CommandName {
+    Terminate,
+    Read,
+    Update,
+    Reload,
 }
 
 pub struct Command {
     target: ControllerType,
-    pub name: String,
+    pub name: CommandName,
     pub arguments: Value,
 }
 
 impl Command {
-    pub fn new(target: ControllerType, name: String, arguments: Value) -> Self {
+    pub fn new(target: ControllerType, name: CommandName, arguments: Value) -> Self {
         Self {
             target,
             name,
@@ -47,10 +54,16 @@ impl Task {
     fn new(command_rx: Receiver<Command>, packet_tx: Sender<Packet>) -> Self {
         Self {
             command_rx,
-            controllers: HashMap::from([(
-                ControllerType::Config,
-                Box::new(config::Controller::new(packet_tx)) as Box<dyn Controller>,
-            )]),
+            controllers: HashMap::from([
+                (
+                    ControllerType::Config,
+                    Box::new(config::Controller::new(packet_tx.clone())) as Box<dyn Controller>,
+                ),
+                (
+                    ControllerType::Player,
+                    Box::new(player::Controller::new(packet_tx.clone())) as Box<dyn Controller>,
+                ),
+            ]),
         }
     }
 
@@ -58,7 +71,7 @@ impl Task {
         let mut task = Task::new(command_rx, packet_tx);
         thread::spawn(move || {
             for command in task.command_rx.iter() {
-                if command.name == COMMAND_NAME_TERMINATE {
+                if command.name == CommandName::Terminate {
                     break;
                 }
 

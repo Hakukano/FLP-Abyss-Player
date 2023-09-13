@@ -3,9 +3,8 @@ mod json;
 
 use std::{ops::RangeInclusive, sync::RwLock};
 
-use anyhow::{anyhow, Result};
 use clap::ValueEnum;
-use flp_abyss_player_derive::AccessibleModel;
+use flp_abyss_player_derive::{AccessibleModel, Differ};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +12,7 @@ use crate::CLI;
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
 pub enum MediaType {
     Unset,
     Server,
@@ -66,7 +65,7 @@ impl From<MediaType> for u8 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
 pub enum VideoPlayer {
     Unset,
     #[cfg(feature = "native")]
@@ -119,7 +118,7 @@ impl From<VideoPlayer> for u8 {
     }
 }
 
-#[derive(Clone, Default, Deserialize, Serialize, AccessibleModel)]
+#[derive(Clone, Deserialize, Serialize, AccessibleModel, Differ)]
 #[accessible_model(singleton = CONFIG, rw_lock)]
 pub struct Config {
     pub locale: String,
@@ -127,7 +126,6 @@ pub struct Config {
     pub repeat: bool,
     pub auto: bool,
     pub auto_interval: u32,
-    #[serde(rename = "loop")]
     pub lop: bool,
     pub random: bool,
 
@@ -140,28 +138,43 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn validate(self) -> Result<Self> {
-        if !AUTO_INTERVAL_RANGE.contains(&self.auto_interval) {
-            return Err(anyhow!(format!(
-                "auto_interval should be in range {:?} but found {}",
-                AUTO_INTERVAL_RANGE, self.auto_interval
-            )));
+    pub fn can_play(&self) -> bool {
+        if self.playlist_path.is_some() {
+            return true;
         }
+        match (
+            self.media_type,
+            self.video_player,
+            self.video_player_path.as_ref(),
+        ) {
+            (MediaType::Server, _, _)
+            | (MediaType::Image, _, _)
+            | (MediaType::Video, VideoPlayer::Native, _)
+            | (MediaType::Video, _, Some(_)) => true,
+            _ => false,
+        }
+    }
 
-        Ok(self)
+    pub fn supported_extensions(&self) -> &[&str] {
+        match self.media_type {
+            MediaType::Image => &["bmp", "gif", "jpeg", "jpg", "png"],
+            MediaType::Server => &[
+                "bmp", "gif", "jpeg", "jpg", "png", "avi", "mp4", "webm", "mp3", "wav",
+            ],
+            MediaType::Video => &["avi", "mkv", "mov", "mp4", "webm"],
+            _ => &[],
+        }
     }
 }
 
-static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| {
-    let config = match (
-        CLI.playlist_path.as_ref(),
-        CLI.config_file.as_ref(),
-        CLI.media_type,
-        CLI.root_path.as_ref(),
-        CLI.video_player,
-    ) {
-        (None, Some(config_file), _, _, _) => json::new(config_file),
-        _ => args::new(),
-    };
-    RwLock::new(config)
-});
+impl Default for Config {
+    fn default() -> Self {
+        if let Some(config_file) = CLI.config_file.as_ref() {
+            json::new(config_file)
+        } else {
+            args::new()
+        }
+    }
+}
+
+static CONFIG: Lazy<RwLock<Config>> = Lazy::new(|| RwLock::default());

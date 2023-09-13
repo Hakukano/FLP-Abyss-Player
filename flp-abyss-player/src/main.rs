@@ -3,7 +3,6 @@
 #[macro_use]
 extern crate rust_i18n;
 
-mod app;
 mod controller;
 mod library;
 mod model;
@@ -101,6 +100,6 @@ fn main() {
     let controller_task = controller::Task::run(command_rx, packet_tx.clone());
     let view_task = view::Task::run(packet_rx, packet_tx, command_tx);
 
-    view_task.join();
-    controller_task.join();
+    let _ = view_task.join();
+    let _ = controller_task.join();
 }
