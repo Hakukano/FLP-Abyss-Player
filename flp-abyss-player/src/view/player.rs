@@ -3,6 +3,7 @@ use eframe::egui::{
     TopBottomPanel, Ui, Vec2, Window,
 };
 use rand::Rng;
+use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
     sync::{mpsc::Sender, Arc},
@@ -15,6 +16,7 @@ use crate::{
         config::{Config, MediaType},
         player::Player,
     },
+    timer::{Signal, SignalName},
     view::{
         widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
         Packet, PacketName, ViewType,
@@ -37,6 +39,7 @@ pub trait MediaPlayer: Send + Sync {
 pub struct View {
     packet_tx: Sender<Packet>,
     command_tx: Sender<Command>,
+    signal_tx: Sender<Signal>,
 
     state: Player,
     state_buffer: Player,
@@ -66,6 +69,7 @@ impl View {
         player: Player,
         packet_tx: Sender<Packet>,
         command_tx: Sender<Command>,
+        signal_tx: Sender<Signal>,
         ctx: &Context,
         #[cfg(feature = "native")] gl: Arc<glow::Context>,
     ) -> Self {
@@ -95,6 +99,7 @@ impl View {
         Self {
             packet_tx,
             command_tx,
+            signal_tx,
 
             state: player.clone(),
             state_buffer: player.clone(),
@@ -154,12 +159,12 @@ impl View {
         );
     }
 
-    pub fn random(&mut self) -> usize {
+    pub fn random(&self) -> usize {
         let mut rng = rand::thread_rng();
         rng.gen_range(0..self.item_paths().len())
     }
 
-    pub fn next(&mut self) -> usize {
+    pub fn next(&self) -> usize {
         if self.state.repeat {
             return self.index;
         }
@@ -175,7 +180,7 @@ impl View {
         }
     }
 
-    pub fn prev(&mut self) -> usize {
+    pub fn prev(&self) -> usize {
         if self.state.repeat {
             return self.index;
         }
@@ -204,6 +209,9 @@ impl super::View for View {
             }
             PacketName::Filter => {
                 self.filtered_paths = serde_json::from_value(packet.data).unwrap();
+            }
+            PacketName::Tick => {
+                self.index_buffer = self.next();
             }
             _ => {}
         }
@@ -373,6 +381,20 @@ impl super::View for View {
         }
 
         // Cleanup Phase
+        if self.state.auto != self.state_buffer.auto {
+            if self.state_buffer.auto {
+                self.signal_tx
+                    .send(Signal::new(
+                        SignalName::Start,
+                        serde_json::to_value(self.state_buffer.auto_interval).unwrap(),
+                    ))
+                    .unwrap();
+            } else {
+                self.signal_tx
+                    .send(Signal::new(SignalName::Stop, Value::Null))
+                    .unwrap();
+            }
+        }
         if let Some(diff) = self.state.diff(&self.state_buffer) {
             self.command_tx
                 .send(Command::new(
