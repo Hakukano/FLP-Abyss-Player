@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use eframe::egui::Context;
 use serde_json::Value;
 use std::{
     process::exit,
@@ -46,7 +47,11 @@ impl Task {
         }
     }
 
-    pub fn run(signal_rx: Receiver<Signal>, packet_tx: Sender<Packet>) -> JoinHandle<()> {
+    pub fn run(
+        signal_rx: Receiver<Signal>,
+        packet_tx: Sender<Packet>,
+        ctx: Context,
+    ) -> JoinHandle<()> {
         let mut task = Self::new(signal_rx, packet_tx);
         thread::spawn(move || loop {
             match task.signal_rx.try_recv() {
@@ -55,6 +60,7 @@ impl Task {
                     SignalName::Start => {
                         task.running = true;
                         task.interval = serde_json::from_value(signal.data).unwrap();
+                        task.last_triggered = Utc::now();
                     }
                     SignalName::Stop => {
                         task.running = false;
@@ -75,6 +81,8 @@ impl Task {
                 .unwrap();
 
             task.last_triggered = Utc::now() - chrono::Duration::milliseconds(overshot);
+
+            ctx.request_repaint();
         })
     }
 }

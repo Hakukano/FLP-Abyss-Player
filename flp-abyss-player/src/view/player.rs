@@ -16,8 +16,8 @@ use crate::{
         config::{Config, MediaType},
         player::Player,
     },
-    timer::{Signal, SignalName},
     view::{
+        timer::{Signal, SignalName},
         widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
         Packet, PacketName, ViewType,
     },

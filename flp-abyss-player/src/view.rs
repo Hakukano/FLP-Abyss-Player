@@ -6,13 +6,15 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::{
     process::exit,
-    sync::mpsc::{Receiver, Sender, TryRecvError},
+    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
 };
+use timer::Signal;
 
-use crate::{controller::Command, library, model::config::Config, timer::Signal};
+use crate::{controller::Command, library, model::config::Config};
 
 mod config;
 mod player;
+mod timer;
 mod widget;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize)]
@@ -85,7 +87,6 @@ impl Task {
         packet_rx: Receiver<Packet>,
         packet_tx: Sender<Packet>,
         command_tx: Sender<Command>,
-        signal_tx: Sender<Signal>,
     ) {
         let options = eframe::NativeOptions {
             initial_window_size: Some(egui::vec2(1600.0, 900.0)),
@@ -99,6 +100,8 @@ impl Task {
             t!("ui.app_name").as_str(),
             options,
             Box::new(|cc| {
+                let (signal_tx, signal_rx) = channel::<Signal>();
+                let _ = timer::Task::run(signal_rx, packet_tx.clone(), cc.egui_ctx.clone());
                 let task = Task::new(packet_rx, packet_tx, command_tx, signal_tx, cc);
                 Box::new(task)
             }),

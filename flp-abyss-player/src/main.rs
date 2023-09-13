@@ -6,7 +6,6 @@ extern crate rust_i18n;
 mod controller;
 mod library;
 mod model;
-mod timer;
 mod view;
 
 use clap::Parser;
@@ -96,12 +95,9 @@ fn main() {
 
     let (command_tx, command_rx) = channel::<controller::Command>();
     let (packet_tx, packet_rx) = channel::<view::Packet>();
-    let (signal_tx, signal_rx) = channel::<timer::Signal>();
 
     let controller_task = controller::Task::run(command_rx, packet_tx.clone());
-    let timer_task = timer::Task::run(signal_rx, packet_tx.clone());
 
-    view::Task::run(packet_rx, packet_tx, command_tx, signal_tx);
-    let _ = timer_task.join();
+    view::Task::run(packet_rx, packet_tx, command_tx);
     let _ = controller_task.join();
 }
