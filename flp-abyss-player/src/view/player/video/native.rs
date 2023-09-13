@@ -517,7 +517,7 @@ impl VideoFrame {
         }
     }
 
-    fn paint(&mut self) {
+    fn paint(&self) {
         if self.width == 0 || self.height == 0 {
             return;
         }
@@ -858,7 +858,7 @@ impl super::VideoPlayer for VideoPlayer {
             let video_frame = self.video_frame.clone();
             let callback = egui::PaintCallback {
                 callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
-                    video_frame.write().unwrap().paint();
+                    video_frame.read().unwrap().paint();
                 })),
                 rect,
             };

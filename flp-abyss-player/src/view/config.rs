@@ -1,8 +1,7 @@
 #![allow(clippy::single_match)]
 
-use eframe::{
-    egui,
-    egui::{Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel},
+use eframe::egui::{
+    Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel,
 };
 use serde_json::Value;
 use std::sync::mpsc::Sender;
@@ -142,7 +141,7 @@ impl super::View for View {
                         &mut self.state_buffer.playlist_path,
                     );
                     self.config_playlist_path
-                        .show_hint(ui, ctx, &self.state.playlist_path);
+                        .show_hint(ui, ctx, &self.state_buffer.playlist_path);
                 });
 
                 if self.state.playlist_path.is_none() {
@@ -163,7 +162,7 @@ impl super::View for View {
                             &mut self.state_buffer.root_path,
                         );
                         self.config_root_path
-                            .show_hint(ui, ctx, &self.state.root_path);
+                            .show_hint(ui, ctx, &self.state_buffer.root_path);
                     });
 
                     if self.state.media_type == MediaType::Video {
@@ -190,46 +189,24 @@ impl super::View for View {
                                     self.config_video_player_path.show_hint(
                                         ui,
                                         ctx,
-                                        &self.state.video_player_path,
+                                        &self.state_buffer.video_player_path,
                                     );
                                 });
                             }
                         }
                     }
                 }
-
-                ui.horizontal(|ui| {
-                    if ui
-                        .button(gen_rich_text(ctx, t!("ui.config.reset"), Button, None))
-                        .clicked()
-                    {
-                        self.state_buffer = self.state.clone();
-                    }
-                    if let Some(diff) = self.state.diff(&self.state_buffer) {
-                        if ui
-                            .button(gen_rich_text(ctx, t!("ui.config.apply"), Button, None))
-                            .clicked()
-                        {
-                            self.command_tx
-                                .send(Command::new(
-                                    ControllerType::Config,
-                                    CommandName::Update,
-                                    diff,
-                                ))
-                                .unwrap();
-                        }
-                    } else {
-                        ui.add_enabled(
-                            false,
-                            egui::Button::new(gen_rich_text(
-                                ctx,
-                                t!("ui.config.apply"),
-                                Button,
-                                None,
-                            )),
-                        );
-                    }
-                });
             });
+
+        // Cleanup phase
+        if let Some(diff) = self.state.diff(&self.state_buffer) {
+            self.command_tx
+                .send(Command::new(
+                    ControllerType::Config,
+                    CommandName::Update,
+                    diff,
+                ))
+                .unwrap();
+        }
     }
 }

@@ -8,6 +8,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use flp_abyss_player_derive::Differ;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -133,5 +134,19 @@ impl Playlist {
     pub fn set_from_config(&mut self, config: &Config) {
         self.header = Header::from_config(config);
         self.body = Body::from_paths(config.find_all_paths().as_slice());
+    }
+
+    pub fn filter(&self, search_str: impl AsRef<str>) -> Vec<(usize, String)> {
+        let matcher = SkimMatcherV2::default();
+        self.body
+            .item_paths
+            .iter()
+            .enumerate()
+            .filter_map(|(i, p)| {
+                matcher
+                    .fuzzy_match(p.as_str(), search_str.as_ref())
+                    .map(|_| (i, p.clone()))
+            })
+            .collect()
     }
 }

@@ -1,4 +1,3 @@
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use std::sync::mpsc::Sender;
 
 use crate::{
@@ -46,17 +45,7 @@ impl super::Controller for Controller {
             }
             CommandName::Search => {
                 let search: String = serde_json::from_value(command.arguments).unwrap();
-                let paths = Player::playlist().body.item_paths;
-                let matcher = SkimMatcherV2::default();
-                let paths: Vec<(usize, String)> = paths
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, p)| {
-                        matcher
-                            .fuzzy_match(p.as_str(), search.as_str())
-                            .map(|_| (i, p.clone()))
-                    })
-                    .collect();
+                let paths = Player::playlist().filter(search);
                 self.packet_tx
                     .send(Packet::new(
                         PacketName::Filter,

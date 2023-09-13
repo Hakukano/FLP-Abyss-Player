@@ -7,8 +7,6 @@ use std::sync::Arc;
 use std::{
     process::exit,
     sync::mpsc::{Receiver, Sender, TryRecvError},
-    thread,
-    thread::JoinHandle,
 };
 
 use crate::{controller::Command, library, model::config::Config};
@@ -83,25 +81,23 @@ impl Task {
         packet_rx: Receiver<Packet>,
         packet_tx: Sender<Packet>,
         command_tx: Sender<Command>,
-    ) -> JoinHandle<()> {
-        thread::spawn(move || {
-            let options = eframe::NativeOptions {
-                initial_window_size: Some(egui::vec2(1600.0, 900.0)),
-                #[cfg(feature = "native")]
-                multisampling: 4,
-                #[cfg(feature = "native")]
-                renderer: eframe::Renderer::Glow,
-                ..Default::default()
-            };
-            let _ = eframe::run_native(
-                t!("ui.app_name").as_str(),
-                options,
-                Box::new(|cc| {
-                    let task = Task::new(packet_rx, packet_tx, command_tx, cc);
-                    Box::new(task)
-                }),
-            );
-        })
+    ) {
+        let options = eframe::NativeOptions {
+            initial_window_size: Some(egui::vec2(1600.0, 900.0)),
+            #[cfg(feature = "native")]
+            multisampling: 4,
+            #[cfg(feature = "native")]
+            renderer: eframe::Renderer::Glow,
+            ..Default::default()
+        };
+        let _ = eframe::run_native(
+            t!("ui.app_name").as_str(),
+            options,
+            Box::new(|cc| {
+                let task = Task::new(packet_rx, packet_tx, command_tx, cc);
+                Box::new(task)
+            }),
+        );
     }
 }
 

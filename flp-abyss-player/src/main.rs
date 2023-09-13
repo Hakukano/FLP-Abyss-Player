@@ -97,8 +97,7 @@ fn main() {
     let (packet_tx, packet_rx) = channel::<view::Packet>();
 
     let controller_task = controller::Task::run(command_rx, packet_tx.clone());
-    let view_task = view::Task::run(packet_rx, packet_tx, command_tx);
 
-    let _ = view_task.join();
+    view::Task::run(packet_rx, packet_tx, command_tx);
     let _ = controller_task.join();
 }

@@ -199,6 +199,7 @@ impl super::View for View {
                 let player: Player = serde_json::from_value(packet.data).unwrap();
                 self.state = player;
                 self.state_buffer = self.state.clone();
+                self.filtered_paths = self.state.playlist.filter(self.search_str.as_str());
                 self.media_player.sync(&self.state);
             }
             PacketName::Filter => {
