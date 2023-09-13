@@ -2,6 +2,7 @@ use std::sync::mpsc::Sender;
 
 use crate::{
     controller::{Command, CommandName},
+    library::differ::Differ,
     model::player::Player,
     view::{Packet, PacketName, ViewType},
 };

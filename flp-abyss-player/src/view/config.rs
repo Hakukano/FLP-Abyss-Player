@@ -8,7 +8,7 @@ use std::sync::mpsc::Sender;
 
 use crate::{
     controller::{Command, CommandName, ControllerType},
-    library::{fonts::gen_rich_text, helper::message_dialog_error},
+    library::{differ::Differ, fonts::gen_rich_text, helper::message_dialog_error},
     model::config::{Config, MediaType, VideoPlayer},
     view::{
         widget::{

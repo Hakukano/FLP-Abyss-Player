@@ -20,10 +20,8 @@ pub fn handle(token: TokenStream) -> TokenStream {
         let field_name_str = field_name.unraw().to_string();
 
         quote! {
-            let self_json = serde_json::to_string(&self.#field_name).unwrap();
-            let other_json = serde_json::to_string(&other.#field_name).unwrap();
-            if self_json != other_json {
-                map.insert(#field_name_str.to_string(), serde_json::to_value(&other.#field_name).unwrap());
+            if let Some(diff) = self.#field_name.diff(&other.#field_name) {
+                map.insert(#field_name_str.to_string(), diff);
             }
         }
     });
@@ -34,14 +32,14 @@ pub fn handle(token: TokenStream) -> TokenStream {
 
         quote! {
             if let Some(value) = diff.get(#field_name_str) {
-                self.#field_name = serde_json::from_value(value.clone()).unwrap();
+                self.#field_name.apply_diff(value.clone());
             }
         }
     });
 
     let output = quote! {
-        impl #struct_name {
-            pub fn diff(&self, other: &Self) -> Option<serde_json::Value> {
+        impl crate::library::differ::Differ for #struct_name {
+            fn diff(&self, other: &Self) -> Option<serde_json::Value> {
                 let mut map = serde_json::Map::new();
                 #(#cmps)*
                 if map.is_empty() {
@@ -51,7 +49,7 @@ pub fn handle(token: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn apply_diff(&mut self, diff: serde_json::Value) {
+            fn apply_diff(&mut self, diff: serde_json::Value) {
                 #(#apply)*
             }
         }

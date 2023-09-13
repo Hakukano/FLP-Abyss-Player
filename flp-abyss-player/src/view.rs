@@ -6,13 +6,15 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::{
     process::exit,
-    sync::mpsc::{Receiver, Sender, TryRecvError},
+    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
 };
+use timer::Signal;
 
 use crate::{controller::Command, library, model::config::Config};
 
 mod config;
 mod player;
+mod timer;
 mod widget;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize)]
@@ -26,6 +28,7 @@ pub enum PacketName {
     ChangeView(ViewType),
     Update,
     Filter,
+    Tick,
 }
 
 pub struct Packet {
@@ -49,6 +52,7 @@ pub struct Task {
     packet_rx: Receiver<Packet>,
     packet_tx: Sender<Packet>,
     command_tx: Sender<Command>,
+    signal_tx: Sender<Signal>,
     view: Box<dyn View>,
 
     #[cfg(feature = "native")]
@@ -60,6 +64,7 @@ impl Task {
         packet_rx: Receiver<Packet>,
         packet_tx: Sender<Packet>,
         command_tx: Sender<Command>,
+        signal_tx: Sender<Signal>,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
         library::fonts::init(&cc.egui_ctx);
@@ -72,6 +77,7 @@ impl Task {
             packet_rx,
             packet_tx,
             command_tx,
+            signal_tx,
             #[cfg(feature = "native")]
             gl: cc.gl.clone().expect("gl context should be available"),
         }
@@ -94,7 +100,9 @@ impl Task {
             t!("ui.app_name").as_str(),
             options,
             Box::new(|cc| {
-                let task = Task::new(packet_rx, packet_tx, command_tx, cc);
+                let (signal_tx, signal_rx) = channel::<Signal>();
+                let _ = timer::Task::run(signal_rx, packet_tx.clone(), cc.egui_ctx.clone());
+                let task = Task::new(packet_rx, packet_tx, command_tx, signal_tx, cc);
                 Box::new(task)
             }),
         );
@@ -120,6 +128,7 @@ impl eframe::App for Task {
                                 serde_json::from_value(packet.data).unwrap(),
                                 self.packet_tx.clone(),
                                 self.command_tx.clone(),
+                                self.signal_tx.clone(),
                                 ctx,
                                 self.gl.clone(),
                             ))

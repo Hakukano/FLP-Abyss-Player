@@ -24,7 +24,7 @@ pub const EXTENSION: &str = "fappl";
 const FLP: &[u8] = b"FLP";
 const APPL: &[u8] = b"APPL";
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize, Differ)]
 pub struct Version {
     major: u8,
     minor: u8,
