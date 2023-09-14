@@ -13,6 +13,7 @@ use crate::view::{Packet, PacketName};
 
 pub enum SignalName {
     Start,
+    Update,
     Stop,
 }
 
@@ -61,6 +62,9 @@ impl Task {
                         task.running = true;
                         task.interval = serde_json::from_value(signal.data).unwrap();
                         task.last_triggered = Utc::now();
+                    }
+                    SignalName::Update => {
+                        task.interval = serde_json::from_value(signal.data).unwrap();
                     }
                     SignalName::Stop => {
                         task.running = false;

@@ -395,6 +395,14 @@ impl super::View for View {
                     .unwrap();
             }
         }
+        if self.state.auto_interval != self.state_buffer.auto_interval {
+            self.signal_tx
+                .send(Signal::new(
+                    SignalName::Update,
+                    serde_json::to_value(self.state_buffer.auto_interval).unwrap(),
+                ))
+                .unwrap();
+        }
         if let Some(diff) = self.state.diff(&self.state_buffer) {
             self.command_tx
                 .send(Command::new(
