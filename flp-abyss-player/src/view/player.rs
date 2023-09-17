@@ -2,7 +2,6 @@ use eframe::egui::{
     Align, CentralPanel, Context, DragValue, Frame, Key, Layout, Margin, TextStyle::*,
     TopBottomPanel, Ui, Vec2, Window,
 };
-use rand::Rng;
 use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
@@ -43,8 +42,6 @@ pub struct View {
 
     state: Player,
     state_buffer: Player,
-    index: usize,
-    index_buffer: usize,
 
     search: bool,
     search_str: String,
@@ -103,8 +100,6 @@ impl View {
 
             state: player.clone(),
             state_buffer: player.clone(),
-            index: 0,
-            index_buffer: 0,
 
             search: false,
             search_str: String::new(),
@@ -140,60 +135,17 @@ impl View {
         !self.show_playlist
     }
 
-    pub fn item_paths(&self) -> &[String] {
-        self.state.playlist.body.item_paths.as_slice()
-    }
-
-    pub fn set_index(&mut self, index: usize, ctx: &Context) {
-        self.index = index;
-        self.index_buffer = index;
+    pub fn reload_media_player(&mut self, ctx: &Context) {
         self.media_player.reload(
             self.state
                 .playlist
                 .body
                 .item_paths
-                .get(index)
+                .get(self.state_buffer.index)
                 .expect("Out of bound: paths"),
             ctx,
-            &self.state,
+            &self.state_buffer,
         );
-    }
-
-    pub fn random(&self) -> usize {
-        let mut rng = rand::thread_rng();
-        rng.gen_range(0..self.item_paths().len())
-    }
-
-    pub fn next(&self) -> usize {
-        if self.state.repeat {
-            return self.index;
-        }
-        if self.state.random {
-            return self.random();
-        }
-        if self.index == self.item_paths().len() - 1 && self.state.lop {
-            0
-        } else if self.index < self.item_paths().len() - 1 {
-            self.index + 1
-        } else {
-            self.index
-        }
-    }
-
-    pub fn prev(&self) -> usize {
-        if self.state.repeat {
-            return self.index;
-        }
-        if self.state.random {
-            return self.random();
-        }
-        if self.index == 0 && self.state.lop {
-            self.item_paths().len() - 1
-        } else if self.index > 0 {
-            self.index - 1
-        } else {
-            self.index
-        }
     }
 }
 
@@ -211,7 +163,7 @@ impl super::View for View {
                 self.filtered_paths = serde_json::from_value(packet.data).unwrap();
             }
             PacketName::Tick => {
-                self.index_buffer = self.next();
+                self.state_buffer.next();
             }
             _ => {}
         }
@@ -227,7 +179,6 @@ impl super::View for View {
                     ui,
                     ctx,
                     &mut self.state_buffer,
-                    &mut self.index_buffer,
                     &mut self.search,
                     &mut self.search_str,
                     &self.filtered_paths,
@@ -273,31 +224,25 @@ impl super::View for View {
                                 self.show_playlist = true;
                             }
                             if self.next_icon.show(max_size, ui).clicked() {
-                                self.index_buffer = self.next();
+                                self.state_buffer.next();
                             }
                             ui.label(gen_rich_text(
                                 ctx,
-                                format!("/{}", self.item_paths().len()),
+                                format!("/{}", self.state.item_paths().len()),
                                 Body,
                                 None,
                             ));
-                            let mut idx = self.index;
-                            if ui
-                                .add(
-                                    DragValue::new(&mut idx)
-                                        .speed(1)
-                                        .clamp_range(0..=(self.item_paths().len() - 1))
-                                        .custom_formatter(|n, _| (n as usize + 1).to_string())
-                                        .custom_parser(|s| {
-                                            s.parse::<usize>().map(|n| (n - 1) as f64).ok()
-                                        }),
-                                )
-                                .changed()
-                            {
-                                self.index_buffer = idx;
-                            }
+                            ui.add(
+                                DragValue::new(&mut self.state_buffer.index)
+                                    .speed(1)
+                                    .clamp_range(0..=(self.state.item_paths().len() - 1))
+                                    .custom_formatter(|n, _| (n as usize + 1).to_string())
+                                    .custom_parser(|s| {
+                                        s.parse::<usize>().map(|n| (n - 1) as f64).ok()
+                                    }),
+                            );
                             if self.prev_icon.show(max_size, ui).clicked() {
-                                self.index_buffer = self.prev();
+                                self.state_buffer.prev();
                             }
                         },
                     );
@@ -320,7 +265,7 @@ impl super::View for View {
                             .playlist
                             .body
                             .item_paths
-                            .get(self.index)
+                            .get(self.state.index)
                             .expect("Out of bound: paths"),
                         Body,
                         None,
@@ -349,7 +294,7 @@ impl super::View for View {
                 left: 10.0,
             }))
             .show(ctx, |ui| {
-                if self.item_paths().is_empty() {
+                if self.state.item_paths().is_empty() {
                     return;
                 }
                 self.media_player
@@ -358,13 +303,13 @@ impl super::View for View {
 
         if self.can_input() {
             if ctx.input(|i| i.key_pressed(Key::J)) {
-                self.index_buffer = self.next();
+                self.state_buffer.next();
             }
             if ctx.input(|i| i.key_pressed(Key::K)) {
-                self.index_buffer = self.prev();
+                self.state_buffer.prev();
             }
             if ctx.input(|i| i.key_pressed(Key::R)) {
-                self.index_buffer = self.random();
+                self.state_buffer.random_next();
             }
             if ctx.input(|i| i.key_pressed(Key::Num1)) {
                 self.state_buffer.repeat = !self.state_buffer.repeat;
@@ -403,6 +348,9 @@ impl super::View for View {
                 ))
                 .unwrap();
         }
+        if self.state.index != self.state_buffer.index {
+            self.reload_media_player(ctx);
+        }
         if let Some(diff) = self.state.diff(&self.state_buffer) {
             self.command_tx
                 .send(Command::new(
@@ -411,9 +359,6 @@ impl super::View for View {
                     diff,
                 ))
                 .unwrap();
-        }
-        if self.index != self.index_buffer {
-            self.set_index(self.index_buffer, ctx);
         }
         if self.search {
             self.command_tx
