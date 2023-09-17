@@ -78,7 +78,6 @@ impl Playlist {
         ui: &mut egui::Ui,
         ctx: &egui::Context,
         player_buffer: &mut Player,
-        index_buffer: &mut usize,
         search: &mut bool,
         search_str: &mut String,
         filtered_paths: &Vec<(usize, String)>,
@@ -174,7 +173,7 @@ impl Playlist {
                                         ctx,
                                         path,
                                         text_style.clone(),
-                                        if *index == *index_buffer {
+                                        if *index == player_buffer.index {
                                             Some(Color32::LIGHT_GREEN)
                                         } else {
                                             None
@@ -182,7 +181,7 @@ impl Playlist {
                                     ))
                                     .clicked()
                                 {
-                                    *index_buffer = *index;
+                                    player_buffer.index = *index;
                                 }
 
                                 ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
@@ -192,11 +191,11 @@ impl Playlist {
                                         .show(Vec2::new(max_height, max_height), ui)
                                         .clicked()
                                     {
-                                        if *index != *index_buffer {
+                                        if *index != player_buffer.index {
                                             player_buffer.playlist.body.item_paths.remove(*index);
                                         }
-                                        if *index < *index_buffer {
-                                            *index_buffer -= 1;
+                                        if *index < player_buffer.index {
+                                            player_buffer.index -= 1;
                                         }
                                     }
                                     if self
@@ -210,10 +209,10 @@ impl Playlist {
                                             .body
                                             .item_paths
                                             .swap(*index, *index + 1);
-                                        if *index == *index_buffer {
-                                            *index_buffer += 1;
-                                        } else if *index + 1 == *index_buffer {
-                                            *index_buffer -= 1;
+                                        if *index == player_buffer.index {
+                                            player_buffer.index += 1;
+                                        } else if *index + 1 == player_buffer.index {
+                                            player_buffer.index -= 1;
                                         }
                                     }
                                     if self
@@ -227,10 +226,10 @@ impl Playlist {
                                             .body
                                             .item_paths
                                             .swap(*index, *index - 1);
-                                        if *index == *index_buffer {
-                                            *index_buffer -= 1;
-                                        } else if *index - 1 == *index_buffer {
-                                            *index_buffer += 1;
+                                        if *index == player_buffer.index {
+                                            player_buffer.index -= 1;
+                                        } else if *index - 1 == player_buffer.index {
+                                            player_buffer.index += 1;
                                         }
                                     }
                                 });

@@ -46,6 +46,7 @@ macro_rules! impl_differ_simple {
 impl_differ_simple!(bool);
 impl_differ_simple!(u8);
 impl_differ_simple!(u32);
+impl_differ_simple!(usize);
 impl_differ_simple!(String);
 impl_differ_simple!(DateTime<Utc>);
 impl_differ_simple!(Vec<String>);

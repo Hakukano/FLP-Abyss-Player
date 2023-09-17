@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 
@@ -14,6 +15,7 @@ pub struct Player {
     pub random: bool,
 
     pub playlist: Playlist,
+    pub index: usize,
 }
 
 impl Player {
@@ -32,6 +34,44 @@ impl Player {
                 .expect("Cannot load playlist");
         } else {
             lock.playlist.set_from_config(&config);
+        }
+        lock.index = 0;
+    }
+
+    pub fn item_paths(&self) -> &[String] {
+        self.playlist.body.item_paths.as_slice()
+    }
+
+    pub fn random_next(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.index = rng.gen_range(0..self.item_paths().len());
+    }
+
+    pub fn next(&mut self) {
+        if self.repeat {
+            return;
+        }
+        if self.random {
+            return self.random_next();
+        }
+        if self.index == self.item_paths().len() - 1 && self.lop {
+            self.index = 0;
+        } else if self.index < self.item_paths().len() - 1 {
+            self.index += 1;
+        }
+    }
+
+    pub fn prev(&mut self) {
+        if self.repeat {
+            return;
+        }
+        if self.random {
+            return self.random_next();
+        }
+        if self.index == 0 && self.lop {
+            self.index = self.item_paths().len() - 1;
+        } else if self.index > 0 {
+            self.index -= 1;
         }
     }
 }
