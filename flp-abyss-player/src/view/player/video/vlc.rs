@@ -5,7 +5,7 @@ use std::{
     process::{Child, Command},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, RwLock,
+        Arc,
     },
 };
 
@@ -14,6 +14,7 @@ use eframe::{
     egui::{self, TextStyle},
     epaint::Color32,
 };
+use parking_lot::RwLock;
 use passwords::PasswordGenerator;
 use reqwest::{Client, Method};
 use tokio::runtime;
@@ -166,30 +167,22 @@ impl VideoPlayer {
                         Err(_) => {
                             let mut queue = VecDeque::new();
                             queue.push_back("Waiting for the stream...".to_string());
-                            status.write().expect("Cannot get status write lock").error = queue;
+                            status.write().error = queue;
                         }
                         Ok(response) => match response.text().await {
                             Err(err) => {
-                                status
-                                    .write()
-                                    .expect("Cannot get status write lock")
-                                    .error
-                                    .push_back(err.to_string());
+                                status.write().error.push_back(err.to_string());
                             }
                             Ok(text) => {
                                 match quick_xml::de::from_str::<status::Root>(text.as_str()) {
                                     Err(err) => {
-                                        status
-                                            .write()
-                                            .expect("Cannot get status write lock")
-                                            .error
-                                            .push_back(err.to_string());
+                                        status.write().error.push_back(err.to_string());
                                     }
                                     Ok(xml) => {
                                         if xml.state == "playing" || xml.state == "paused" {
                                             played.swap(true, Ordering::AcqRel);
                                         }
-                                        *status.write().expect("Cannot get status write lock") = xml
+                                        *status.write() = xml
                                     }
                                 }
                             }
@@ -228,29 +221,27 @@ impl Drop for VideoPlayer {
 
 impl super::VideoPlayer for VideoPlayer {
     fn is_paused(&self) -> bool {
-        self.played.load(Ordering::Acquire)
-            && self.status.read().expect("Cannot get status lock").state == "paused"
+        self.played.load(Ordering::Acquire) && self.status.read().state == "paused"
     }
 
     fn is_end(&self) -> bool {
-        self.played.load(Ordering::Acquire)
-            && self.status.read().expect("Cannot get status lock").state == "stopped"
+        self.played.load(Ordering::Acquire) && self.status.read().state == "stopped"
     }
 
     fn position(&self) -> u32 {
-        self.status.read().unwrap().time
+        self.status.read().time
     }
 
     fn duration(&self) -> u32 {
-        self.status.read().unwrap().length
+        self.status.read().length
     }
 
     fn volume(&self) -> u8 {
-        ((self.status.read().unwrap().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
+        ((self.status.read().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
     }
 
     fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let status = self.status.read().expect("Cannot get status read lock");
+        let status = self.status.read();
 
         ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
 

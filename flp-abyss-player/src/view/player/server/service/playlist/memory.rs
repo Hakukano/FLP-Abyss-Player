@@ -1,11 +1,9 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use parking_lot::RwLock;
 
 use super::{list, read, Data, DataBuilder};
 
@@ -16,7 +14,7 @@ pub struct Playlist {
 #[async_trait]
 impl super::Playlist for Playlist {
     async fn read(&self, query: read::Query) -> Result<Option<read::Response>> {
-        let path_guard = self.paths.read().unwrap();
+        let path_guard = self.paths.read();
         let path = path_guard.get(query.id as usize);
         if let Some(path) = path {
             Ok(read::Response::builder()
@@ -34,7 +32,6 @@ impl super::Playlist for Playlist {
         let data = self
             .paths
             .read()
-            .unwrap()
             .iter()
             .enumerate()
             .filter_map(|(i, p)| {

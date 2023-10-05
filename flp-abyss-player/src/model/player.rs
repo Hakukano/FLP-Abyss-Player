@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::sync::RwLock;
 
 use crate::{library::playlist::Playlist, model::config::Config};
 
@@ -21,7 +21,7 @@ pub struct Player {
 impl Player {
     pub fn reload() {
         let config = Config::all();
-        let mut lock = PLAYER.write().unwrap();
+        let mut lock = PLAYER.write();
         lock.repeat = config.repeat;
         lock.auto = config.auto;
         lock.auto_interval = config.auto_interval;

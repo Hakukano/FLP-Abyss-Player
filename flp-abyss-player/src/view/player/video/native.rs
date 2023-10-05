@@ -1,7 +1,7 @@
 use std::{
     mem::{size_of, size_of_val},
     path::Path,
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 use anyhow::Result;
@@ -10,6 +10,7 @@ use gst::prelude::*;
 use gstreamer::{self as gst, element_error};
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
+use parking_lot::RwLock;
 
 use crate::library::helper::scale_fit_all;
 
@@ -265,7 +266,7 @@ impl VideoElements {
                     let rgbas = map.as_slice();
 
                     {
-                        let mut video_frame_guard = video_frame.write().unwrap();
+                        let mut video_frame_guard = video_frame.write();
                         video_frame_guard.width = width;
                         video_frame_guard.height = height;
                         video_frame_guard.rgbas = rgbas.to_vec();
@@ -704,17 +705,12 @@ impl VideoPlayer {
             let video_elements = VideoElements::new();
             let audio_elements = AudioElements::new();
 
-            audio_volume
-                .write()
-                .unwrap()
-                .replace(audio_elements.volume.clone());
-            pipeline.write().unwrap().replace(gst::Pipeline::default());
+            audio_volume.write().replace(audio_elements.volume.clone());
+            pipeline.write().replace(gst::Pipeline::default());
 
             let bus = {
-                let pipeline_guard = pipeline.read().unwrap();
-                let pipeline = pipeline_guard
-                    .as_ref()
-                    .expect("pipeline has just been replaced");
+                let pipeline_guard = pipeline.read();
+                let pipeline = pipeline_guard.as_ref().unwrap();
                 source_elements.add_to_pipeline(pipeline);
                 video_elements.add_to_pipeline(pipeline);
                 audio_elements.add_to_pipeline(pipeline);
@@ -751,13 +747,12 @@ impl VideoPlayer {
                             .map(|s| {
                                 s == pipeline
                                     .read()
-                                    .unwrap()
                                     .as_ref()
                                     .expect("pipeline should be available during message handling")
                             })
                             .unwrap_or(false)
                         {
-                            *state.write().unwrap() = state_changed.current();
+                            *state.write() = state_changed.current();
                         }
                     }
                     MessageView::Eos(..) => break,
@@ -765,16 +760,15 @@ impl VideoPlayer {
                 }
             }
 
-            audio_volume.write().unwrap().take();
+            audio_volume.write().take();
             pipeline
                 .read()
-                .unwrap()
                 .as_ref()
                 .expect("pipeline has not been taken yet")
                 .set_state(gst::State::Null)
                 .expect("Unable to set the pipeline to the `Null` state");
-            pipeline.write().unwrap().take();
-            *state.write().unwrap() = gst::State::Null;
+            pipeline.write().take();
+            *state.write() = gst::State::Null;
         });
 
         video_player
@@ -783,7 +777,7 @@ impl VideoPlayer {
 
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             let _ = pipeline.set_state(gst::State::Null);
         }
     }
@@ -791,15 +785,15 @@ impl Drop for VideoPlayer {
 
 impl super::VideoPlayer for VideoPlayer {
     fn is_paused(&self) -> bool {
-        *self.state.read().unwrap() == gst::State::Paused
+        *self.state.read() == gst::State::Paused
     }
 
     fn is_end(&self) -> bool {
-        *self.state.read().unwrap() == gst::State::Null
+        *self.state.read() == gst::State::Null
     }
 
     fn position(&self) -> u32 {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline
                 .query_position::<gst::ClockTime>()
                 .map(|c| c.seconds())
@@ -810,7 +804,7 @@ impl super::VideoPlayer for VideoPlayer {
     }
 
     fn duration(&self) -> u32 {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline
                 .query_duration::<gst::ClockTime>()
                 .map(|c| c.seconds())
@@ -821,7 +815,7 @@ impl super::VideoPlayer for VideoPlayer {
     }
 
     fn volume(&self) -> u8 {
-        if let Some(audio_volume) = self.audio_volume.read().unwrap().as_ref() {
+        if let Some(audio_volume) = self.audio_volume.read().as_ref() {
             (audio_volume.property::<f64>("volume").max(0.0) * 100.0).min(u8::MAX as f64) as u8
         } else {
             0
@@ -831,7 +825,7 @@ impl super::VideoPlayer for VideoPlayer {
     fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let max_size = {
-                let video_frame_guard = self.video_frame.read().unwrap();
+                let video_frame_guard = self.video_frame.read();
                 if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
                     scale_fit_all(
                         Vec2::new(
@@ -858,7 +852,7 @@ impl super::VideoPlayer for VideoPlayer {
             let video_frame = self.video_frame.clone();
             let callback = egui::PaintCallback {
                 callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
-                    video_frame.read().unwrap().paint();
+                    video_frame.read().paint();
                 })),
                 rect,
             };
@@ -867,42 +861,42 @@ impl super::VideoPlayer for VideoPlayer {
     }
 
     fn start(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Playing)?;
         }
         Ok(())
     }
 
     fn resume(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Playing)?;
         }
         Ok(())
     }
 
     fn pause(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Paused)?;
         }
         Ok(())
     }
 
     fn stop(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Null)?;
         }
         Ok(())
     }
 
     fn set_volume(&mut self, percent: u8) -> Result<()> {
-        if let Some(audio_volume) = self.audio_volume.read().unwrap().as_ref() {
+        if let Some(audio_volume) = self.audio_volume.read().as_ref() {
             audio_volume.set_property("volume", percent as f64 / 100.0);
         }
         Ok(())
     }
 
     fn seek(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
                 seconds as u64 * gst::ClockTime::SECOND,
@@ -912,7 +906,7 @@ impl super::VideoPlayer for VideoPlayer {
     }
 
     fn fast_forward(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
                 (pipeline
@@ -927,7 +921,7 @@ impl super::VideoPlayer for VideoPlayer {
     }
 
     fn rewind(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().unwrap().as_ref() {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
                 (pipeline

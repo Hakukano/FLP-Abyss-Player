@@ -34,11 +34,11 @@ pub fn handle(token: TokenStream) -> TokenStream {
         if options.rw_lock {
             quote! {
                 pub fn #field_name() -> #field_type {
-                    #singleton.read().unwrap().#field_name.clone()
+                    #singleton.read().#field_name.clone()
                 }
 
                 pub fn #set_field_name(value: #field_type) {
-                    #singleton.write().unwrap().#field_name = value;
+                    #singleton.write().#field_name = value;
                 }
             }
         } else {
@@ -55,11 +55,11 @@ pub fn handle(token: TokenStream) -> TokenStream {
             #(#accessors)*
 
             pub fn all() -> #struct_name {
-                (*#singleton.read().unwrap()).clone()
+                (*#singleton.read()).clone()
             }
 
             pub fn set_all(value: #struct_name) {
-                *#singleton.write().unwrap() = value;
+                *#singleton.write() = value;
             }
         }
     };
