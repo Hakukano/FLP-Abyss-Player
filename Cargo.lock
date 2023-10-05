@@ -1399,6 +1399,7 @@ dependencies = [
  "image",
  "nom",
  "once_cell",
+ "parking_lot",
  "passwords",
  "phf",
  "quick-xml",

@@ -5,11 +5,11 @@ use std::{
     ffi::OsStr,
     ops::RangeInclusive,
     path::{Path, PathBuf},
-    sync::RwLock,
 };
 
 use clap::ValueEnum;
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
 use crate::{impl_differ_simple, library::differ::Differ, CLI};

@@ -1,9 +1,7 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use std::{path::PathBuf, sync::Arc};
 
 use eframe::{egui::TextStyle, epaint::Color32};
+use parking_lot::RwLock;
 use tokio::runtime::{self, Runtime};
 
 use crate::{
@@ -74,7 +72,7 @@ impl super::MediaPlayer for MediaPlayer {
     }
 
     fn sync(&mut self, state: &Player) {
-        *self.paths.write().unwrap() = state
+        *self.paths.write() = state
             .playlist
             .body
             .item_paths
