@@ -85,7 +85,7 @@ impl View {
                 .playlist
                 .body
                 .item_paths
-                .get(0)
+                .first()
                 .expect("Out of bound: paths"),
             ctx,
             &player,
