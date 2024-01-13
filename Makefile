@@ -6,13 +6,22 @@ SRC_BUNDLE_ASSETS = assets
 TARGET_BUNDLE_SCRIPTS = $(OUTPUT_DIRECTORY)/scripts.zip
 SRC_BUNDLE_SCRIPTS = scripts
 
+COVERAGE_DIRECTORY = coverage
+
+TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
+
 .PHONY: usage client bundle clean
 
 usage:
-	echo "Usage: make [client] [bundle] [clean]"
+	echo "Usage: make [coverage] [client] [bundle] [clean]"
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
+
+$(TARGET_COVERAGE_SERVER):
+	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
+
+coverage: $(TARGET_COVERAGE_SERVER)
 
 client:
 	cd ./client && yarn build && cd ..
