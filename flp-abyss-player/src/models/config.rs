@@ -1,6 +1,9 @@
 mod args;
 mod json;
 
+#[cfg(test)]
+mod tests;
+
 use std::{
     ffi::OsStr,
     fmt::Display,
@@ -235,18 +238,3 @@ impl Default for Config {
 }
 
 static CONFIG: Lazy<RwLock<Config>> = Lazy::new(RwLock::default);
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    mod media_type {
-        use super::*;
-
-        #[test]
-        fn media_type_is_unset() {
-            Config::set_media_type(MediaType::Unset);
-            assert!(Config::media_type().is_unset());
-        }
-    }
-}
