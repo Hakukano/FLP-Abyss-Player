@@ -2,6 +2,12 @@
 name = "flp-abyss-player-derive"
 version = "0.1.0"
 edition = "2021"
+authors = ["Hakukano <hakukano@flp-web.org>"]
+description = "Derives for Abyss Player"
+repository = "https://github.com/Hakukano/FLP-Abyss-Player"
+homepage = "https://flp-abyss-player.rs/"
+license = "MIT OR Apache-2.0"
+readme = "../README.md"
 
 [lib]
 proc-macro = true
