@@ -9,13 +9,13 @@ use std::{
 };
 
 use crate::{
-    controller::{Command, CommandName, ControllerType},
+    controllers::{Command, CommandName, ControllerType},
     library::{differ::Differ, fonts::gen_rich_text},
-    model::{
+    models::{
         config::{Config, MediaType},
         player::Player,
     },
-    view::{
+    views::{
         timer::{Signal, SignalName},
         widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
         Packet, PacketName, ViewType,

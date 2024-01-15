@@ -6,7 +6,7 @@ use tokio::runtime::{self, Runtime};
 
 use crate::{
     library::{fonts::gen_rich_text, helper::find_available_port},
-    model::player::Player,
+    models::player::Player,
 };
 
 use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};

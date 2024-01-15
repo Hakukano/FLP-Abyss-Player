@@ -6,7 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use crate::view::Packet;
+use crate::views::Packet;
 
 mod config;
 mod player;

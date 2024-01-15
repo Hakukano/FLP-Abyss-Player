@@ -1,10 +1,10 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    controller::{Command, CommandName},
+    controllers::{Command, CommandName},
     library::differ::Differ,
-    model::player::Player,
-    view::{Packet, PacketName, ViewType},
+    models::player::Player,
+    views::{Packet, PacketName, ViewType},
 };
 
 pub struct Controller {

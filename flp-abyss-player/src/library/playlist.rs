@@ -12,7 +12,7 @@ use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    model::config::{Config, MediaType, VideoPlayer},
+    models::config::{Config, MediaType, VideoPlayer},
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH,
 };
 

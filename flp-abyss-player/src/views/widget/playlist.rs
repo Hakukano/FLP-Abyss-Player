@@ -10,11 +10,11 @@ use eframe::{
 };
 
 #[cfg(feature = "native")]
-use crate::model::config::VideoPlayer;
+use crate::models::config::VideoPlayer;
 use crate::{
     library,
     library::fonts::gen_rich_text,
-    model::{config::MediaType, player::Player},
+    models::{config::MediaType, player::Player},
     CLI,
 };
 

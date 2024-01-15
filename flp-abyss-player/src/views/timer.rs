@@ -9,7 +9,7 @@ use std::{
     time,
 };
 
-use crate::view::{Packet, PacketName};
+use crate::views::{Packet, PacketName};
 
 pub enum SignalName {
     Start,

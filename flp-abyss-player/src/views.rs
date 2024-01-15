@@ -10,7 +10,7 @@ use std::{
 };
 use timer::Signal;
 
-use crate::{controller::Command, library, model::config::Config};
+use crate::{controllers::Command, library, models::config::Config};
 
 mod config;
 mod player;

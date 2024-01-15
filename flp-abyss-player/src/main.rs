@@ -6,10 +6,10 @@ extern crate rust_i18n;
 #[macro_use]
 extern crate flp_abyss_player_derive;
 
-mod controller;
+mod controllers;
 mod library;
-mod model;
-mod view;
+mod models;
+mod views;
 
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -23,12 +23,12 @@ i18n!(fallback = "en_US");
 
 fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
     let auto_interval = s.parse::<u32>().map_err(|err| err.to_string())?;
-    if model::config::AUTO_INTERVAL_RANGE.contains(&auto_interval) {
+    if models::config::AUTO_INTERVAL_RANGE.contains(&auto_interval) {
         Ok(auto_interval)
     } else {
         Err(format!(
             "auto_interval should be in the range of {:?} but found {}",
-            model::config::AUTO_INTERVAL_RANGE,
+            models::config::AUTO_INTERVAL_RANGE,
             auto_interval
         ))
     }
@@ -57,7 +57,7 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub auto: bool,
 
-    /// [Player] The interva of seconds for auto play to next media. Range: (1..=60)
+    /// [Player] The interval of seconds for auto play to next media. Range: (1..=60)
     #[arg(long, default_value_t = 1, value_parser = value_parser_auto_interval)]
     pub auto_interval: u32,
 
@@ -69,23 +69,23 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub random: bool,
 
-    /// [Naviation] Path to playlist file. This option will overwrite all other navigation options
+    /// [Navigation] Path to playlist file. This option will overwrite all other navigation options
     #[arg(long)]
     pub playlist_path: Option<String>,
 
-    /// [Naviation] The media type to be played
-    #[arg(long, value_enum, default_value_t = model::config::MediaType::Unset)]
-    pub media_type: model::config::MediaType,
+    /// [Navigation] The media type to be played
+    #[arg(long, value_enum, default_value_t = models::config::MediaType::Unset)]
+    pub media_type: models::config::MediaType,
 
-    /// [Naviation] The root path
+    /// [Navigation] The root path
     #[arg(long)]
     pub root_path: Option<String>,
 
-    /// [Naviation] The video player to use for playing videos
-    #[arg(long, value_enum, default_value_t = model::config::VideoPlayer::Unset)]
-    pub video_player: model::config::VideoPlayer,
+    /// [Navigation] The video player to use for playing videos
+    #[arg(long, value_enum, default_value_t = models::config::VideoPlayer::Unset)]
+    pub video_player: models::config::VideoPlayer,
 
-    /// [Naviation] The video player executable path
+    /// [Navigation] The video player executable path
     #[arg(long)]
     pub video_player_path: Option<String>,
 }
@@ -94,13 +94,13 @@ static CLI: Lazy<Cli> = Lazy::new(Cli::parse);
 
 fn main() {
     // Init locale
-    rust_i18n::set_locale(model::config::Config::locale().as_str());
+    rust_i18n::set_locale(models::config::Config::locale().as_str());
 
-    let (command_tx, command_rx) = channel::<controller::Command>();
-    let (packet_tx, packet_rx) = channel::<view::Packet>();
+    let (command_tx, command_rx) = channel::<controllers::Command>();
+    let (packet_tx, packet_rx) = channel::<views::Packet>();
 
-    let controller_task = controller::Task::run(command_rx, packet_tx.clone());
+    let controller_task = controllers::Task::run(command_rx, packet_tx.clone());
 
-    view::Task::run(packet_rx, packet_tx, command_tx);
+    views::Task::run(packet_rx, packet_tx, command_tx);
     let _ = controller_task.join();
 }

@@ -7,10 +7,10 @@ use serde_json::Value;
 use std::sync::mpsc::Sender;
 
 use crate::{
-    controller::{Command, CommandName, ControllerType},
+    controllers::{Command, CommandName, ControllerType},
     library::{differ::Differ, fonts::gen_rich_text, helper::message_dialog_error},
-    model::config::{Config, MediaType, VideoPlayer},
-    view::{
+    models::config::{Config, MediaType, VideoPlayer},
+    views::{
         widget::{
             config::{
                 media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,

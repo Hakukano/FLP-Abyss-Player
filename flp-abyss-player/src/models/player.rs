@@ -3,7 +3,7 @@ use parking_lot::RwLock;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{library::playlist::Playlist, model::config::Config};
+use crate::{library::playlist::Playlist, models::config::Config};
 
 #[derive(Clone, Default, AccessibleModel, Deserialize, Serialize, Differ)]
 #[accessible_model(singleton = PLAYER, rw_lock)]

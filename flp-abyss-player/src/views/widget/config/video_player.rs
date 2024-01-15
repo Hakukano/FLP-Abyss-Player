@@ -6,8 +6,8 @@ use eframe::{
 };
 
 use crate::{
-    library::fonts::gen_rich_text, model::config::VideoPlayer,
-    view::widget::button_icon::ButtonIcon, CLI,
+    library::fonts::gen_rich_text, models::config::VideoPlayer,
+    views::widget::button_icon::ButtonIcon, CLI,
 };
 
 pub struct ConfigVideoPlayer {

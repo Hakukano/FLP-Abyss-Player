@@ -86,7 +86,7 @@ pub mod read {
 }
 
 pub mod list {
-    use crate::view::player::server::service::{ListQuery, ListResponse};
+    use crate::views::player::server::service::{ListQuery, ListResponse};
     pub type Query = ListQuery;
     pub type Response = ListResponse<super::Data>;
 }

@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{library::helper::scale_fit_all, model::player::Player};
+use crate::{library::helper::scale_fit_all, models::player::Player};
 
 pub struct MediaPlayer {
     texture: Option<egui::TextureHandle>,

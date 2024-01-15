@@ -15,8 +15,8 @@ use eframe::{
 
 use crate::{
     library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
-    model::{config, player::Player},
-    view::widget::button_icon::ButtonIcon,
+    models::{config, player::Player},
+    views::widget::button_icon::ButtonIcon,
     CLI,
 };
 

@@ -3,10 +3,10 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    controller::{Command, CommandName},
+    controllers::{Command, CommandName},
     library::differ::Differ,
-    model::config::Config,
-    view::{Packet, PacketName},
+    models::config::Config,
+    views::{Packet, PacketName},
 };
 
 pub struct Controller {
