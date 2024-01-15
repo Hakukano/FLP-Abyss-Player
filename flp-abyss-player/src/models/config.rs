@@ -3,6 +3,7 @@ mod json;
 
 use std::{
     ffi::OsStr,
+    fmt::Display,
     ops::RangeInclusive,
     path::{Path, PathBuf},
 };
@@ -66,14 +67,15 @@ impl Default for MediaType {
     }
 }
 
-impl ToString for MediaType {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for MediaType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             Self::Unset => "--".to_string(),
             Self::Server => t!("ui.config.media_type.server"),
             Self::Image => t!("ui.config.media_type.image"),
             Self::Video => t!("ui.config.media_type.video"),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -121,14 +123,15 @@ impl Default for VideoPlayer {
     }
 }
 
-impl ToString for VideoPlayer {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for VideoPlayer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             Self::Unset => "--".to_string(),
             #[cfg(feature = "native")]
             Self::Native => t!("ui.config.video_player.native"),
             Self::Vlc => t!("ui.config.video_player.vlc"),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
