@@ -1,4 +1,4 @@
-use std::{fmt::Display, net::TcpListener};
+use std::{env, fmt::Display, net::TcpListener, path::PathBuf};
 
 use eframe::egui::Vec2;
 
@@ -41,4 +41,9 @@ pub fn message_dialog_error(error: impl Display) -> bool {
         .set_buttons(rfd::MessageButtons::Ok)
         .set_description(error.to_string().as_str())
         .show()
+}
+
+#[cfg(test)]
+pub fn fixtures_dir() -> PathBuf {
+    env::current_dir().unwrap().join("fixtures")
 }
