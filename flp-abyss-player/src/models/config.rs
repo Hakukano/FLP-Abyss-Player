@@ -17,6 +17,25 @@ use crate::{impl_differ_simple, library::differ::Differ, CLI};
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
+trait FileExtension {
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
+}
+
+impl<P> FileExtension for P
+where
+    P: AsRef<Path>,
+{
+    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
+        if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
+            return extensions
+                .iter()
+                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
+        }
+
+        false
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
 pub enum MediaType {
     Unset,
@@ -217,21 +236,17 @@ impl Default for Config {
 
 static CONFIG: Lazy<RwLock<Config>> = Lazy::new(RwLock::default);
 
-trait FileExtension {
-    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
-}
+#[cfg(test)]
+mod test {
+    use super::*;
 
-impl<P> FileExtension for P
-where
-    P: AsRef<Path>,
-{
-    fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
-        if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
-            return extensions
-                .iter()
-                .any(|x| x.as_ref().eq_ignore_ascii_case(extension));
+    mod media_type {
+        use super::*;
+
+        #[test]
+        fn media_type_is_unset() {
+            Config::set_media_type(MediaType::Unset);
+            assert!(Config::media_type().is_unset());
         }
-
-        false
     }
 }

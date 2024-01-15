@@ -38,7 +38,7 @@ fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// [Startup] The path to assets directory
-    #[arg(long)]
+    #[arg(long, default_value_t = String::from("./assets"))]
     pub assets_path: String,
 
     /// [Startup] The locale to use. e.g. en_US. Default to system locale
