@@ -6,6 +6,11 @@ mod media_type {
     use super::*;
 
     #[test]
+    fn default() {
+        assert_eq!(MediaType::default(), MediaType::Unset);
+    }
+
+    #[test]
     fn is_unset() {
         assert!(MediaType::Unset.is_unset());
         assert!(!MediaType::Image.is_unset());
@@ -37,4 +42,18 @@ mod media_type {
             .collect::<Vec<_>>();
         assert_eq!(paths.len(), 9);
     }
+
+    #[test]
+    fn convert_u8() {
+        assert_eq!(u8::from(MediaType::Unset), 0);
+        assert_eq!(MediaType::from(0), MediaType::Unset);
+        assert_eq!(u8::from(MediaType::Image), 1);
+        assert_eq!(MediaType::from(1), MediaType::Image);
+        assert_eq!(u8::from(MediaType::Video), 2);
+        assert_eq!(MediaType::from(2), MediaType::Video);
+        assert_eq!(u8::from(MediaType::Server), 255);
+        assert_eq!(MediaType::from(255), MediaType::Server);
+    }
 }
+
+mod video_player {}

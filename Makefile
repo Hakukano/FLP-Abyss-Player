@@ -12,16 +12,18 @@ TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
 .PHONY: usage client bundle clean
 
+FORCE: ;
+
 usage:
 	echo "Usage: make [coverage] [client] [bundle] [clean]"
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
 
-$(TARGET_COVERAGE_SERVER):
+$(TARGET_COVERAGE_SERVER): FORCE
 	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
 
-coverage: $(TARGET_COVERAGE_SERVER)
+coverage: $(TARGET_COVERAGE_SERVER);
 
 client:
 	cd ./client && yarn build && cd ..
