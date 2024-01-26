@@ -12,10 +12,10 @@ TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
 .PHONY: usage client bundle clean
 
-FORCE: ;
-
 usage:
 	echo "Usage: make [coverage] [client] [bundle] [clean]"
+
+FORCE: ;
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
