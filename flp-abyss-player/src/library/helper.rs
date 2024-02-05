@@ -2,6 +2,9 @@ use std::{fmt::Display, net::TcpListener};
 
 use eframe::egui::Vec2;
 
+#[cfg(test)]
+use std::path::{Path, PathBuf};
+
 pub fn find_available_port() -> Option<u16> {
     (40000..40100).find(|port| port_is_available(*port))
 }
@@ -41,4 +44,9 @@ pub fn message_dialog_error(error: impl Display) -> bool {
         .set_buttons(rfd::MessageButtons::Ok)
         .set_description(error.to_string().as_str())
         .show()
+}
+
+#[cfg(test)]
+pub fn fixtures_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }

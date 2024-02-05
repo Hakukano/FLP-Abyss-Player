@@ -1,13 +1,13 @@
 [package]
 name = "flp-abyss-player"
-version = "0.7.3"
+version = "0.8.0"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media player that sees all"
 repository = "https://github.com/Hakukano/FLP-Abyss-Player"
 homepage = "https://flp-abyss-player.rs/"
 license = "MIT OR Apache-2.0"
-readme = "README.md"
+readme = "../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -38,6 +38,7 @@ rust-i18n = "2.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sys-locale = "0.2"
+tap = "1.0"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tower = { version = "0.4", features = ["full", "tokio", "tokio-stream"] }
