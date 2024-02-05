@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/steps/gstreamer-linux
+      - uses: ./.github/actions/gstreamer-linux
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --all-features
   test:
@@ -33,6 +33,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/steps/gstreamer-linux
+      - uses: ./.github/actions/gstreamer-linux
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --all-features
