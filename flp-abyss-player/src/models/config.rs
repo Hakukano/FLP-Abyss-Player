@@ -2,7 +2,7 @@ mod args;
 mod json;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 use std::{
     ffi::OsStr,

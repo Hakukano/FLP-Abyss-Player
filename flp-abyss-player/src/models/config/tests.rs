@@ -1,8 +1,33 @@
+use tap::prelude::*;
+
+use crate::library::helper::fixtures_dir;
+
 use super::*;
 
-mod media_type {
-    use crate::library::helper::fixtures_dir;
+pub fn mock_default() -> Config {
+    Config {
+        locale: "en_US".to_string(),
 
+        repeat: false,
+        auto: false,
+        auto_interval: 1,
+        lop: false,
+        random: false,
+
+        playlist_path: None,
+
+        media_type: MediaType::Unset,
+        root_path: fixtures_dir().to_str().map(|s| s.to_string()),
+        video_player: VideoPlayer::Unset,
+        video_player_path: None,
+    }
+}
+
+pub fn mock_image() -> Config {
+    mock_default().tap_mut(|config| config.media_type = MediaType::Image)
+}
+
+mod media_type {
     use super::*;
 
     #[test]
@@ -56,4 +81,27 @@ mod media_type {
     }
 }
 
-mod video_player {}
+mod video_player {
+    use super::*;
+
+    #[test]
+    fn default() {
+        assert_eq!(VideoPlayer::default(), VideoPlayer::Unset);
+    }
+
+    #[test]
+    fn is_unset() {
+        assert!(VideoPlayer::Unset.is_unset());
+        assert!(!VideoPlayer::Native.is_unset());
+    }
+
+    #[test]
+    fn convert_u8() {
+        assert_eq!(u8::from(VideoPlayer::Unset), 0);
+        assert_eq!(VideoPlayer::from(0), VideoPlayer::Unset);
+        assert_eq!(u8::from(VideoPlayer::Vlc), 1);
+        assert_eq!(VideoPlayer::from(1), VideoPlayer::Vlc);
+        assert_eq!(u8::from(VideoPlayer::Native), 255);
+        assert_eq!(VideoPlayer::from(255), VideoPlayer::Native);
+    }
+}
