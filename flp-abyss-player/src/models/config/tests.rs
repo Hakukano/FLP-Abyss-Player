@@ -27,6 +27,12 @@ pub fn mock_image() -> Config {
     mock_default().tap_mut(|config| config.media_type = MediaType::Image)
 }
 
+#[test]
+fn can_play() {
+    assert!(!mock_default().can_play());
+    assert!(mock_image().can_play());
+}
+
 mod media_type {
     use super::*;
 
