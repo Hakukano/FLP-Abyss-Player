@@ -4,17 +4,16 @@ extern crate rust_i18n;
 use tauri::{Manager, State};
 
 mod models;
-mod state;
 
 i18n!(fallback = "en_US");
 
 #[tauri::command]
-fn greet(name: &str, app_state: State<state::AppState>) -> String {
+fn greet(name: &str, models: State<models::Models>) -> String {
     format!(
         "{}: {}, {}",
         t!("ui.app_name"),
         name,
-        app_state.app_config.read().locale()
+        models.app_config.read().locale()
     )
 }
 
@@ -22,10 +21,10 @@ fn greet(name: &str, app_state: State<state::AppState>) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .manage(state::AppState::new())
+        .manage(models::Models::new())
         .setup(|app| {
             models::app_config::initialize(
-                &mut app.state::<state::AppState>().app_config.write(),
+                &mut app.state::<models::Models>().app_config.write(),
                 app,
             );
             Ok(())
