@@ -1,7 +1,7 @@
 {
   "productName": "flp-abyss-player",
-  "version": "0.0.0",
-  "identifier": "com.tauri.dev",
+  "version": "0.8.0",
+  "identifier": "wiki.flp-web.org",
   "build": {
     "beforeDevCommand": "yarn dev",
     "devUrl": "http://localhost:1420",
