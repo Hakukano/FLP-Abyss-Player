@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "master"
+      - "release-*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/gstreamer-linux
+    - uses: dtolnay/rust-toolchain@stable
+    - run: cargo build --all-features --release
