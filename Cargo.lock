@@ -1145,6 +1145,8 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-shell",
+ "tracing",
+ "tracing-subscriber",
  "walkdir 2.4.0",
 ]
 
@@ -3915,6 +3917,7 @@ dependencies = [
  "tauri-utils",
  "thiserror",
  "tokio",
+ "tracing",
  "tray-icon",
  "url",
  "webkit2gtk",
@@ -4057,6 +4060,7 @@ dependencies = [
  "tao",
  "tauri-runtime",
  "tauri-utils",
+ "tracing",
  "webkit2gtk",
  "webview2-com",
  "windows 0.52.0",
@@ -5207,6 +5211,7 @@ dependencies = [
  "soup3",
  "tao-macros",
  "thiserror",
+ "tracing",
  "url",
  "webkit2gtk",
  "webkit2gtk-sys",

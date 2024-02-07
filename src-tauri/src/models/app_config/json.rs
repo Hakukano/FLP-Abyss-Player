@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{
     fs::File,
     io::{BufReader, Read},
@@ -60,5 +60,9 @@ impl super::AppConfig for SystemConfig {
             })
             .transpose()?;
         Ok(())
+    }
+
+    fn to_json(&self) -> Result<Value> {
+        Ok(serde_json::to_value(self)?)
     }
 }

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde_json::Value;
 use std::path::PathBuf;
 use tauri::{App, Manager};
 
@@ -10,6 +11,8 @@ pub trait AppConfig: Send + Sync {
 
     fn root_path(&self) -> Option<PathBuf>;
     fn set_root_path(&mut self, root_path: Option<PathBuf>) -> Result<()>;
+
+    fn to_json(&self) -> Result<Value>;
 }
 
 fn system_locale() -> String {

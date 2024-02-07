@@ -1,12 +1,11 @@
-use crate::models;
 use tauri::State;
 
-#[tauri::command]
-pub fn greet(name: &str, models: State<models::Models>) -> String {
-    format!(
-        "{}: {}, {}",
-        t!("ui.app_name"),
-        name,
-        models.app_config.read().locale()
-    )
+use super::Response;
+use crate::models;
+
+pub fn index(models: State<models::Models>) -> Result<Response, Response> {
+    Response::ok(models.app_config.read().to_json().map_err(|err| {
+        error!("Serialization error: {}", err);
+        Response::internal_server_error()
+    })?)
 }
