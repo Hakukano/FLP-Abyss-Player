@@ -1,18 +1,12 @@
-import { invoke } from "@tauri-apps/api/core";
+import appConfig from "./services/api/app_config.ts";
 
 let greetInputEl: HTMLInputElement | null;
 let greetMsgEl: HTMLElement | null;
 
 async function greet() {
   if (greetMsgEl && greetInputEl) {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    greetMsgEl.textContent = JSON.stringify(await invoke("api", {
-      request: {
-        path: ["app_config"],
-        method: "GET",
-        args: {}
-      }
-    }));
+    const resp = await appConfig.index();
+    greetMsgEl.textContent = resp.body.locale;
   }
 }
 
@@ -21,6 +15,6 @@ window.addEventListener("DOMContentLoaded", () => {
   greetMsgEl = document.querySelector("#greet-msg");
   document.querySelector("#greet-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
-    greet().catch(err => console.log(err));
+    greet().catch((err) => console.log(err));
   });
 });

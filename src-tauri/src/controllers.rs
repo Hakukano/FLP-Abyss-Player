@@ -5,7 +5,7 @@ use tauri::{AppHandle, State};
 
 use crate::models;
 
-pub mod app_config_controller;
+pub mod app_config;
 
 #[derive(Debug, Deserialize)]
 enum Method {
@@ -109,7 +109,7 @@ pub fn api(
 ) -> Result<Response, Response> {
     match request.path.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
         ["app_config"] => match request.method {
-            Method::Get => app_config_controller::index(models),
+            Method::Get => app_config::index(models),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),
