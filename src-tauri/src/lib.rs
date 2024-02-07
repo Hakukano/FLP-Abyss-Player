@@ -1,21 +1,12 @@
 #[macro_use]
 extern crate rust_i18n;
 
-use tauri::{Manager, State};
+use tauri::Manager;
 
+mod controllers;
 mod models;
 
 i18n!(fallback = "en_US");
-
-#[tauri::command]
-fn greet(name: &str, models: State<models::Models>) -> String {
-    format!(
-        "{}: {}, {}",
-        t!("ui.app_name"),
-        name,
-        models.app_config.read().locale()
-    )
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -29,7 +20,9 @@ pub fn run() {
             );
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            controllers::app_config_controller::greet
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

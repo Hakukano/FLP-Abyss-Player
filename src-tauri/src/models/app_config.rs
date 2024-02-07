@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::path::PathBuf;
 use tauri::{App, Manager};
 
@@ -5,8 +6,10 @@ mod json;
 
 pub trait AppConfig: Send + Sync {
     fn locale(&self) -> String;
-
     fn set_locale(&mut self, locale: String);
+
+    fn root_path(&self) -> Option<PathBuf>;
+    fn set_root_path(&mut self, root_path: Option<PathBuf>) -> Result<()>;
 }
 
 fn system_locale() -> String {
