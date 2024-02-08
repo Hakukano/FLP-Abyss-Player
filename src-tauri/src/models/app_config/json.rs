@@ -75,6 +75,7 @@ impl super::AppConfig for AppConfig {
     }
 
     fn set_from_json(&mut self, value: Value) -> Result<()> {
-        Ok(serde_json::from_value(value)?)
+        *self = serde_json::from_value(value)?;
+        Ok(())
     }
 }

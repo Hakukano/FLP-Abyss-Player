@@ -5,7 +5,7 @@ use tauri::{App, Manager};
 
 mod json;
 #[cfg(test)]
-pub mod tests;
+mod json_test;
 
 pub trait AppConfig: Send + Sync {
     fn locale(&self) -> String;
