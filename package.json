@@ -11,11 +11,15 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@popperjs/core": "^2.11.8",
     "@tauri-apps/api": "^2.0.0-beta.0",
-    "@tauri-apps/plugin-shell": "^2.0.0-beta.0"
+    "@tauri-apps/plugin-shell": "^2.0.0-beta.0",
+    "bootstrap": "^5.3.2",
+    "sass": "^1.70.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0-beta.0",
+    "@types/bootstrap": "^5.2.10",
     "internal-ip": "^7.0.0",
     "prettier": "3.2.5",
     "typescript": "^5.0.2",
