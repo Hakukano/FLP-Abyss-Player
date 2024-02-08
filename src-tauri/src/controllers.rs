@@ -79,6 +79,13 @@ impl Response {
         }
     }
 
+    pub fn bad_request(reason: impl AsRef<str>) -> Self {
+        Self {
+            code: 400,
+            body: serde_json::to_value(reason.as_ref()).unwrap(),
+        }
+    }
+
     pub fn not_found() -> Self {
         Self {
             code: 404,
@@ -101,15 +108,14 @@ impl Response {
     }
 }
 
+pub type ApiResult = Result<Response, Response>;
+
 #[tauri::command]
-pub fn api(
-    request: Request,
-    _app_handle: AppHandle,
-    models: State<models::Models>,
-) -> Result<Response, Response> {
+pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Models>) -> ApiResult {
     match request.path.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
         ["app_config"] => match request.method {
             Method::Get => app_config::index(models),
+            Method::Put => app_config::update(request.args, models),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),

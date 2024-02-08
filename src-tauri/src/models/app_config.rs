@@ -13,6 +13,7 @@ pub trait AppConfig: Send + Sync {
     fn set_root_path(&mut self, root_path: Option<PathBuf>) -> Result<()>;
 
     fn to_json(&self) -> Result<Value>;
+    fn set_from_json(&mut self, value: Value) -> Result<()>;
 }
 
 fn system_locale() -> String {
@@ -36,9 +37,9 @@ fn file_path(app: &App) -> PathBuf {
 }
 
 pub fn instantiate() -> Box<dyn AppConfig> {
-    Box::<json::SystemConfig>::default()
+    Box::<json::AppConfig>::default()
 }
 
 pub fn initialize(instance: &mut Box<dyn AppConfig>, app: &App) {
-    *instance = Box::new(json::SystemConfig::load_or_defaults(file_path(app)))
+    *instance = Box::new(json::AppConfig::load_or_defaults(file_path(app)))
 }

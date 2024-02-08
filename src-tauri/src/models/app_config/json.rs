@@ -8,12 +8,12 @@ use std::{
 };
 
 #[derive(Default, Deserialize, Serialize)]
-pub struct SystemConfig {
+pub struct AppConfig {
     locale: String,
     root_path: Option<String>,
 }
 
-impl SystemConfig {
+impl AppConfig {
     fn new(s: impl AsRef<str>) -> Self {
         serde_json::from_str(s.as_ref()).expect("Cannot parse json for SystemConfig")
     }
@@ -34,7 +34,7 @@ impl SystemConfig {
     }
 }
 
-impl super::AppConfig for SystemConfig {
+impl super::AppConfig for AppConfig {
     fn locale(&self) -> String {
         self.locale.clone()
     }
@@ -64,5 +64,9 @@ impl super::AppConfig for SystemConfig {
 
     fn to_json(&self) -> Result<Value> {
         Ok(serde_json::to_value(self)?)
+    }
+
+    fn set_from_json(&mut self, value: Value) -> Result<()> {
+        Ok(serde_json::from_value(value)?)
     }
 }
