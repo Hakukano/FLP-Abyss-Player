@@ -6,6 +6,8 @@ use tauri::{AppHandle, State};
 use crate::models;
 
 pub mod app_config;
+#[cfg(test)]
+mod app_config_test;
 
 #[derive(Debug, Deserialize)]
 enum Method {
@@ -38,7 +40,7 @@ pub struct Request {
     args: Value,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Response {
     code: u16,
     body: Value,
@@ -114,8 +116,8 @@ pub type ApiResult = Result<Response, Response>;
 pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Models>) -> ApiResult {
     match request.path.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
         ["app_config"] => match request.method {
-            Method::Get => app_config::index(models),
-            Method::Put => app_config::update(request.args, models),
+            Method::Get => app_config::index(models.app_config.read().as_ref()),
+            Method::Put => app_config::update(request.args, models.app_config.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),
