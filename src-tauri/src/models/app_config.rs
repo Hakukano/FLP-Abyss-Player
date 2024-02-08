@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use tauri::{App, Manager};
 
 mod json;
+#[cfg(test)]
+pub mod tests;
 
 pub trait AppConfig: Send + Sync {
     fn locale(&self) -> String;
@@ -22,24 +24,19 @@ fn system_locale() -> String {
         .replace('-', "_")
 }
 
-fn file_path(app: &App) -> PathBuf {
+pub fn instantiate() -> Box<dyn AppConfig> {
     if cfg!(test) {
-        app.path()
-            .temp_dir()
-            .expect("Temp dir not found")
-            .join("app_config.json")
+        Box::new(json::AppConfig::load_or_defaults(""))
     } else {
-        app.path()
-            .app_config_dir()
-            .expect("App config dir not found")
-            .join("app_config.json")
+        Box::<json::AppConfig>::default()
     }
 }
 
-pub fn instantiate() -> Box<dyn AppConfig> {
-    Box::<json::AppConfig>::default()
-}
-
 pub fn initialize(instance: &mut Box<dyn AppConfig>, app: &App) {
-    *instance = Box::new(json::AppConfig::load_or_defaults(file_path(app)))
+    *instance = Box::new(json::AppConfig::load_or_defaults(
+        app.path()
+            .app_config_dir()
+            .expect("App config dir not found")
+            .join("app_config.json"),
+    ))
 }

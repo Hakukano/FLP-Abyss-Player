@@ -1,13 +1,13 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::{
     fs::File,
     io::{BufReader, Read},
     path::{Path, PathBuf},
 };
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct AppConfig {
     locale: String,
     root_path: Option<String>,
@@ -25,12 +25,20 @@ impl AppConfig {
     }
 
     pub fn load_or_defaults(path: impl AsRef<Path>) -> Self {
-        Self::new(Self::load(path).unwrap_or_else(|_| {
-            json!({
-                "locale": super::system_locale()
-            })
-            .to_string()
-        }))
+        if let Ok(data) = Self::load(path) {
+            Self::new(data)
+        } else {
+            Self::default()
+        }
+    }
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            locale: super::system_locale(),
+            root_path: None,
+        }
     }
 }
 
