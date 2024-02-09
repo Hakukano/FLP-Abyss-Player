@@ -1,32 +1,9 @@
 import { AppConfigService } from "./api/app_config.ts";
 import I18Next from "./locale/i18next.ts";
 
-export class LocaleService {
-  appConfigService: AppConfigService;
-
-  constructor(appConfigService: AppConfigService) {
-    this.appConfigService = appConfigService;
-  }
-
-  async init(): Promise<void> {
-    const locale = (await this.appConfigService.index()).body.locale;
-    await this.initExtras(locale);
-  }
-
-  protected async initExtras(_locale: string): Promise<void> {
-    throw "Not Implemented";
-  }
-
-  async setLocale(locale: string): Promise<void> {
-    const appConfig = (await this.appConfigService.index()).body;
-    appConfig.locale = locale;
-    await this.appConfigService.update(appConfig);
-    await this.setLocaleExtras(locale);
-  }
-
-  protected async setLocaleExtras(_locale: string): Promise<void> {
-    throw "Not implemented";
-  }
+export interface LocaleService {
+  init(): Promise<void>;
+  setLocale(locale: string): Promise<void>;
 }
 
 export async function initialize(

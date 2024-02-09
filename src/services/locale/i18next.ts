@@ -4,12 +4,15 @@ import { LocaleService } from "../locale.ts";
 import { AppConfigService } from "../api/app_config.ts";
 import { enUS, jaJP } from "./translations.ts";
 
-export default class I18Next extends LocaleService {
+export default class I18Next implements LocaleService {
+  appConfigService: AppConfigService;
+
   constructor(appConfigService: AppConfigService) {
-    super(appConfigService);
+    this.appConfigService = appConfigService;
   }
 
-  async initExtras(locale: string): Promise<void> {
+  async init(): Promise<void> {
+    const locale = (await this.appConfigService.index()).body.locale;
     await i18next.init({
       debug: import.meta.env.DEV,
       lng: locale,
@@ -25,7 +28,10 @@ export default class I18Next extends LocaleService {
     });
   }
 
-  async setLocaleExtras(locale: string): Promise<void> {
+  async setLocale(locale: string): Promise<void> {
+    const appConfig = (await this.appConfigService.index()).body;
+    appConfig.locale = locale;
+    await this.appConfigService.update(appConfig);
     await i18next.changeLanguage(locale);
   }
 }
