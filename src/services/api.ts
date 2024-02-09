@@ -7,7 +7,7 @@ export interface Response<Body> {
   body: Body;
 }
 
-export async function send_tauri_command<Args, Body>(
+export async function sendTauriCommand<Args, Body>(
   path: string[],
   method: Method,
   args: Args,

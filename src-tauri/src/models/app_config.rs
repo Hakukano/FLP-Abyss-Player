@@ -19,9 +19,7 @@ pub trait AppConfig: Send + Sync {
 }
 
 fn system_locale() -> String {
-    sys_locale::get_locale()
-        .unwrap_or_else(|| "en_US".to_string())
-        .replace('-', "_")
+    sys_locale::get_locale().unwrap_or_else(|| "en-US".to_string())
 }
 
 pub fn instantiate() -> Box<dyn AppConfig> {

@@ -1,7 +1,4 @@
 #[macro_use]
-extern crate rust_i18n;
-
-#[macro_use]
 extern crate tracing;
 
 use tauri::Manager;
@@ -9,8 +6,6 @@ use tauri::Manager;
 mod controllers;
 mod models;
 mod utils;
-
-i18n!(fallback = "en_US");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

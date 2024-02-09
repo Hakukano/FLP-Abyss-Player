@@ -16,12 +16,13 @@ export interface AppConfigDetails
   extends AppConfigImmutable,
     AppConfigMutable {}
 
-export interface AppConfig {
+export interface AppConfigService {
   index(): Promise<Response<AppConfigBrief>>;
   update(app_config: AppConfigMutable): Promise<Response<void>>;
 }
 
-const appConfig =
-  import.meta.env.MODE === "test" ? new TauriCommand() : new TauriCommand();
-
-export default appConfig;
+export function initialize(): AppConfigService {
+  return import.meta.env.MODE === "test"
+    ? new TauriCommand()
+    : new TauriCommand();
+}

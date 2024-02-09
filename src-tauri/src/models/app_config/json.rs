@@ -49,7 +49,6 @@ impl super::AppConfig for AppConfig {
 
     fn set_locale(&mut self, locale: String) {
         self.locale = locale;
-        rust_i18n::set_locale(self.locale().as_str());
     }
 
     fn root_path(&self) -> Option<PathBuf> {

@@ -1,17 +1,17 @@
-import { Response, send_tauri_command } from "../../api.ts";
+import { Response, sendTauriCommand } from "../../api.ts";
 import {
-  AppConfig,
+  AppConfigService,
   basePath,
   AppConfigMutable,
   AppConfigBrief,
 } from "../app_config.ts";
 
-export default class TauriCommand implements AppConfig {
+export default class TauriCommand implements AppConfigService {
   async index(): Promise<Response<AppConfigBrief>> {
-    return await send_tauri_command(basePath, "GET", {});
+    return await sendTauriCommand(basePath, "GET", {});
   }
 
   async update(app_config: AppConfigMutable): Promise<Response<void>> {
-    return await send_tauri_command(basePath, "PUT", app_config);
+    return await sendTauriCommand(basePath, "PUT", app_config);
   }
 }
