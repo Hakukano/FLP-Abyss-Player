@@ -18,10 +18,10 @@ export interface AppConfigDetails
 
 export interface AppConfigService {
   index(): Promise<Response<AppConfigBrief>>;
-  update(app_config: AppConfigMutable): Promise<Response<void>>;
+  update(appConfig: AppConfigMutable): Promise<Response<void>>;
 }
 
-export function initialize(): AppConfigService {
+export function initializeAppConfigService(): AppConfigService {
   return import.meta.env.MODE === "test"
     ? new TauriCommand()
     : new TauriCommand();
