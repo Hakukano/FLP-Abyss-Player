@@ -16,11 +16,6 @@ export default class AppConfig extends Component {
   }
 
   async reload(): Promise<any> {
-    this.data = null;
-    try {
-      this.data = (await appConfig.index()).body;
-    } catch (err: any) {
-      alert(err.body);
-    }
+    this.data = (await appConfig.index()).body;
   }
 }
