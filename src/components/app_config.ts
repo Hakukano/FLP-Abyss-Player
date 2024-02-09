@@ -25,7 +25,7 @@ export default class AppConfig extends Component {
     this.data = (await this.appConfigService.index()).body;
     this.content = $(`
       <div id="app-config" class="container-fluid">
-        <h1>${i18next.t("components.app_config.title")}</h1>
+        <h1 class="text-light">${i18next.t("components.app_config.title")}</h1>
       </div>
     `);
   }
