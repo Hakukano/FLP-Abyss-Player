@@ -11,7 +11,7 @@ export default class Page {
   }
 
   async render() {
-    const root = $("root");
+    const root = $("#root");
     try {
       await this.reload();
       root.empty();
