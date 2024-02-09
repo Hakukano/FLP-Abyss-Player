@@ -2,12 +2,12 @@ import { Response, send_tauri_command } from "../../api.ts";
 import {
   AppConfig,
   basePath,
-  AppConfigDetails,
   AppConfigMutable,
+  AppConfigBrief,
 } from "../app_config.ts";
 
 export default class TauriCommand implements AppConfig {
-  async index(): Promise<Response<AppConfigDetails>> {
+  async index(): Promise<Response<AppConfigBrief>> {
     return await send_tauri_command(basePath, "GET", {});
   }
 
