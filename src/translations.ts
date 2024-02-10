@@ -2,6 +2,8 @@ export default {
   "en-US": {
     language_name: "English (US)",
     app_name: "FLP Abyss Player",
+    new_playlist: "Create a new playlist",
+    load_playlist: "Load a playlist",
     error: "Error",
     config: "Configuration",
     app_config: {
@@ -20,6 +22,8 @@ export default {
   "ja-JP": {
     language_name: "日本語",
     app_name: "FLP・アビスプレイヤー",
+    new_playlist: "新規プレイリスト",
+    load_playlist: "プレリストを読み込む",
     error: "エラー",
     config: "設定",
     app_config: {

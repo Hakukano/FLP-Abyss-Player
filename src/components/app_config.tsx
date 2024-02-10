@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "react-bootstrap/Button";
@@ -17,20 +17,24 @@ import {
 } from "../services/api/app_config.ts";
 import translations from "../translations.ts";
 
-const FORM_LABEL_WIDTH = 2;
-const FORM_INPUT_WIDTH = 4;
-const FORM_DESCRIPTION_WIDTH = 6;
+const FORM_LABEL_WIDTH = 3;
+const FORM_INPUT_WIDTH = 9;
 
-interface Props extends React.HTMLAttributes<HTMLElement> {
+interface Props {
   appConfigService: AppConfigService;
+  appConfigState?: [
+    AppConfigBrief | null,
+    Dispatch<SetStateAction<AppConfigBrief | null>>,
+  ];
 }
 
-export default function Config(props: Props) {
+export default function AppConfig(props: Props) {
   const { t } = useTranslation();
 
   const [error, setError] = useState("");
   const [errorShow, setErrorShow] = useState(false);
-  const [appConfig, setAppConfig] = useState<AppConfigBrief | null>(null);
+  const [appConfig, setAppConfig] =
+    props.appConfigState || useState<AppConfigBrief | null>(null);
 
   const handleError = (err: any) => {
     if (typeof err === "string") {
@@ -86,10 +90,10 @@ export default function Config(props: Props) {
       <h2>{t("app_config.title")}</h2>
       <Form>
         <Form.Group as={Row} className="mb-3" controlId="app-config-locale">
-          <Form.Label column sm={FORM_LABEL_WIDTH}>
+          <Form.Label column md={FORM_LABEL_WIDTH}>
             {t("app_config.locale.name")}
           </Form.Label>
-          <Col sm={FORM_INPUT_WIDTH}>
+          <Col md={FORM_INPUT_WIDTH}>
             <Form.Select
               value={appConfig?.locale}
               onChange={(event) => {
@@ -103,15 +107,13 @@ export default function Config(props: Props) {
               ))}
             </Form.Select>
           </Col>
-          <Form.Label column sm={FORM_DESCRIPTION_WIDTH}>
-            {t("app_config.locale.description")}
-          </Form.Label>
+          <Form.Text muted>{t("app_config.locale.description")}</Form.Text>
         </Form.Group>
         <Form.Group as={Row} className="mb-3" controlId="app-config-root-path">
-          <Form.Label column sm={FORM_LABEL_WIDTH}>
+          <Form.Label column md={FORM_LABEL_WIDTH}>
             {t("app_config.root_path.name")}
           </Form.Label>
-          <Col sm={FORM_INPUT_WIDTH}>
+          <Col md={FORM_INPUT_WIDTH}>
             <Button
               variant="light"
               className="w-100 text-start"
@@ -120,9 +122,7 @@ export default function Config(props: Props) {
               {appConfig?.root_path || t("app_config.root_path.placeholder")}
             </Button>
           </Col>
-          <Form.Label column sm={FORM_DESCRIPTION_WIDTH}>
-            {t("app_config.root_path.description")}
-          </Form.Label>
+          <Form.Text muted>{t("app_config.root_path.description")}</Form.Text>
         </Form.Group>
       </Form>
     </Stack>
