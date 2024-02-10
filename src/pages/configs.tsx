@@ -70,7 +70,7 @@ export default function Config(props: Props) {
   }, []);
 
   return (
-    <Stack gap={2}>
+    <Stack gap={3}>
       <ToastContainer
         className="p-3"
         position="top-center"

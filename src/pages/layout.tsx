@@ -11,7 +11,7 @@ export default function Layout() {
 
   return (
     <Container fluid className="vh-100">
-      <Stack gap={2}>
+      <Stack gap={4}>
         <Navbar expand="lg" className="bg-body-tertiary">
           <Container>
             <Navbar.Brand>{t("app_name")}</Navbar.Brand>
