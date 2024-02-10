@@ -59,11 +59,11 @@ export default function AppConfig(props: Props) {
     }
   };
 
-  const setRootPath = async () => {
+  const setPlaylist = async () => {
     if (appConfig) {
       const path = await open({ multiple: false, directory: true });
       const config = appConfig;
-      config.root_path = path;
+      config.playlist = path;
       await props.appConfigService.update(config);
       await fetchAppConfig();
     }
@@ -111,18 +111,18 @@ export default function AppConfig(props: Props) {
         </Form.Group>
         <Form.Group as={Row} className="mb-3" controlId="app-config-root-path">
           <Form.Label column md={FORM_LABEL_WIDTH}>
-            {t("app_config.root_path.name")}
+            {t("app_config.playlist.name")}
           </Form.Label>
           <Col md={FORM_INPUT_WIDTH}>
             <Button
               variant="light"
               className="w-100 text-start"
-              onClick={() => setRootPath().catch(handleError)}
+              onClick={() => setPlaylist().catch(handleError)}
             >
-              {appConfig?.root_path || t("app_config.root_path.placeholder")}
+              {appConfig?.playlist || t("app_config.playlist.placeholder")}
             </Button>
           </Col>
-          <Form.Text muted>{t("app_config.root_path.description")}</Form.Text>
+          <Form.Text muted>{t("app_config.playlist.description")}</Form.Text>
         </Form.Group>
       </Form>
     </Stack>

@@ -25,17 +25,17 @@ fn set_locale() {
 }
 
 #[test]
-fn root_path() {
-    let lhs = app_config_default().root_path();
+fn playlist() {
+    let lhs = app_config_default().playlist();
     let rhs = None;
     assert_eq!(lhs, rhs);
 }
 
 #[test]
-fn set_root_path() {
+fn set_playlist() {
     let lhs = app_config_default()
-        .tap_mut(|config| config.set_root_path(Some("/test".into())).unwrap())
-        .root_path();
+        .tap_mut(|config| config.set_playlist(Some("/test".into())).unwrap())
+        .playlist();
     let rhs = Some("/test".into());
     assert_eq!(lhs, rhs)
 }
@@ -45,7 +45,7 @@ fn to_json() {
     let lhs = app_config_default().to_json().unwrap();
     let rhs = json!({
         "locale": system_locale(),
-        "root_path": null,
+        "playlist": null,
     });
     assert_eq!(lhs, rhs);
 }
@@ -56,11 +56,11 @@ fn set_from_json() {
         config
             .set_from_json(json!({
                 "locale": "xx_YY",
-                "root_path": "/test",
+                "playlist": "/test",
             }))
             .unwrap();
     });
-    let lhs = (lhs.locale(), lhs.root_path());
+    let lhs = (lhs.locale(), lhs.playlist());
     let rhs = ("xx_YY".to_string(), Some(Path::new("/test").to_path_buf()));
     assert_eq!(lhs, rhs);
 }

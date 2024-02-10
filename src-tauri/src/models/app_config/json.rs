@@ -10,7 +10,7 @@ use std::{
 #[derive(Deserialize, Serialize)]
 pub struct AppConfig {
     locale: String,
-    root_path: Option<String>,
+    playlist: Option<String>,
 }
 
 impl AppConfig {
@@ -37,7 +37,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             locale: super::system_locale(),
-            root_path: None,
+            playlist: None,
         }
     }
 }
@@ -51,18 +51,16 @@ impl super::AppConfig for AppConfig {
         self.locale = locale;
     }
 
-    fn root_path(&self) -> Option<PathBuf> {
-        self.root_path
-            .as_ref()
-            .map(|p| Path::new(p.as_str()).into())
+    fn playlist(&self) -> Option<PathBuf> {
+        self.playlist.as_ref().map(|p| Path::new(p.as_str()).into())
     }
 
-    fn set_root_path(&mut self, root_path: Option<PathBuf>) -> Result<()> {
-        self.root_path = root_path
+    fn set_playlist(&mut self, playlist: Option<PathBuf>) -> Result<()> {
+        self.playlist = playlist
             .as_ref()
             .map(|p| {
                 p.to_str()
-                    .ok_or_else(|| anyhow!("Invalid root path: {:?}", root_path))
+                    .ok_or_else(|| anyhow!("Invalid path: {:?}", playlist))
                     .map(|s| s.to_string())
             })
             .transpose()?;

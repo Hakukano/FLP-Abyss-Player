@@ -21,12 +21,12 @@ fn update() {
     app_config::update(
         json!({
             "locale": "xx_YY",
-            "root_path": "/test",
+            "playlist": "/test",
         }),
         mock_app_config.as_mut(),
     )
     .unwrap();
-    let lhs = (mock_app_config.locale(), mock_app_config.root_path());
+    let lhs = (mock_app_config.locale(), mock_app_config.playlist());
     let rhs = ("xx_YY".to_string(), Some(Path::new("/test").to_path_buf()));
     assert_eq!(lhs, rhs);
 }

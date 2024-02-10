@@ -7,7 +7,7 @@ export interface AppConfigImmutable {}
 
 export interface AppConfigMutable {
   locale: string;
-  root_path: string | null;
+  playlist: string | null;
 }
 
 export interface AppConfigBrief extends AppConfigImmutable, AppConfigMutable {}

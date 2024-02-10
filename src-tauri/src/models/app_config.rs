@@ -11,8 +11,8 @@ pub trait AppConfig: Send + Sync {
     fn locale(&self) -> String;
     fn set_locale(&mut self, locale: String);
 
-    fn root_path(&self) -> Option<PathBuf>;
-    fn set_root_path(&mut self, root_path: Option<PathBuf>) -> Result<()>;
+    fn playlist(&self) -> Option<PathBuf>;
+    fn set_playlist(&mut self, playlist: Option<PathBuf>) -> Result<()>;
 
     fn to_json(&self) -> Result<Value>;
     fn set_from_json(&mut self, value: Value) -> Result<()>;

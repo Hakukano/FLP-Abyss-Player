@@ -12,9 +12,9 @@ export default {
         name: "Language",
         description: "Display language",
       },
-      root_path: {
-        name: "Root Path",
-        description: "The root path of the player",
+      playlist: {
+        name: "Playlist",
+        description: "The playlist path",
         placeholder: "Click to choose a directory",
       },
     },
@@ -32,9 +32,9 @@ export default {
         name: "言語",
         description: "インターフェース言語",
       },
-      root_path: {
-        name: "ルートパス",
-        description: "プレイヤーのルートパス",
+      playlist: {
+        name: "プレイリスト",
+        description: "プレイリストのパス",
         placeholder: "フォルダーを選択してください",
       },
     },

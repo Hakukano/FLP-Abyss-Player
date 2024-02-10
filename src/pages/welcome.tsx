@@ -38,7 +38,7 @@ export default function Welcome(props: Props) {
                   appConfigState={[appConfig, setAppConfig]}
                 />
                 {appConfig ? (
-                  appConfig.root_path ? (
+                  appConfig.playlist ? (
                     <Button variant="info">{t("load_playlist")}</Button>
                   ) : (
                     <Button variant="warning">{t("new_playlist")}</Button>
