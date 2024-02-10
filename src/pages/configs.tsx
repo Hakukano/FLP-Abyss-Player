@@ -1,13 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Stack from "react-bootstrap/Stack";
+import Toast from "react-bootstrap/Toast";
+import ToastContainer from "react-bootstrap/ToastContainer";
 
-import { AppConfigService } from "../services/api/app_config.ts";
-import i18next from "i18next";
+import {
+  AppConfigBrief,
+  AppConfigService,
+} from "../services/api/app_config.ts";
+import translations from "../translations.ts";
+
+const FORM_LABEL_WIDTH = 2;
+const FORM_INPUT_WIDTH = 4;
+const FORM_DESCRIPTION_WIDTH = 6;
 
 interface Props extends React.HTMLAttributes<HTMLElement> {
   appConfigService: AppConfigService;
@@ -16,24 +25,70 @@ interface Props extends React.HTMLAttributes<HTMLElement> {
 export default function Config(props: Props) {
   const { t } = useTranslation();
 
+  const [error, setError] = useState("");
+  const [errorShow, setErrorShow] = useState(false);
+  const [appConfig, setAppConfig] = useState<AppConfigBrief | null>(null);
+
+  const handleError = (err: any) => {
+    setError(JSON.stringify(err));
+    setErrorShow(true);
+  };
+
+  const fetchAppConfig = async () => {
+    const resp = await props.appConfigService.index();
+    setAppConfig(resp.body);
+  };
+
+  const setLocale = async (locale: string) => {
+    if (appConfig) {
+      const config = appConfig;
+      config.locale = locale;
+      await props.appConfigService.update(config);
+      await fetchAppConfig();
+    }
+  };
+
+  useEffect(() => {
+    fetchAppConfig().catch(handleError);
+  }, []);
+
   return (
     <Stack gap={2}>
+      <ToastContainer
+        className="p-3"
+        position="top-center"
+        style={{ zIndex: 1 }}
+      >
+        <Toast onClose={() => setErrorShow(false)} show={errorShow}>
+          <Toast.Header>
+            <strong className="me-auto">{t("error")}</strong>
+          </Toast.Header>
+          <Toast.Body>{error}</Toast.Body>
+        </Toast>
+      </ToastContainer>
       <h2>{t("app_config.title")}</h2>
       <Form>
         <Form.Group as={Row} className="mb-3" controlId="app-config-locale">
-          <Form.Label column sm={2}>
+          <Form.Label column sm={FORM_LABEL_WIDTH}>
             {t("app_config.locale.name")}
           </Form.Label>
-          <Col sm={10}>
-            <Form.Select>
-              <option>-</option>
-              {i18next.languages.map((language) => (
+          <Col sm={FORM_INPUT_WIDTH}>
+            <Form.Select
+              value={appConfig?.locale}
+              onChange={(event) => {
+                setLocale(event.target.value).catch(handleError);
+              }}
+            >
+              {Object.entries(translations).map(([language, translation]) => (
                 <option key={language} value={language}>
-                  {language}
+                  {translation.language_name}
                 </option>
               ))}
             </Form.Select>
           </Col>
+          <Form.Label column sm={FORM_DESCRIPTION_WIDTH}>
+            {t("app_config.locale.description")}
+          </Form.Label>
         </Form.Group>
       </Form>
     </Stack>

@@ -6,7 +6,7 @@ import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import App from "./app.tsx";
-import { enUS, jaJP } from "./translations.ts";
+import translations from "./translations.ts";
 import { initializeAppConfigService } from "./services/api/app_config.ts";
 
 async function main() {
@@ -19,10 +19,10 @@ async function main() {
     fallbackLng: "en-US",
     resources: {
       "en-US": {
-        translation: enUS,
+        translation: translations["en-US"],
       },
       "ja-JP": {
-        translation: jaJP,
+        translation: translations["ja-JP"],
       },
     },
   });

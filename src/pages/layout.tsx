@@ -19,7 +19,7 @@ export default function Layout() {
             <Navbar.Collapse id="layout-navbar">
               <Nav className="me-auto">
                 <Nav.Link as={Link} to="/config">
-                  {t("app_config.title")}
+                  {t("config")}
                 </Nav.Link>
               </Nav>
             </Navbar.Collapse>
