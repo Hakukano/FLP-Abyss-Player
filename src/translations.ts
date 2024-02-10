@@ -13,6 +13,7 @@ export default {
       root_path: {
         name: "Root Path",
         description: "The root path of the player",
+        placeholder: "Click to choose a directory",
       },
     },
   },
@@ -30,6 +31,7 @@ export default {
       root_path: {
         name: "ルートパス",
         description: "プレイヤーのルートパス",
+        placeholder: "フォルダーを選択してください",
       },
     },
   },

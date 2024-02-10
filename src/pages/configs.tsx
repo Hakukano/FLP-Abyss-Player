@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Stack from "react-bootstrap/Stack";
 import Toast from "react-bootstrap/Toast";
 import ToastContainer from "react-bootstrap/ToastContainer";
+
+import { open } from "@tauri-apps/plugin-dialog";
 
 import {
   AppConfigBrief,
@@ -30,7 +33,11 @@ export default function Config(props: Props) {
   const [appConfig, setAppConfig] = useState<AppConfigBrief | null>(null);
 
   const handleError = (err: any) => {
-    setError(JSON.stringify(err));
+    if (typeof err === "string") {
+      setError(err);
+    } else {
+      setError(JSON.stringify(err));
+    }
     setErrorShow(true);
   };
 
@@ -43,6 +50,16 @@ export default function Config(props: Props) {
     if (appConfig) {
       const config = appConfig;
       config.locale = locale;
+      await props.appConfigService.update(config);
+      await fetchAppConfig();
+    }
+  };
+
+  const setRootPath = async () => {
+    if (appConfig) {
+      const path = await open({ multiple: false, directory: true });
+      const config = appConfig;
+      config.root_path = path;
       await props.appConfigService.update(config);
       await fetchAppConfig();
     }
@@ -88,6 +105,23 @@ export default function Config(props: Props) {
           </Col>
           <Form.Label column sm={FORM_DESCRIPTION_WIDTH}>
             {t("app_config.locale.description")}
+          </Form.Label>
+        </Form.Group>
+        <Form.Group as={Row} className="mb-3" controlId="app-config-root-path">
+          <Form.Label column sm={FORM_LABEL_WIDTH}>
+            {t("app_config.root_path.name")}
+          </Form.Label>
+          <Col sm={FORM_INPUT_WIDTH}>
+            <Button
+              variant="light"
+              className="w-100 text-start"
+              onClick={() => setRootPath().catch(handleError)}
+            >
+              {appConfig?.root_path || t("app_config.root_path.placeholder")}
+            </Button>
+          </Col>
+          <Form.Label column sm={FORM_DESCRIPTION_WIDTH}>
+            {t("app_config.root_path.description")}
           </Form.Label>
         </Form.Group>
       </Form>

@@ -1,1 +1,1 @@
-{}
+{"desktop-capability":{"identifier":"desktop-capability","description":"","context":"local","windows":["main"],"permissions":["dialog:allow-open"],"platforms":["linux","macOS","windows"]},"mobile-capability":{"identifier":"mobile-capability","description":"","context":"local","windows":["main"],"permissions":["dialog:allow-open"],"platforms":["iOS","android"]}}

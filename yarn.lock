@@ -556,6 +556,20 @@
     "@tauri-apps/cli-win32-ia32-msvc" "2.0.0-beta.1"
     "@tauri-apps/cli-win32-x64-msvc" "2.0.0-beta.1"
 
+"@tauri-apps/plugin-dialog@^2.0.0-beta.0":
+  version "2.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-dialog/-/plugin-dialog-2.0.0-beta.0.tgz#07ba51779342300228f1a5eb946306f5069a4f00"
+  integrity sha512-cNxiBwGB6Xgnwy5GyAabwPyvm1iaC7MmrgzcUwB1JaydLjp/Yu3Z0TmkmmEClFrrvIQA+sMcq0C8wwv6i4aedw==
+  dependencies:
+    "@tauri-apps/api" "2.0.0-beta.0"
+
+"@tauri-apps/plugin-fs@^2.0.0-beta.0":
+  version "2.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-fs/-/plugin-fs-2.0.0-beta.0.tgz#bab917941a8197af3f25a18f38595c39e9cdfe85"
+  integrity sha512-oFAA8T5wyg5dmsF/WmjjtUMEnJtzu+p2ElsK2FdwLVSB2AdAdud5izZhd1o63HFjR6waiIYebSI+llzJG7b5MQ==
+  dependencies:
+    "@tauri-apps/api" "2.0.0-beta.0"
+
 "@tauri-apps/plugin-shell@^2.0.0-beta.0":
   version "2.0.0-beta.0"
   resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-shell/-/plugin-shell-2.0.0-beta.0.tgz#96f2742fc8e5db8668560f5be1568b15026f2260"
