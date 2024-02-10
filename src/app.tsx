@@ -1,21 +1,26 @@
-import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AppConfigService } from "./services/api/app_config.ts";
 import Layout from "./pages/layout.tsx";
 import Config from "./pages/configs.tsx";
 
-interface AppProps extends React.HTMLAttributes<HTMLElement> {
+interface Props {
   appConfigService: AppConfigService;
 }
 
-function App(props: AppProps) {
+function App(props: Props) {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Config />} />
-          <Route path="config" element={<Config />} />
+          <Route
+            index
+            element={<Config appConfigService={props.appConfigService} />}
+          ></Route>
+          <Route
+            path="config"
+            element={<Config appConfigService={props.appConfigService} />}
+          ></Route>
         </Route>
       </Routes>
     </BrowserRouter>
