@@ -67,13 +67,6 @@ impl Response {
         Self::new(200, body)
     }
 
-    pub fn created<T>(body: T) -> Result<Self, Self>
-    where
-        T: Serialize,
-    {
-        Self::new(201, body)
-    }
-
     pub fn no_content() -> Self {
         Self {
             code: 204,
