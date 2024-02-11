@@ -1,6 +1,7 @@
 use parking_lot::RwLock;
 
 pub mod app_config;
+pub mod playlist;
 
 pub struct Models {
     pub app_config: RwLock<Box<dyn app_config::AppConfig>>,
