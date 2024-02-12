@@ -5,7 +5,7 @@ use super::Meta;
 #[derive(Clone, Serialize)]
 pub struct Entry {
     pub meta: Meta,
-    mime: String,
+    pub mime: String,
 }
 
 impl Entry {

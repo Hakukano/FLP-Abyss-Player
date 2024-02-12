@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::{entry::Entry, Meta};
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct Group {
     pub meta: Meta,
     pub entries: Vec<Entry>,

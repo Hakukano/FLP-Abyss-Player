@@ -1,10 +1,9 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde::{Deserialize, Serialize};
-use std::{
-    cmp::Ordering,
-    path::{Path, PathBuf},
-};
+use std::{cmp::Ordering, collections::HashSet, path::Path};
+use tap::Tap;
 
 pub mod entry;
 mod fs;
@@ -57,11 +56,11 @@ impl Meta {
 
 #[derive(Deserialize)]
 pub struct SearchGroupsParams {
-    search: String,
+    path_pattern: String,
     order_by: MetaCmpBy,
     ascend: bool,
-    limit: usize,
     offset: usize,
+    limit: usize,
 }
 
 #[derive(Serialize)]
@@ -72,12 +71,13 @@ pub struct SearchGroupsResult {
 
 #[derive(Deserialize)]
 pub struct SearchEntriesParams {
-    search: String,
+    groups: Vec<String>,
     mimes: Vec<String>,
+    path_pattern: String,
     order_by: MetaCmpBy,
     ascend: bool,
-    limit: usize,
     offset: usize,
+    limit: usize,
 }
 
 #[derive(Serialize)]
@@ -91,7 +91,61 @@ pub trait Playlist {
 
     fn groups(&self) -> &[group::Group];
 
-    fn search_groups(&self, params: SearchGroupsParams) -> Result<SearchGroupsResult>;
-
     fn remove(&mut self, paths: impl AsRef<[String]>) -> Result<()>;
+
+    fn search_groups(&self, params: SearchGroupsParams) -> SearchGroupsResult {
+        let matcher = SkimMatcherV2::default();
+        let groups = self
+            .groups()
+            .iter()
+            .filter(|group| {
+                matcher
+                    .fuzzy_match(group.meta.path.as_str(), params.path_pattern.as_str())
+                    .is_some()
+            })
+            .collect::<Vec<_>>()
+            .tap_mut(|groups| {
+                groups.sort_by(|a, b| a.meta.cmp_by(&b.meta, params.order_by, params.ascend))
+            });
+        let total = groups.len();
+        let result = groups
+            .into_iter()
+            .skip(params.offset)
+            .take(params.limit)
+            .cloned()
+            .collect();
+        SearchGroupsResult { total, result }
+    }
+
+    fn search_entries(&self, params: SearchEntriesParams) -> SearchEntriesResult {
+        let groups_set: HashSet<String> = params.groups.into_iter().collect();
+        let mimes_set: HashSet<String> = params.mimes.into_iter().collect();
+        let matcher = SkimMatcherV2::default();
+        let entries = self
+            .groups()
+            .iter()
+            .filter(|group| groups_set.contains(&group.meta.path))
+            .fold(Vec::new(), |acc, cur| {
+                acc.tap_mut(|a| cur.entries.iter().for_each(|entry| a.push(entry)))
+            })
+            .into_iter()
+            .filter(|entry| {
+                mimes_set.contains(&entry.mime)
+                    && matcher
+                        .fuzzy_match(entry.meta.path.as_str(), params.path_pattern.as_str())
+                        .is_some()
+            })
+            .collect::<Vec<_>>()
+            .tap_mut(|entries| {
+                entries.sort_by(|a, b| a.meta.cmp_by(&b.meta, params.order_by, params.ascend))
+            });
+        let total = entries.len();
+        let result = entries
+            .into_iter()
+            .skip(params.offset)
+            .take(params.limit)
+            .cloned()
+            .collect();
+        SearchEntriesResult { total, result }
+    }
 }
