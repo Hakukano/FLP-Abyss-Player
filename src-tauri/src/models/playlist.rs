@@ -55,23 +55,7 @@ impl Meta {
 }
 
 #[derive(Deserialize)]
-pub struct SearchGroupsParams {
-    path_pattern: String,
-    order_by: MetaCmpBy,
-    ascend: bool,
-    offset: usize,
-    limit: usize,
-}
-
-#[derive(Serialize)]
-pub struct SearchGroupsResult {
-    total: usize,
-    result: Vec<group::Group>,
-}
-
-#[derive(Deserialize)]
-pub struct SearchEntriesParams {
-    groups: Vec<String>,
+pub struct SearchParams {
     mimes: Vec<String>,
     path_pattern: String,
     order_by: MetaCmpBy,
@@ -81,27 +65,52 @@ pub struct SearchEntriesParams {
 }
 
 #[derive(Serialize)]
-pub struct SearchEntriesResult {
+pub struct SearchResult {
     total: usize,
-    result: Vec<entry::Entry>,
+    result: Vec<group::Group>,
 }
 
 pub trait Playlist {
-    fn scan(&mut self, path: impl AsRef<Path>, allowed_mimes: impl AsRef<[String]>) -> Result<()>;
+    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Result<Vec<entry::Entry>>;
 
-    fn groups(&self) -> &[group::Group];
+    fn create_groups(&mut self, paths: Vec<String>) -> Result<()>;
 
-    fn remove(&mut self, paths: impl AsRef<[String]>) -> Result<()>;
+    fn groups(&self) -> &Vec<group::Group>;
 
-    fn search_groups(&self, params: SearchGroupsParams) -> SearchGroupsResult {
+    fn groups_mut(&mut self) -> &mut Vec<group::Group>;
+
+    fn create_entries(&mut self, entries: Vec<entry::Entry>) -> Vec<entry::Entry> {
+        self.groups_mut()
+            .iter_mut()
+            .fold(entries, |acc, cur| cur.take_matched_entries(acc))
+    }
+
+    fn search_groups(&self, params: SearchParams) -> SearchResult {
+        let mimes_set = params.mimes.iter().collect::<HashSet<_>>();
         let matcher = SkimMatcherV2::default();
         let groups = self
             .groups()
             .iter()
-            .filter(|group| {
-                matcher
-                    .fuzzy_match(group.meta.path.as_str(), params.path_pattern.as_str())
-                    .is_some()
+            .filter_map(|group| {
+                let entries = group
+                    .entries
+                    .iter()
+                    .filter(|entry| {
+                        mimes_set.contains(&entry.mime)
+                            && matcher
+                                .fuzzy_match(entry.meta.path.as_str(), params.path_pattern.as_str())
+                                .is_some()
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if entries.is_empty() {
+                    None
+                } else {
+                    Some(group::Group {
+                        meta: group.meta.clone(),
+                        entries,
+                    })
+                }
             })
             .collect::<Vec<_>>()
             .tap_mut(|groups| {
@@ -112,40 +121,17 @@ pub trait Playlist {
             .into_iter()
             .skip(params.offset)
             .take(params.limit)
-            .cloned()
             .collect();
-        SearchGroupsResult { total, result }
+        SearchResult { total, result }
     }
 
-    fn search_entries(&self, params: SearchEntriesParams) -> SearchEntriesResult {
-        let groups_set: HashSet<String> = params.groups.into_iter().collect();
-        let mimes_set: HashSet<String> = params.mimes.into_iter().collect();
-        let matcher = SkimMatcherV2::default();
-        let entries = self
-            .groups()
-            .iter()
-            .filter(|group| groups_set.contains(&group.meta.path))
-            .fold(Vec::new(), |acc, cur| {
-                acc.tap_mut(|a| cur.entries.iter().for_each(|entry| a.push(entry)))
-            })
-            .into_iter()
-            .filter(|entry| {
-                mimes_set.contains(&entry.mime)
-                    && matcher
-                        .fuzzy_match(entry.meta.path.as_str(), params.path_pattern.as_str())
-                        .is_some()
-            })
-            .collect::<Vec<_>>()
-            .tap_mut(|entries| {
-                entries.sort_by(|a, b| a.meta.cmp_by(&b.meta, params.order_by, params.ascend))
-            });
-        let total = entries.len();
-        let result = entries
-            .into_iter()
-            .skip(params.offset)
-            .take(params.limit)
-            .cloned()
-            .collect();
-        SearchEntriesResult { total, result }
+    fn remove(&mut self, paths: impl AsRef<[String]>) {
+        let paths_set = paths.as_ref().iter().collect::<HashSet<_>>();
+        self.groups_mut().retain_mut(|group| {
+            group
+                .entries
+                .retain(|entry| !paths_set.contains(&entry.meta.path));
+            !group.entries.is_empty()
+        })
     }
 }

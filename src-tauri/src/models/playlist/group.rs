@@ -9,14 +9,14 @@ pub struct Group {
 }
 
 impl Group {
-    fn new(meta: Meta) -> Self {
+    pub fn new(meta: Meta) -> Self {
         Self {
             meta,
             entries: Vec::new(),
         }
     }
 
-    fn take_matched_entries(&mut self, entries: Vec<Entry>) -> Vec<Entry> {
+    pub fn take_matched_entries(&mut self, entries: Vec<Entry>) -> Vec<Entry> {
         let mut remainders = Vec::new();
         for entry in entries.into_iter() {
             if entry.matches_group(self.meta.path.as_str()) {
