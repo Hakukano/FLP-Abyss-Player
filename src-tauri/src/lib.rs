@@ -5,6 +5,7 @@ use tauri::Manager;
 
 mod controllers;
 mod models;
+mod shared;
 mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

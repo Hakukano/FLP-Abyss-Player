@@ -71,7 +71,7 @@ pub struct SearchResult {
 }
 
 pub trait Playlist {
-    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Result<Vec<entry::Entry>>;
+    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
 
     fn create_groups(&mut self, paths: Vec<String>) -> Result<()>;
 
