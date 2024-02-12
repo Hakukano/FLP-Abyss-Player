@@ -1,7 +1,6 @@
-use crate::models::playlist::entry::Entry;
 use anyhow::Result;
 
-use super::group::Group;
+use super::{entry::Entry, group::Group};
 
 #[derive(Default)]
 pub struct Playlist {
