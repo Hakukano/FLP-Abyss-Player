@@ -2,7 +2,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde::{Deserialize, Serialize};
-use std::{cmp::Ordering, collections::HashSet, path::Path};
+use std::{cmp::Ordering, collections::HashSet};
 use tap::Tap;
 
 pub mod entry;
@@ -20,7 +20,7 @@ enum MetaCmpBy {
 }
 
 #[derive(Clone, Serialize)]
-struct Meta {
+pub struct Meta {
     path: String,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -73,11 +73,25 @@ pub struct SearchResult {
 pub trait Playlist {
     fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
 
-    fn create_groups(&mut self, paths: Vec<String>) -> Result<()>;
+    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<group::Group>>;
 
     fn groups(&self) -> &Vec<group::Group>;
 
     fn groups_mut(&mut self) -> &mut Vec<group::Group>;
+
+    fn create_groups(&mut self, groups: Vec<group::Group>) {
+        let existing_group_path_set = self
+            .groups()
+            .iter()
+            .map(|group| group.meta.path.clone())
+            .collect::<HashSet<_>>();
+        self.groups_mut().append(
+            &mut groups
+                .into_iter()
+                .filter(|group| existing_group_path_set.contains(&group.meta.path))
+                .collect(),
+        );
+    }
 
     fn create_entries(&mut self, entries: Vec<entry::Entry>) -> Vec<entry::Entry> {
         self.groups_mut()

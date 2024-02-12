@@ -1,6 +1,6 @@
 use crate::shared::system_time_to_utc;
 use anyhow::Result;
-use std::collections::HashSet;
+use std::{collections::HashSet, path::Path};
 use walkdir::WalkDir;
 
 use super::{entry::Entry, group::Group, Meta};
@@ -28,7 +28,7 @@ impl super::Playlist for Playlist {
                             if allowed_mimes_set.contains(&mime) {
                                 Some(Entry::new(
                                     Meta {
-                                        path,
+                                        path: path.clone(),
                                         created_at: meta
                                             .created()
                                             .map(|time| {
@@ -55,8 +55,19 @@ impl super::Playlist for Playlist {
             .collect()
     }
 
-    fn create_groups(&mut self, paths: Vec<String>) -> Result<()> {
-        todo!()
+    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<Group>> {
+        let mut groups = Vec::new();
+        for path in paths.into_iter() {
+            let metadata = Path::new(path.as_str()).metadata()?;
+            let created_at = system_time_to_utc(&metadata.created()?)?;
+            let updated_at = system_time_to_utc(&metadata.modified()?)?;
+            groups.push(Group::new(Meta {
+                path,
+                created_at,
+                updated_at,
+            }));
+        }
+        Ok(groups)
     }
 
     fn groups(&self) -> &Vec<Group> {
