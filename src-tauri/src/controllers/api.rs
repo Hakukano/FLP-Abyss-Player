@@ -123,9 +123,10 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
             Method::Post => playlist::create_groups(request.args, models.playlist.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
-        ["playlist", "groups", "new"] => {
-            playlist::new_groups(request.args, models.playlist.write().as_mut())
-        }
+        ["playlist", "groups", "new"] => match request.method {
+            Method::Get => playlist::new_groups(request.args, models.playlist.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
         ["playlist", "entries"] => match request.method {
             Method::Post => {
                 playlist::create_entries(request.args, models.playlist.write().as_mut())
@@ -135,10 +136,14 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
             }
             _ => Err(Response::method_not_allowed()),
         },
-        ["playlist", "entries", "new"] => {
-            playlist::entries(request.args, models.playlist.read().as_ref())
-        }
-        ["playlist", "search"] => playlist::search(request.args, models.playlist.read().as_ref()),
+        ["playlist", "entries", "new"] => match request.method {
+            Method::Get => playlist::entries(request.args, models.playlist.read().as_ref()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "search"] => match request.method {
+            Method::Get => playlist::search(request.args, models.playlist.read().as_ref()),
+            _ => Err(Response::method_not_allowed()),
+        },
         _ => Err(Response::not_found()),
     }
 }
