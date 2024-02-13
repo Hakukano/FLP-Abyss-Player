@@ -11,6 +11,29 @@ pub struct Playlist {
 }
 
 impl super::Playlist for Playlist {
+    fn groups(&self) -> &Vec<Group> {
+        &self.groups
+    }
+
+    fn groups_mut(&mut self) -> &mut Vec<Group> {
+        &mut self.groups
+    }
+
+    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<Group>> {
+        let mut groups = Vec::new();
+        for path in paths.into_iter() {
+            let metadata = Path::new(path.as_str()).metadata()?;
+            let created_at = system_time_to_utc(&metadata.created()?)?;
+            let updated_at = system_time_to_utc(&metadata.modified()?)?;
+            groups.push(Group::new(Meta {
+                path,
+                created_at,
+                updated_at,
+            }));
+        }
+        Ok(groups)
+    }
+
     fn new_entries(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry> {
         WalkDir::new(root_path)
             .into_iter()
@@ -53,27 +76,48 @@ impl super::Playlist for Playlist {
             })
             .collect()
     }
+}
 
-    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<Group>> {
-        let mut groups = Vec::new();
-        for path in paths.into_iter() {
-            let metadata = Path::new(path.as_str()).metadata()?;
-            let created_at = system_time_to_utc(&metadata.created()?)?;
-            let updated_at = system_time_to_utc(&metadata.modified()?)?;
-            groups.push(Group::new(Meta {
-                path,
-                created_at,
-                updated_at,
-            }));
-        }
-        Ok(groups)
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::fixture_dir;
+
+    fn playlist_default() -> Box<dyn super::super::Playlist> {
+        Box::<Playlist>::default()
     }
 
-    fn groups(&self) -> &Vec<Group> {
-        &self.groups
+    #[test]
+    fn new_groups() {
+        let playlist = playlist_default();
+        let groups = playlist
+            .new_groups(vec![
+                fixture_dir()
+                    .join("a")
+                    .join("a")
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                fixture_dir().join("b").to_str().unwrap().to_string(),
+            ])
+            .unwrap();
+        assert_eq!(groups.len(), 2);
+        assert_eq!(
+            groups.first().unwrap().meta.path.split('/').last().unwrap(),
+            "a"
+        );
     }
 
-    fn groups_mut(&mut self) -> &mut Vec<Group> {
-        &mut self.groups
+    #[test]
+    fn new_entries() {
+        let playlist = playlist_default();
+        let entries = playlist.new_entries(
+            fixture_dir().to_str().unwrap().to_string(),
+            vec!["image".to_string(), "video/mp4".to_string()],
+        );
+        assert_eq!(entries.len(), 12);
+        let first = entries.first().unwrap();
+        assert_eq!(first.mime, "video/mp4");
+        assert_eq!(first.meta.path.split('/').last().unwrap(), "1.mp4");
     }
 }

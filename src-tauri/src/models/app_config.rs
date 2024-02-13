@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use tauri::{App, Manager};
 
 mod json;
-#[cfg(test)]
-mod tests;
 
 pub trait AppConfig: Send + Sync {
     fn locale(&self) -> String;

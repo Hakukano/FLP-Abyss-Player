@@ -8,9 +8,6 @@ use crate::models;
 pub mod app_config;
 pub mod playlist;
 
-#[cfg(test)]
-mod app_config_test;
-
 #[derive(Debug, Deserialize)]
 enum Method {
     #[serde(rename = "POST")]
