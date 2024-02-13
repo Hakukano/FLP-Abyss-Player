@@ -8,7 +8,7 @@ fn playlist_default() -> Box<dyn Playlist> {
 
 fn playlist_filled() -> Box<dyn Playlist> {
     playlist_default().tap_mut(|playlist| {
-        let entries = playlist.scan(
+        let entries = playlist.new_entries(
             fixture_dir().to_str().unwrap().to_string(),
             vec!["image".to_string(), "video".to_string()],
         );
@@ -70,7 +70,7 @@ mod meta {
 #[test]
 fn scan() {
     let playlist = playlist_default();
-    let entries = playlist.scan(
+    let entries = playlist.new_entries(
         fixture_dir().to_str().unwrap().to_string(),
         vec!["image".to_string(), "video/mp4".to_string()],
     );
@@ -123,7 +123,7 @@ fn search() {
 fn remove() {
     let mut playlist = playlist_filled();
     assert_eq!(playlist.groups().len(), 4);
-    playlist.remove(&[fixture_dir()
+    playlist.remove_entries(&[fixture_dir()
         .join("a")
         .join("b")
         .join("1.png")

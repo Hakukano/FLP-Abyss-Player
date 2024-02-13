@@ -11,7 +11,7 @@ pub struct Playlist {
 }
 
 impl super::Playlist for Playlist {
-    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry> {
+    fn new_entries(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry> {
         WalkDir::new(root_path)
             .into_iter()
             .filter_map(|err| err.ok())

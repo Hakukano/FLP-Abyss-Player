@@ -6,6 +6,8 @@ use tauri::{AppHandle, State};
 use crate::models;
 
 pub mod app_config;
+pub mod playlist;
+
 #[cfg(test)]
 mod app_config_test;
 
@@ -113,6 +115,26 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
             Method::Put => app_config::update(request.args, models.app_config.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
+        ["playlist", "groups"] => match request.method {
+            Method::Post => playlist::create_groups(request.args, models.playlist.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "groups", "new"] => {
+            playlist::new_groups(request.args, models.playlist.write().as_mut())
+        }
+        ["playlist", "entries"] => match request.method {
+            Method::Post => {
+                playlist::create_entries(request.args, models.playlist.write().as_mut())
+            }
+            Method::Delete => {
+                playlist::delete_entries(request.args, models.playlist.write().as_mut())
+            }
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "entries", "new"] => {
+            playlist::entries(request.args, models.playlist.read().as_ref())
+        }
+        ["playlist", "search"] => playlist::search(request.args, models.playlist.read().as_ref()),
         _ => Err(Response::not_found()),
     }
 }

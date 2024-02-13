@@ -81,14 +81,12 @@ pub struct SearchResult {
     result: Vec<group::Group>,
 }
 
-pub trait Playlist {
-    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
-
-    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<group::Group>>;
-
+pub trait Playlist: Send + Sync {
     fn groups(&self) -> &Vec<group::Group>;
 
     fn groups_mut(&mut self) -> &mut Vec<group::Group>;
+
+    fn new_groups(&self, paths: Vec<String>) -> Result<Vec<group::Group>>;
 
     fn create_groups(&mut self, groups: Vec<group::Group>) {
         let existing_group_path_set = self
@@ -104,10 +102,22 @@ pub trait Playlist {
         );
     }
 
+    fn new_entries(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
+
     fn create_entries(&mut self, entries: Vec<entry::Entry>) -> Vec<entry::Entry> {
         self.groups_mut()
             .iter_mut()
             .fold(entries, |acc, cur| cur.take_matched_entries(acc))
+    }
+
+    fn remove_entries(&mut self, paths: &[String]) {
+        let paths_set = paths.iter().collect::<HashSet<_>>();
+        self.groups_mut().retain_mut(|group| {
+            group
+                .entries
+                .retain(|entry| !paths_set.contains(&entry.meta.path));
+            !group.entries.is_empty()
+        })
     }
 
     fn search(&self, params: SearchParams) -> SearchResult {
@@ -147,16 +157,6 @@ pub trait Playlist {
             .take(params.limit)
             .collect();
         SearchResult { total, result }
-    }
-
-    fn remove(&mut self, paths: &[String]) {
-        let paths_set = paths.iter().collect::<HashSet<_>>();
-        self.groups_mut().retain_mut(|group| {
-            group
-                .entries
-                .retain(|entry| !paths_set.contains(&entry.meta.path));
-            !group.entries.is_empty()
-        })
     }
 }
 
