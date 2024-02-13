@@ -19,7 +19,10 @@ pub fn new_groups(args: Value, playlist: &dyn Playlist) -> ApiResult {
 }
 
 pub fn create_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
-    todo!()
+    playlist.create_groups(
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
+    );
+    Response::created(())
 }
 
 pub fn entries(args: Value, playlist: &dyn Playlist) -> ApiResult {
@@ -29,7 +32,9 @@ pub fn entries(args: Value, playlist: &dyn Playlist) -> ApiResult {
 }
 
 pub fn create_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
-    todo!()
+    Response::created(playlist.create_entries(
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
+    ))
 }
 
 #[derive(Deserialize)]
@@ -39,7 +44,10 @@ struct ScanArgs {
 }
 
 pub fn delete_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
-    todo!()
+    playlist.delete_entries(
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
+    );
+    Ok(Response::no_content())
 }
 
 pub fn search(args: Value, playlist: &dyn Playlist) -> ApiResult {

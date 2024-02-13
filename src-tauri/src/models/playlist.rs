@@ -27,7 +27,7 @@ enum MetaCmpBy {
     UpdatedAt,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Meta {
     path: String,
     created_at: DateTime<Utc>,
@@ -107,7 +107,7 @@ pub trait Playlist: Send + Sync {
             .fold(entries, |acc, cur| cur.take_matched_entries(acc))
     }
 
-    fn delete_entries(&mut self, paths: &[String]) {
+    fn delete_entries(&mut self, paths: Vec<String>) {
         let paths_set = paths.iter().collect::<HashSet<_>>();
         self.groups_mut().retain_mut(|group| {
             group
@@ -257,7 +257,7 @@ mod tests {
     fn delete_entries() {
         let mut playlist = playlist_filled();
         assert_eq!(playlist.groups().len(), 4);
-        playlist.delete_entries(&[fixture_dir()
+        playlist.delete_entries(vec![fixture_dir()
             .join("a")
             .join("b")
             .join("1.png")
