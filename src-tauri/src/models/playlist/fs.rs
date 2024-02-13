@@ -1,9 +1,9 @@
-use crate::shared::system_time_to_utc;
 use anyhow::Result;
-use std::{collections::HashSet, path::Path};
+use std::path::Path;
 use walkdir::WalkDir;
 
-use super::{entry::Entry, group::Group, Meta};
+use super::{entry::Entry, group::Group, match_mime, Meta};
+use crate::shared::system_time_to_utc;
 
 #[derive(Default)]
 pub struct Playlist {
@@ -12,7 +12,6 @@ pub struct Playlist {
 
 impl super::Playlist for Playlist {
     fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry> {
-        let allowed_mimes_set = allowed_mimes.into_iter().collect::<HashSet<_>>();
         WalkDir::new(root_path)
             .into_iter()
             .filter_map(|err| err.ok())
@@ -25,7 +24,7 @@ impl super::Playlist for Playlist {
                         .into_iter()
                         .find_map(|guess| {
                             let mime = guess.to_string();
-                            if allowed_mimes_set.contains(&mime) {
+                            if match_mime(mime.as_str(), allowed_mimes.as_slice()) {
                                 Some(Entry::new(
                                     Meta {
                                         path: path.clone(),

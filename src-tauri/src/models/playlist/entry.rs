@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::Meta;
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Entry {
     pub meta: Meta,
     pub mime: String,

@@ -5,9 +5,20 @@ use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashSet};
 use tap::Tap;
 
-pub mod entry;
+mod entry;
 mod fs;
-pub mod group;
+
+mod group;
+
+#[cfg(test)]
+mod tests;
+
+fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
+    patterns
+        .as_ref()
+        .iter()
+        .any(|pattern| mime.as_ref().starts_with(pattern))
+}
 
 #[derive(Clone, Copy, Deserialize)]
 enum MetaCmpBy {
@@ -19,7 +30,7 @@ enum MetaCmpBy {
     UpdatedAt,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Meta {
     path: String,
     created_at: DateTime<Utc>,
@@ -57,7 +68,7 @@ impl Meta {
 #[derive(Deserialize)]
 pub struct SearchParams {
     mimes: Vec<String>,
-    path_pattern: String,
+    path: String,
     order_by: MetaCmpBy,
     ascend: bool,
     offset: usize,
@@ -88,7 +99,7 @@ pub trait Playlist {
         self.groups_mut().append(
             &mut groups
                 .into_iter()
-                .filter(|group| existing_group_path_set.contains(&group.meta.path))
+                .filter(|group| !existing_group_path_set.contains(&group.meta.path))
                 .collect(),
         );
     }
@@ -99,8 +110,7 @@ pub trait Playlist {
             .fold(entries, |acc, cur| cur.take_matched_entries(acc))
     }
 
-    fn search_groups(&self, params: SearchParams) -> SearchResult {
-        let mimes_set = params.mimes.iter().collect::<HashSet<_>>();
+    fn search(&self, params: SearchParams) -> SearchResult {
         let matcher = SkimMatcherV2::default();
         let groups = self
             .groups()
@@ -110,9 +120,9 @@ pub trait Playlist {
                     .entries
                     .iter()
                     .filter(|entry| {
-                        mimes_set.contains(&entry.mime)
+                        match_mime(entry.mime.as_str(), params.mimes.as_slice())
                             && matcher
-                                .fuzzy_match(entry.meta.path.as_str(), params.path_pattern.as_str())
+                                .fuzzy_match(entry.meta.path.as_str(), params.path.as_str())
                                 .is_some()
                     })
                     .cloned()
@@ -139,8 +149,8 @@ pub trait Playlist {
         SearchResult { total, result }
     }
 
-    fn remove(&mut self, paths: impl AsRef<[String]>) {
-        let paths_set = paths.as_ref().iter().collect::<HashSet<_>>();
+    fn remove(&mut self, paths: &[String]) {
+        let paths_set = paths.iter().collect::<HashSet<_>>();
         self.groups_mut().retain_mut(|group| {
             group
                 .entries
@@ -148,4 +158,8 @@ pub trait Playlist {
             !group.entries.is_empty()
         })
     }
+}
+
+pub fn instantiate() -> Box<dyn Playlist> {
+    Box::<fs::Playlist>::default()
 }
