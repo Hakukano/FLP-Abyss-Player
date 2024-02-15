@@ -168,7 +168,7 @@ mod tests {
     use tap::Tap;
 
     use super::*;
-    use crate::shared::fixture_dir;
+    use crate::shared::test::fixtures_dir;
 
     mod meta {
         use super::*;
@@ -209,25 +209,25 @@ mod tests {
     fn playlist_filled() -> Box<dyn Playlist> {
         playlist_default().tap_mut(|playlist| {
             let entries = playlist.new_entries(
-                fixture_dir().to_str().unwrap().to_string(),
+                fixtures_dir().to_str().unwrap().to_string(),
                 vec!["image".to_string(), "video".to_string()],
             );
             let groups = playlist
                 .new_groups(vec![
-                    fixture_dir()
+                    fixtures_dir()
                         .join("a")
                         .join("a")
                         .to_str()
                         .unwrap()
                         .to_string(),
-                    fixture_dir()
+                    fixtures_dir()
                         .join("a")
                         .join("b")
                         .to_str()
                         .unwrap()
                         .to_string(),
-                    fixture_dir().join("b").to_str().unwrap().to_string(),
-                    fixture_dir().join("c").to_str().unwrap().to_string(),
+                    fixtures_dir().join("b").to_str().unwrap().to_string(),
+                    fixtures_dir().join("c").to_str().unwrap().to_string(),
                 ])
                 .unwrap();
             playlist.create_groups(groups);
@@ -257,7 +257,7 @@ mod tests {
     fn delete_entries() {
         let mut playlist = playlist_filled();
         assert_eq!(playlist.groups().len(), 4);
-        playlist.delete_entries(vec![fixture_dir()
+        playlist.delete_entries(vec![fixtures_dir()
             .join("a")
             .join("b")
             .join("1.png")

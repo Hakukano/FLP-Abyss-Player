@@ -1,13 +1,36 @@
+#[cfg(test)]
+pub mod test;
+
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(test)]
-use std::path::PathBuf;
+pub fn init_tracing(
+    stdout: bool,
+    filter: tracing::Level,
+) -> tracing_appender::non_blocking::WorkerGuard {
+    // Decide which output should be used
+    let (writer, guard) = if stdout {
+        let (writer, guard) = tracing_appender::non_blocking(std::io::stdout());
+        (writer, guard)
+    } else {
+        let file_appender = tracing_appender::rolling::daily("logs", "service.log");
+        let (writer, guard) = tracing_appender::non_blocking(file_appender);
+        (writer, guard)
+    };
 
-#[cfg(test)]
-pub fn fixture_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+    // Initialize tracing instance
+    tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_max_level(filter)
+        .with_ansi(stdout)
+        .with_target(false)
+        .with_file(false)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .init();
+
+    guard
 }
 
 pub fn system_time_to_utc(system_time: &SystemTime) -> Result<DateTime<Utc>> {

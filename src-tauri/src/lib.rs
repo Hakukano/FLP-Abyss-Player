@@ -2,6 +2,7 @@
 extern crate tracing;
 
 use tauri::Manager;
+use tracing::Level;
 
 mod controllers;
 mod models;
@@ -10,7 +11,7 @@ mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tracing_subscriber::fmt::init();
+    let _guard = shared::init_tracing(cfg!(debug_assertions), Level::TRACE);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

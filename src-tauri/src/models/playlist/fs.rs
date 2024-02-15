@@ -81,7 +81,7 @@ impl super::Playlist for Playlist {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::fixture_dir;
+    use crate::shared::test::fixtures_dir;
 
     fn playlist_default() -> Box<dyn super::super::Playlist> {
         Box::<Playlist>::default()
@@ -92,13 +92,13 @@ mod tests {
         let playlist = playlist_default();
         let groups = playlist
             .new_groups(vec![
-                fixture_dir()
+                fixtures_dir()
                     .join("a")
                     .join("a")
                     .to_str()
                     .unwrap()
                     .to_string(),
-                fixture_dir().join("b").to_str().unwrap().to_string(),
+                fixtures_dir().join("b").to_str().unwrap().to_string(),
             ])
             .unwrap();
         assert_eq!(groups.len(), 2);
@@ -112,7 +112,7 @@ mod tests {
     fn new_entries() {
         let playlist = playlist_default();
         let entries = playlist.new_entries(
-            fixture_dir().to_str().unwrap().to_string(),
+            fixtures_dir().to_str().unwrap().to_string(),
             vec!["image".to_string(), "video/mp4".to_string()],
         );
         assert_eq!(entries.len(), 12);
