@@ -41,7 +41,7 @@ pub struct Request {
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Response {
-    code: u16,
+    status: u16,
     body: Value,
 }
 
@@ -51,7 +51,7 @@ impl Response {
         T: Serialize,
     {
         Ok(Self {
-            code,
+            status: code,
             body: serde_json::to_value(body).map_err(|err| {
                 error!("Serialization error: {}", err);
                 Self::internal_server_error()
@@ -75,35 +75,35 @@ impl Response {
 
     pub fn no_content() -> Self {
         Self {
-            code: 204,
+            status: 204,
             body: serde_json::to_value("No Content").unwrap(),
         }
     }
 
     pub fn bad_request(reason: impl AsRef<str>) -> Self {
         Self {
-            code: 400,
+            status: 400,
             body: serde_json::to_value(reason.as_ref()).unwrap(),
         }
     }
 
     pub fn not_found() -> Self {
         Self {
-            code: 404,
+            status: 404,
             body: serde_json::to_value("Not Found").unwrap(),
         }
     }
 
     pub fn method_not_allowed() -> Self {
         Self {
-            code: 405,
+            status: 405,
             body: serde_json::to_value("Method Not Allowed").unwrap(),
         }
     }
 
     pub fn internal_server_error() -> Self {
         Self {
-            code: 500,
+            status: 500,
             body: serde_json::to_value("Internal Server Error").unwrap(),
         }
     }
@@ -137,7 +137,7 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
             _ => Err(Response::method_not_allowed()),
         },
         ["playlist", "entries", "new"] => match request.method {
-            Method::Get => playlist::entries(request.args, models.playlist.read().as_ref()),
+            Method::Get => playlist::new_entries(request.args, models.playlist.read().as_ref()),
             _ => Err(Response::method_not_allowed()),
         },
         ["playlist", "search"] => match request.method {

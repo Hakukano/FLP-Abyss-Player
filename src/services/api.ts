@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 type Method = "POST" | "GET" | "PUT" | "DELETE";
 
 export interface Response<Body> {
-  code: number;
+  status: number;
   body: Body;
 }
 

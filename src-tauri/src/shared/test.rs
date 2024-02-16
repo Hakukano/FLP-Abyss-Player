@@ -16,7 +16,7 @@ pub struct TestResources {
 
 impl TestResources {
     pub fn new() -> Self {
-        let tracing_guard = init_tracing(true, Level::TRACE);
+        let tracing_guard = init_tracing(true, Level::DEBUG);
         Self { tracing_guard }
     }
 }

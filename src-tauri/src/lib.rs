@@ -11,7 +11,14 @@ mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let _guard = shared::init_tracing(cfg!(debug_assertions), Level::TRACE);
+    let _guard = shared::init_tracing(
+        cfg!(debug_assertions),
+        if cfg!(debug_assertions) {
+            Level::DEBUG
+        } else {
+            Level::INFO
+        },
+    );
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

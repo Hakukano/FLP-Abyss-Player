@@ -25,7 +25,13 @@ pub fn create_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
     Response::created(())
 }
 
-pub fn entries(args: Value, playlist: &dyn Playlist) -> ApiResult {
+#[derive(Deserialize)]
+struct ScanArgs {
+    root_path: String,
+    allowed_mimes: Vec<String>,
+}
+
+pub fn new_entries(args: Value, playlist: &dyn Playlist) -> ApiResult {
     let args: ScanArgs =
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
     Response::ok(playlist.new_entries(args.root_path, args.allowed_mimes))
@@ -35,12 +41,6 @@ pub fn create_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
     Response::created(playlist.create_entries(
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
     ))
-}
-
-#[derive(Deserialize)]
-struct ScanArgs {
-    root_path: String,
-    allowed_mimes: Vec<String>,
 }
 
 pub fn delete_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
@@ -59,9 +59,13 @@ pub fn search(args: Value, playlist: &dyn Playlist) -> ApiResult {
 #[cfg(test)]
 mod test {
     use serde_json::json;
+    use tap::Tap;
 
     use super::*;
-    use crate::{models::playlist::instantiate, shared::test::fixtures_dir};
+    use crate::{
+        models::playlist::{group::Group, instantiate},
+        shared::test::fixtures_dir,
+    };
 
     fn mock_playlist_default() -> Box<dyn Playlist> {
         instantiate()
@@ -100,6 +104,18 @@ mod test {
         ]
     }
 
+    fn mock_groups() -> Vec<Group> {
+        mock_playlist_default()
+            .new_groups(mock_group_paths())
+            .unwrap()
+    }
+
+    fn mock_playlist_with_groups() -> Box<dyn Playlist> {
+        mock_playlist_default().tap_mut(|playlist| {
+            playlist.create_groups(mock_groups());
+        })
+    }
+
     #[test]
     fn new_groups() {
         let playlist = mock_playlist_default();
@@ -117,5 +133,20 @@ mod test {
                 .unwrap(),
             mock_group_paths().first().unwrap()
         )
+    }
+
+    #[test]
+    fn create_groups() {
+        let mut playlist = mock_playlist_default();
+        let resp = super::create_groups(
+            serde_json::to_value(mock_groups()).unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 201);
+        assert_eq!(
+            &playlist.groups().first().unwrap().meta.path,
+            mock_group_paths().first().unwrap()
+        );
     }
 }

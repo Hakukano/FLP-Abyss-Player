@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashSet};
 use tap::Tap;
 
-mod entry;
+pub mod entry;
 mod fs;
 
-mod group;
+pub mod group;
 
 fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
     patterns
@@ -29,9 +29,9 @@ enum MetaCmpBy {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Meta {
-    path: String,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    pub path: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Meta {
