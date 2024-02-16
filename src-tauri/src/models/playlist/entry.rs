@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::Meta;
+use super::meta::Meta;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Entry {

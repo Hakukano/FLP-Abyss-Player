@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{entry::Entry, Meta};
+use super::{entry::Entry, meta::Meta};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Group {

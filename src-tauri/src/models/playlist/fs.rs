@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use super::{entry::Entry, group::Group, match_mime, Meta};
+use super::{entry::Entry, group::Group, match_mime, meta::Meta};
 use crate::shared::system_time_to_utc;
 
 #[derive(Default)]
