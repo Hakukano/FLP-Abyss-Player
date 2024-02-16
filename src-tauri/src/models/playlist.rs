@@ -19,6 +19,8 @@ fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
 
 #[derive(Clone, Copy, Deserialize)]
 enum MetaCmpBy {
+    #[serde(rename = "default")]
+    Default,
     #[serde(rename = "path")]
     Path,
     #[serde(rename = "created_at")]
@@ -37,6 +39,13 @@ pub struct Meta {
 impl Meta {
     fn cmp_by(&self, other: &Meta, by: MetaCmpBy, ascend: bool) -> Ordering {
         match by {
+            MetaCmpBy::Default => {
+                if ascend {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            }
             MetaCmpBy::Path => {
                 if ascend {
                     self.path.cmp(&other.path)
@@ -193,6 +202,8 @@ mod tests {
         fn cmp_by() {
             let meta1 = meta_1();
             let meta2 = meta_2();
+            assert!(meta1.cmp_by(&meta2, MetaCmpBy::Default, true).is_lt());
+            assert!(meta2.cmp_by(&meta1, MetaCmpBy::Default, false).is_gt());
             assert!(meta1.cmp_by(&meta2, MetaCmpBy::Path, true).is_lt());
             assert!(meta2.cmp_by(&meta1, MetaCmpBy::Path, false).is_lt());
             assert!(meta1.cmp_by(&meta2, MetaCmpBy::CreatedAt, true).is_gt());
