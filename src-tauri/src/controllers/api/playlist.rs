@@ -227,4 +227,24 @@ mod test {
         assert_eq!(resp.status, 204);
         assert_eq!(playlist.groups().len(), before_delete - 1);
     }
+
+    #[test]
+    fn search() {
+        let playlist = mock_playlist_with_entries();
+        let body = super::search(
+            json!({
+                "mimes": ["image"],
+                "path": "b/2",
+                "order_by": "default",
+                "ascend": true,
+                "offset": 0,
+                "limit": 10
+            }),
+            playlist.as_ref(),
+        )
+        .unwrap()
+        .body;
+        assert_eq!(body.get("total").unwrap(), &json!(1));
+        assert_eq!(body.get("results").unwrap().as_array().unwrap().len(), 1);
+    }
 }

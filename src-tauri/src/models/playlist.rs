@@ -84,7 +84,7 @@ pub struct SearchParams {
 #[derive(Serialize)]
 pub struct SearchResult {
     total: usize,
-    result: Vec<group::Group>,
+    results: Vec<group::Group>,
 }
 
 pub trait Playlist: Send + Sync {
@@ -157,12 +157,12 @@ pub trait Playlist: Send + Sync {
                 groups.sort_by(|a, b| a.meta.cmp_by(&b.meta, params.order_by, params.ascend))
             });
         let total = groups.len();
-        let result = groups
+        let results = groups
             .into_iter()
             .skip(params.offset)
             .take(params.limit)
             .collect();
-        SearchResult { total, result }
+        SearchResult { total, results }
     }
 }
 
@@ -261,7 +261,7 @@ mod tests {
             .unwrap(),
         );
         assert_eq!(result.total, 4);
-        assert_eq!(result.result.len(), 2);
+        assert_eq!(result.results.len(), 2);
     }
 
     #[test]

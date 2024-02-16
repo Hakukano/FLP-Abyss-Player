@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::{Display, Formatter};
+use tap::Tap;
 use tauri::{AppHandle, State};
 
 use crate::models;
@@ -113,6 +114,16 @@ pub type ApiResult = Result<Response, Response>;
 
 #[tauri::command]
 pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Models>) -> ApiResult {
+    let api_path = request.path.join("/");
+    let method = request.method.to_string();
+    let args = request.args.to_string();
+    info!(
+        command = "api",
+        path = api_path,
+        method = method,
+        args = args,
+        "Processing command"
+    );
     match request.path.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
         ["app_config"] => match request.method {
             Method::Get => app_config::index(models.app_config.read().as_ref()),
@@ -146,4 +157,23 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
         },
         _ => Err(Response::not_found()),
     }
+    .tap(|result| {
+        let status = result
+            .as_ref()
+            .map(|response| response.status)
+            .unwrap_or_else(|err| err.status);
+        let body = result
+            .as_ref()
+            .map(|response| response.body.to_string())
+            .unwrap_or_else(|err| err.body.to_string());
+        info!(
+            command = "api",
+            path = api_path,
+            method = method,
+            args = args,
+            status = status,
+            body = body,
+            "Command completed"
+        );
+    })
 }
