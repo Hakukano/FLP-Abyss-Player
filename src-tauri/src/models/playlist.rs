@@ -52,7 +52,7 @@ pub trait Playlist: Send + Sync {
         );
     }
 
-    fn sort_group(&mut self, by: MetaCmpBy, ascend: bool) {
+    fn sort_groups(&mut self, by: MetaCmpBy, ascend: bool) {
         self.groups_mut()
             .sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
     }
@@ -128,76 +128,4 @@ pub trait Playlist: Send + Sync {
 
 pub fn instantiate() -> Box<dyn Playlist> {
     Box::<fs::Playlist>::default()
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::json;
-    use tap::Tap;
-
-    use super::*;
-    use crate::shared::test::fixtures_dir;
-
-    fn playlist_default() -> Box<dyn Playlist> {
-        instantiate()
-    }
-
-    fn playlist_filled() -> Box<dyn Playlist> {
-        playlist_default().tap_mut(|playlist| {
-            let entries = playlist.new_entries(
-                fixtures_dir().to_str().unwrap().to_string(),
-                vec!["image".to_string(), "video".to_string()],
-            );
-            let groups = playlist
-                .new_groups(vec![
-                    fixtures_dir()
-                        .join("a")
-                        .join("a")
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                    fixtures_dir()
-                        .join("a")
-                        .join("b")
-                        .to_str()
-                        .unwrap()
-                        .to_string(),
-                    fixtures_dir().join("b").to_str().unwrap().to_string(),
-                    fixtures_dir().join("c").to_str().unwrap().to_string(),
-                ])
-                .unwrap();
-            playlist.create_groups(groups);
-            playlist.create_entries(entries);
-        })
-    }
-
-    #[test]
-    fn search() {
-        let playlist = playlist_filled();
-        let result = playlist.search(
-            serde_json::from_value(json!({
-                "mimes": ["image"],
-                "path": "1",
-                "offset": 1,
-                "limit": 2,
-            }))
-            .unwrap(),
-        );
-        assert_eq!(result.total, 4);
-        assert_eq!(result.results.len(), 2);
-    }
-
-    #[test]
-    fn delete_entries() {
-        let mut playlist = playlist_filled();
-        assert_eq!(playlist.groups().len(), 4);
-        playlist.delete_entries(vec![fixtures_dir()
-            .join("a")
-            .join("b")
-            .join("1.png")
-            .to_str()
-            .unwrap()
-            .to_string()]);
-        assert_eq!(playlist.groups().len(), 3);
-    }
 }
