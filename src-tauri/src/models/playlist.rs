@@ -1,8 +1,8 @@
-use anyhow::Result;
+use crate::models::playlist::meta::MetaCmpBy;
+use anyhow::{anyhow, Result};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use tap::Tap;
 
 pub mod entry;
 mod fs;
@@ -21,8 +21,6 @@ fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
 pub struct SearchParams {
     mimes: Vec<String>,
     path: String,
-    order_by: meta::MetaCmpBy,
-    ascend: bool,
     offset: usize,
     limit: usize,
 }
@@ -52,6 +50,25 @@ pub trait Playlist: Send + Sync {
                 .filter(|group| !existing_group_path_set.contains(&group.meta.path))
                 .collect(),
         );
+    }
+
+    fn sort_group(&mut self, by: MetaCmpBy, ascend: bool) {
+        self.groups_mut()
+            .sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
+    }
+
+    fn move_group(&mut self, path: String, index: usize) -> Result<()> {
+        if index >= self.groups().len() {
+            return Err(anyhow!("Out of range"));
+        }
+        let origin = self
+            .groups()
+            .iter()
+            .position(|group| group.meta.path == path)
+            .ok_or_else(|| anyhow!("Group not found"))?;
+        let group = self.groups_mut().remove(origin);
+        self.groups_mut().insert(index, group);
+        Ok(())
     }
 
     fn new_entries(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
@@ -98,10 +115,7 @@ pub trait Playlist: Send + Sync {
                     })
                 }
             })
-            .collect::<Vec<_>>()
-            .tap_mut(|groups| {
-                groups.sort_by(|a, b| a.meta.cmp_by(&b.meta, params.order_by, params.ascend))
-            });
+            .collect::<Vec<_>>();
         let total = groups.len();
         let results = groups
             .into_iter()
@@ -164,8 +178,6 @@ mod tests {
             serde_json::from_value(json!({
                 "mimes": ["image"],
                 "path": "1",
-                "order_by": "created_at",
-                "ascend": false,
                 "offset": 1,
                 "limit": 2,
             }))

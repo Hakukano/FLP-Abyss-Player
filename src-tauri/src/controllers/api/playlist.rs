@@ -235,8 +235,6 @@ mod test {
             json!({
                 "mimes": ["image"],
                 "path": "b/2",
-                "order_by": "default",
-                "ascend": true,
                 "offset": 0,
                 "limit": 10
             }),
