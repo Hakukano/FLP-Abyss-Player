@@ -71,12 +71,49 @@ pub trait Playlist: Send + Sync {
         Ok(())
     }
 
+    fn delete_groups(&mut self, paths: Vec<String>) {
+        let paths_set = paths.iter().collect::<HashSet<_>>();
+        self.groups_mut()
+            .retain(|group| !paths_set.contains(&group.meta.path))
+    }
+
     fn new_entries(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<entry::Entry>;
 
     fn create_entries(&mut self, entries: Vec<entry::Entry>) -> Vec<entry::Entry> {
         self.groups_mut()
             .iter_mut()
             .fold(entries, |acc, cur| cur.take_matched_entries(acc))
+    }
+
+    fn sort_entries(&mut self, owner: String, by: MetaCmpBy, ascend: bool) -> Result<()> {
+        self.groups_mut()
+            .iter_mut()
+            .find(|group| group.meta.path == owner)
+            .ok_or_else(|| anyhow!("Owner group not found"))
+            .map(|group| {
+                group
+                    .entries
+                    .sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend))
+            })
+    }
+
+    fn move_entry(&mut self, owner: String, path: String, index: usize) -> Result<()> {
+        let group = self
+            .groups_mut()
+            .iter_mut()
+            .find(|group| group.meta.path == owner)
+            .ok_or_else(|| anyhow!("Owner group not found"))?;
+        if index >= group.entries.len() {
+            return Err(anyhow!("Out of range"));
+        }
+        let origin = group
+            .entries
+            .iter()
+            .position(|entry| entry.meta.path == path)
+            .ok_or_else(|| anyhow!("Entry not found"))?;
+        let entry = group.entries.remove(origin);
+        group.entries.insert(index, entry);
+        Ok(())
     }
 
     fn delete_entries(&mut self, paths: Vec<String>) {
