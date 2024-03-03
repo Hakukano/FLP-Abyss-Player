@@ -16,4 +16,4 @@ jobs:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/tauri-linux
     - uses: dtolnay/rust-toolchain@stable
-    - run: cargo build --all-features --release
+    - run: make build-linux
