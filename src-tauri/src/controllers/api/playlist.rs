@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{ApiResult, Response};
-use crate::models::playlist::Playlist;
+use crate::models::playlist::{meta::MetaCmpBy, Playlist};
 
 pub fn new_groups(args: Value, playlist: &dyn Playlist) -> ApiResult {
     Response::ok(
@@ -26,6 +26,40 @@ pub fn create_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
 }
 
 #[derive(Deserialize, Serialize)]
+struct SortGroupsArgs {
+    by: MetaCmpBy,
+    ascend: bool,
+}
+
+pub fn sort_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
+    let args: SortGroupsArgs =
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    Response::ok(playlist.sort_groups(args.by, args.ascend))
+}
+
+#[derive(Deserialize, Serialize)]
+struct MoveGroupArgs {
+    path: String,
+    index: usize,
+}
+
+pub fn move_group(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
+    let args: MoveGroupArgs =
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    Response::ok(
+        playlist
+            .move_group(args.path, args.index)
+            .map_err(|err| Response::bad_request(err.to_string()))?,
+    )
+}
+
+pub fn delete_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
+    Response::ok(playlist.delete_groups(
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
+    ))
+}
+
+#[derive(Deserialize, Serialize)]
 struct NewEntriesArgs {
     root_path: String,
     allowed_mimes: Vec<String>,
@@ -41,6 +75,40 @@ pub fn create_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
     Response::created(playlist.create_entries(
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
     ))
+}
+
+#[derive(Deserialize, Serialize)]
+struct SortEntriesArgs {
+    owner: String,
+    by: MetaCmpBy,
+    ascend: bool,
+}
+
+pub fn sort_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
+    let args: SortEntriesArgs =
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    Response::ok(
+        playlist
+            .sort_entries(args.owner, args.by, args.ascend)
+            .map_err(|_| Response::not_found())?,
+    )
+}
+
+#[derive(Deserialize, Serialize)]
+struct MoveEntryArgs {
+    owner: String,
+    path: String,
+    index: usize,
+}
+
+pub fn move_entry(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
+    let args: MoveEntryArgs =
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    Response::ok(
+        playlist
+            .move_entry(args.owner, args.path, args.index)
+            .map_err(|err| Response::bad_request(err.to_string()))?,
+    )
 }
 
 pub fn delete_entries(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
