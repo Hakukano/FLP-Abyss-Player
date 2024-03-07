@@ -132,10 +132,21 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
         },
         ["playlist", "groups"] => match request.method {
             Method::Post => playlist::create_groups(request.args, models.playlist.write().as_mut()),
+            Method::Delete => {
+                playlist::delete_groups(request.args, models.playlist.write().as_mut())
+            }
             _ => Err(Response::method_not_allowed()),
         },
         ["playlist", "groups", "new"] => match request.method {
             Method::Get => playlist::new_groups(request.args, models.playlist.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "groups", "sort"] => match request.method {
+            Method::Put => playlist::sort_groups(request.args, models.playlist.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "groups", "move"] => match request.method {
+            Method::Put => playlist::move_group(request.args, models.playlist.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["playlist", "entries"] => match request.method {
@@ -149,6 +160,14 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
         },
         ["playlist", "entries", "new"] => match request.method {
             Method::Get => playlist::new_entries(request.args, models.playlist.read().as_ref()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "entries", "sort"] => match request.method {
+            Method::Put => playlist::sort_entries(request.args, models.playlist.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlist", "entries", "move"] => match request.method {
+            Method::Put => playlist::move_entry(request.args, models.playlist.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["playlist", "search"] => match request.method {
