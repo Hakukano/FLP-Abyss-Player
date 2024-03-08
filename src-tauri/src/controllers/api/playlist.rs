@@ -34,7 +34,8 @@ struct SortGroupsArgs {
 pub fn sort_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
     let args: SortGroupsArgs =
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
-    Response::ok(playlist.sort_groups(args.by, args.ascend))
+    playlist.sort_groups(args.by, args.ascend);
+    Response::ok(())
 }
 
 #[derive(Deserialize, Serialize)]
@@ -54,9 +55,10 @@ pub fn move_group(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
 }
 
 pub fn delete_groups(args: Value, playlist: &mut dyn Playlist) -> ApiResult {
-    Response::ok(playlist.delete_groups(
+    playlist.delete_groups(
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?,
-    ))
+    );
+    Response::ok(())
 }
 
 #[derive(Deserialize, Serialize)]
