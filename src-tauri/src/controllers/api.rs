@@ -130,6 +130,10 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
             Method::Put => app_config::update(request.args, models.app_config.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
+        ["playlist"] => match request.method {
+            Method::Get => playlist::index(models.playlist.read().as_ref()),
+            _ => Err(Response::method_not_allowed()),
+        },
         ["playlist", "groups"] => match request.method {
             Method::Post => playlist::create_groups(request.args, models.playlist.write().as_mut()),
             Method::Delete => {
