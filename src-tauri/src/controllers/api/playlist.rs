@@ -239,6 +239,63 @@ mod test {
     }
 
     #[test]
+    fn sort_groups() {
+        let mut playlist = mock_playlist_with_groups();
+        let resp = super::sort_groups(
+            serde_json::to_value(SortGroupsArgs {
+                by: MetaCmpBy::Path,
+                ascend: false,
+            })
+            .unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 200);
+        assert_eq!(
+            &playlist.groups().first().unwrap().meta.path,
+            mock_group_paths().last().unwrap()
+        );
+    }
+
+    #[test]
+    fn move_group() {
+        let mut playlist = mock_playlist_with_groups();
+        let resp = super::move_group(
+            serde_json::to_value(MoveGroupArgs {
+                path: mock_group_paths().first().unwrap().to_string(),
+                index: 1,
+            })
+            .unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 200);
+        assert_eq!(
+            &playlist.groups().first().unwrap().meta.path,
+            mock_group_paths().get(1).unwrap()
+        );
+    }
+
+    #[test]
+    fn delete_groups() {
+        let mut playlist = mock_playlist_with_groups();
+        let resp = super::delete_groups(
+            serde_json::to_value(vec![
+                mock_group_paths().first().unwrap().to_string(),
+                mock_group_paths().get(1).unwrap().to_string(),
+            ])
+            .unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 200);
+        assert_eq!(
+            &playlist.groups().first().unwrap().meta.path,
+            mock_group_paths().get(2).unwrap()
+        );
+    }
+
+    #[test]
     fn new_entries() {
         let playlist = mock_playlist_default();
         let body = super::new_entries(
@@ -282,6 +339,82 @@ mod test {
                 .meta
                 .path,
             mock_group_paths().first().unwrap().clone() + "/1.png"
+        );
+    }
+
+    #[test]
+    fn sort_entries() {
+        let mut playlist = mock_playlist_with_entries();
+        let origin_last = playlist
+            .groups()
+            .last()
+            .unwrap()
+            .entries
+            .last()
+            .unwrap()
+            .meta
+            .path
+            .clone();
+        let resp = super::sort_entries(
+            serde_json::to_value(SortEntriesArgs {
+                owner: mock_group_paths().last().unwrap().to_string(),
+                by: MetaCmpBy::Path,
+                ascend: true,
+            })
+            .unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 200);
+        assert_eq!(
+            playlist
+                .groups()
+                .last()
+                .unwrap()
+                .entries
+                .first()
+                .unwrap()
+                .meta
+                .path,
+            origin_last
+        );
+    }
+
+    #[test]
+    fn move_entry() {
+        let mut playlist = mock_playlist_with_entries();
+        let origin_last = playlist
+            .groups()
+            .last()
+            .unwrap()
+            .entries
+            .last()
+            .unwrap()
+            .meta
+            .path
+            .clone();
+        let resp = super::move_entry(
+            serde_json::to_value(MoveEntryArgs {
+                owner: mock_group_paths().last().unwrap().to_string(),
+                path: origin_last.clone(),
+                index: 0,
+            })
+            .unwrap(),
+            playlist.as_mut(),
+        )
+        .unwrap();
+        assert_eq!(resp.status, 200);
+        assert_eq!(
+            playlist
+                .groups()
+                .last()
+                .unwrap()
+                .entries
+                .first()
+                .unwrap()
+                .meta
+                .path,
+            origin_last
         );
     }
 
