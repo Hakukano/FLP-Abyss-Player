@@ -15,7 +15,7 @@ export default {
       playlist: {
         name: "Playlist",
         description: "The playlist path",
-        placeholder: "Click to choose a directory",
+        placeholder: "Click to choose a playlist file",
       },
     },
   },
@@ -35,7 +35,7 @@ export default {
       playlist: {
         name: "プレイリスト",
         description: "プレイリストのパス",
-        placeholder: "フォルダーを選択してください",
+        placeholder: "プレイリストを選択してください",
       },
     },
   },

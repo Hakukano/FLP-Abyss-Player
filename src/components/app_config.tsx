@@ -16,6 +16,7 @@ import {
   AppConfigService,
 } from "../services/api/app_config.ts";
 import translations from "../translations.ts";
+import { PLAYLIST_EXTENSION } from "../utils/consts.ts";
 
 const FORM_LABEL_WIDTH = 3;
 const FORM_INPUT_WIDTH = 9;
@@ -61,9 +62,13 @@ export default function AppConfig(props: Props) {
 
   const setPlaylist = async () => {
     if (appConfig) {
-      const path = await open({ multiple: false, directory: true });
+      const path = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: "APPL", extensions: [PLAYLIST_EXTENSION] }],
+      });
       const config = appConfig;
-      config.playlist = path;
+      config.playlist = path?.path || null;
       await props.appConfigService.update(config);
       await fetchAppConfig();
     }
@@ -109,7 +114,11 @@ export default function AppConfig(props: Props) {
           </Col>
           <Form.Text muted>{t("app_config.locale.description")}</Form.Text>
         </Form.Group>
-        <Form.Group as={Row} className="mb-3" controlId="app-config-root-path">
+        <Form.Group
+          as={Row}
+          className="mb-3"
+          controlId="app-config-playlist-path"
+        >
           <Form.Label column md={FORM_LABEL_WIDTH}>
             {t("app_config.playlist.name")}
           </Form.Label>
