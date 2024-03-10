@@ -4,7 +4,7 @@ use serde_json::Value;
 use super::{ApiResult, Response};
 use crate::models::playlist::{meta::MetaCmpBy, Playlist};
 
-pub fn index(playlist: &dyn Playlist) -> ApiResult {
+pub fn get_groups(playlist: &dyn Playlist) -> ApiResult {
     Response::ok(playlist.groups().clone())
 }
 
