@@ -102,6 +102,13 @@ impl Response {
         }
     }
 
+    pub fn conflict() -> Self {
+        Self {
+            status: 409,
+            body: serde_json::to_value("Conflict").unwrap(),
+        }
+    }
+
     pub fn internal_server_error() -> Self {
         Self {
             status: 500,
@@ -136,6 +143,7 @@ pub fn api(
         },
         ["playlists"] => match request.method {
             Method::Get => playlists::index(services.playlist.read().as_ref()),
+            Method::Post => playlists::create(request.args, services.playlist.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["playlists", id] => match request.method {
