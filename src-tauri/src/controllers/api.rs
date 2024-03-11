@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use tap::Tap;
 use tauri::{AppHandle, State};
 
-use crate::models;
+use crate::services;
 
 pub mod app_config;
 pub mod playlist;
@@ -113,7 +113,11 @@ impl Response {
 pub type ApiResult = Result<Response, Response>;
 
 #[tauri::command]
-pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Models>) -> ApiResult {
+pub fn api(
+    request: Request,
+    _app_handle: AppHandle,
+    services: State<services::Services>,
+) -> ApiResult {
     let api_path = request.path.join("/");
     let method = request.method.to_string();
     let args = request.args.to_string();
@@ -126,53 +130,8 @@ pub fn api(request: Request, _app_handle: AppHandle, models: State<models::Model
     );
     match request.path.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
         ["app_config"] => match request.method {
-            Method::Get => app_config::index(models.app_config.read().as_ref()),
-            Method::Put => app_config::update(request.args, models.app_config.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "groups"] => match request.method {
-            Method::Get => playlist::get_groups(models.playlist.read().as_ref()),
-            Method::Post => playlist::create_groups(request.args, models.playlist.write().as_mut()),
-            Method::Delete => {
-                playlist::delete_groups(request.args, models.playlist.write().as_mut())
-            }
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "groups", "new"] => match request.method {
-            Method::Get => playlist::new_groups(request.args, models.playlist.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "groups", "sort"] => match request.method {
-            Method::Put => playlist::sort_groups(request.args, models.playlist.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "groups", "move"] => match request.method {
-            Method::Put => playlist::move_group(request.args, models.playlist.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "entries"] => match request.method {
-            Method::Post => {
-                playlist::create_entries(request.args, models.playlist.write().as_mut())
-            }
-            Method::Delete => {
-                playlist::delete_entries(request.args, models.playlist.write().as_mut())
-            }
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "entries", "new"] => match request.method {
-            Method::Get => playlist::new_entries(request.args, models.playlist.read().as_ref()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "entries", "sort"] => match request.method {
-            Method::Put => playlist::sort_entries(request.args, models.playlist.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "entries", "move"] => match request.method {
-            Method::Put => playlist::move_entry(request.args, models.playlist.write().as_mut()),
-            _ => Err(Response::method_not_allowed()),
-        },
-        ["playlist", "search"] => match request.method {
-            Method::Get => playlist::search(request.args, models.playlist.read().as_ref()),
+            Method::Get => app_config::index(services.app_config.read().as_ref()),
+            Method::Put => app_config::update(request.args, services.app_config.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),

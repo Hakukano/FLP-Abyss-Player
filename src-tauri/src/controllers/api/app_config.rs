@@ -1,30 +1,34 @@
 use serde_json::Value;
 
-use super::{ApiResult, Response};
-use crate::models::app_config::AppConfig;
+use crate::services::app_config::AppConfigService;
 
-pub fn index(app_config: &dyn AppConfig) -> ApiResult {
-    Response::ok(app_config.to_json().map_err(|err| {
-        error!("Serialization error: {}", err);
-        Response::internal_server_error()
-    })?)
+use super::{ApiResult, Response};
+
+pub fn index(app_config: &dyn AppConfigService) -> ApiResult {
+    Response::ok(app_config.all())
 }
 
-pub fn update(args: Value, app_config: &mut dyn AppConfig) -> ApiResult {
+pub fn update(args: Value, app_config: &mut dyn AppConfigService) -> ApiResult {
     app_config
-        .set_from_json(args)
-        .map_err(|err| Response::bad_request(format!("Invalid arguments: {}", err)))?;
+        .save(
+            serde_json::from_value(args)
+                .map_err(|err| Response::bad_request(format!("Invalid arguments: {}", err))),
+        )
+        .map_err(|err| {
+            error!("Cannot update app config: {}", err);
+            Response::internal_server_error()
+        })?;
     Ok(Response::no_content())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::app_config::{instantiate, AppConfig};
-    use serde_json::json;
-    use std::path::Path;
+    use crate::services::app_config::instantiate;
 
-    fn mock_app_config_default() -> Box<dyn AppConfig> {
+    use super::*;
+    use serde_json::json;
+
+    fn mock_app_config_default() -> Box<dyn AppConfigService> {
         instantiate()
     }
 
@@ -41,14 +45,13 @@ mod tests {
         let mut mock_app_config = mock_app_config_default();
         super::update(
             json!({
-                "locale": "xx_YY",
-                "playlist": "/test",
+                "locale": "xx_YY"
             }),
             mock_app_config.as_mut(),
         )
         .unwrap();
-        let lhs = (mock_app_config.locale(), mock_app_config.playlist());
-        let rhs = ("xx_YY".to_string(), Some(Path::new("/test").to_path_buf()));
+        let lhs = mock_app_config.locale();
+        let rhs = "xx_YY".to_string();
         assert_eq!(lhs, rhs);
     }
 }

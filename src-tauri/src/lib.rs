@@ -25,7 +25,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .manage(services::Services::new())
         .setup(|app| {
-            models::app_config::initialize(
+            services::app_config::initialize(
                 &mut app.state::<services::Services>().app_config.write(),
                 app,
             );
