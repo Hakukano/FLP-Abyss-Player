@@ -1120,6 +1120,7 @@ name = "flp-abyss-player"
 version = "0.8.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.0",
  "chrono",
  "flp-abyss-player-derive",
  "image",

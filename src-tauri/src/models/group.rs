@@ -1,4 +1,5 @@
 use anyhow::Result;
+use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -18,7 +19,7 @@ pub struct Group {
 impl Group {
     pub fn new(meta: Meta, playlist_id: String) -> Self {
         Self {
-            id: meta.path.clone(),
+            id: URL_SAFE.encode(meta.path.as_str()),
             meta,
             playlist_id,
         }
