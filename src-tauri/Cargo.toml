@@ -24,7 +24,6 @@ flp-abyss-player-derive = { version = "0.1", path = "../src-derive" }
 
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-fuzzy-matcher = "0.3"
 image = "0.24"
 mime = "0.3"
 mime_guess = "2.0"

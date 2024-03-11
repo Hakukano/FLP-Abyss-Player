@@ -6,12 +6,12 @@ use tracing::Level;
 
 mod controllers;
 mod models;
-mod shared;
+mod services;
 mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let _guard = shared::init_tracing(
+    let _guard = utils::init_tracing(
         cfg!(debug_assertions),
         if cfg!(debug_assertions) {
             Level::DEBUG

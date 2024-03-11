@@ -1,6 +1,9 @@
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
+use std::{cmp::Ordering, path::Path};
+
+use super::system_time_to_utc;
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
 pub enum MetaCmpBy {
@@ -22,6 +25,19 @@ pub struct Meta {
 }
 
 impl Meta {
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self> {
+        let metadata = path.as_ref().metadata()?;
+        Ok(Self {
+            path: path
+                .as_ref()
+                .to_str()
+                .ok_or_else(|| anyhow!("Invalid path"))?
+                .to_string(),
+            created_at: system_time_to_utc(&metadata.created()?),
+            updated_at: system_time_to_utc(&metadata.modified()?),
+        })
+    }
+
     pub fn cmp_by(&self, other: &Meta, by: MetaCmpBy, ascend: bool) -> Ordering {
         match by {
             MetaCmpBy::Default => {

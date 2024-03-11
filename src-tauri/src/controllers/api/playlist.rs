@@ -138,7 +138,7 @@ mod test {
     use super::*;
     use crate::{
         models::playlist::{entry::Entry, group::Group, instantiate},
-        shared::test::fixtures_dir,
+        utils::test::fixtures_dir,
     };
 
     fn mock_playlist_default() -> Box<dyn Playlist> {
