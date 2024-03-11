@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::models::group::Group;
+use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
 mod fs;
 
@@ -20,6 +20,8 @@ pub trait GroupService: Send + Sync {
     }
 
     fn save(&mut self, group: Group) -> Result<Group>;
+
+    fn sort(&mut self, by: MetaCmpBy, ascend: bool);
 }
 
 pub fn instantiate() -> Box<dyn GroupService> {

@@ -15,6 +15,8 @@ pub trait PlaylistService: Send + Sync {
     }
 
     fn save(&mut self, playlist: Playlist) -> Result<Playlist>;
+
+    fn destroy(&mut self, id: &str) -> Result<Playlist>;
 }
 
 pub fn instantiate() -> Box<dyn PlaylistService> {

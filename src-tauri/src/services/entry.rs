@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::models::entry::Entry;
+use crate::{models::entry::Entry, utils::meta::MetaCmpBy};
 
 mod fs;
 
@@ -10,7 +10,7 @@ pub trait EntryService: Send + Sync {
     fn find_by_group_id(&self, group_id: &str) -> Vec<Entry> {
         self.all()
             .iter()
-            .filter(|group| group.group_id == group_id)
+            .filter(|group| group.group_id.clone().unwrap_or_default() == group_id)
             .cloned()
             .collect()
     }
@@ -18,6 +18,8 @@ pub trait EntryService: Send + Sync {
     fn save(&mut self, entry: Entry) -> Result<Entry>;
 
     fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry>;
+
+    fn sort(&mut self, by: MetaCmpBy, ascend: bool);
 }
 
 pub fn instantiate() -> Box<dyn EntryService> {

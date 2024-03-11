@@ -8,7 +8,7 @@ use crate::{
 
 use super::group::Group;
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Playlist {
     pub id: String,
     pub meta: Meta,
@@ -22,11 +22,15 @@ impl Playlist {
         }
     }
 
-    pub fn save(self, playlist_service: &mut PlaylistService) -> Result<Self> {
+    pub fn save(self, playlist_service: &mut dyn PlaylistService) -> Result<Self> {
         playlist_service.save(self)
     }
 
-    pub fn groups(&self, group_service: &GroupService) -> Vec<Group> {
+    pub fn destroy(self, playlist_service: &mut dyn PlaylistService) -> Result<Self> {
+        playlist_service.destroy(self.id.as_str())
+    }
+
+    pub fn groups(&self, group_service: &dyn GroupService) -> Vec<Group> {
         group_service.find_by_playlist_id(self.id.as_str())
     }
 }

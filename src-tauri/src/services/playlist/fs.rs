@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
 use crate::models::playlist::Playlist;
@@ -20,5 +20,11 @@ impl super::PlaylistService for PlaylistService {
     fn save(&mut self, playlist: Playlist) -> Result<Playlist> {
         self.data.insert(playlist.id.clone(), playlist.clone());
         Ok(playlist)
+    }
+
+    fn destroy(&mut self, id: &str) -> Result<Playlist> {
+        self.data
+            .remove(id)
+            .ok_or_else(|| anyhow!("Playlist not found"))
     }
 }

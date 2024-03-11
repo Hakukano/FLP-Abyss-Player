@@ -26,11 +26,11 @@ impl Entry {
         }
     }
 
-    pub fn save(self, entry_service: &mut EntryService) -> Result<Self> {
+    pub fn save(self, entry_service: &mut dyn EntryService) -> Result<Self> {
         entry_service.save(self)
     }
 
-    pub fn group(&self, group_service: &GroupService) -> Option<Group> {
+    pub fn group(&self, group_service: &dyn GroupService) -> Option<Group> {
         self.group_id
             .as_ref()
             .and_then(|group_id| group_service.find_by_id(group_id))

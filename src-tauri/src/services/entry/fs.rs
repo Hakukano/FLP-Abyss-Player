@@ -1,23 +1,30 @@
 use anyhow::Result;
-use std::collections::HashMap;
 use walkdir::WalkDir;
 
 use crate::{
     models::entry::Entry,
-    utils::{match_mime, meta::Meta},
+    utils::{
+        match_mime,
+        meta::{Meta, MetaCmpBy},
+    },
 };
 
+#[derive(Default)]
 pub struct EntryService {
-    data: HashMap<String, Entry>,
+    data: Vec<Entry>,
 }
 
 impl super::EntryService for EntryService {
     fn all(&self) -> Vec<Entry> {
-        self.data.values().cloned().collect()
+        self.data.clone()
     }
 
     fn save(&mut self, entry: Entry) -> Result<Entry> {
-        self.data.insert(entry.id.clone(), entry.clone());
+        if let Some(origin) = self.data.iter_mut().find(|g| g.id == entry.id) {
+            *origin = entry.clone();
+        } else {
+            self.data.push(entry.clone());
+        }
         Ok(entry)
     }
 
@@ -32,7 +39,7 @@ impl super::EntryService for EntryService {
                         .find_map(|guess| {
                             let mime = guess.to_string();
                             if match_mime(mime.as_str(), allowed_mimes.as_slice()) {
-                                Some(Entry::new(meta, mime, None))
+                                Some(Entry::new(meta.clone(), mime, None))
                             } else {
                                 None
                             }
@@ -40,5 +47,9 @@ impl super::EntryService for EntryService {
                 })
             })
             .collect()
+    }
+
+    fn sort(&mut self, by: MetaCmpBy, ascend: bool) {
+        self.data.sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
     }
 }

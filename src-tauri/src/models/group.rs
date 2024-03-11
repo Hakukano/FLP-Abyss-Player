@@ -24,15 +24,15 @@ impl Group {
         }
     }
 
-    pub fn save(self, group_service: &mut GroupService) -> Result<Self> {
+    pub fn save(self, group_service: &mut dyn GroupService) -> Result<Self> {
         group_service.save(self)
     }
 
-    pub fn playlist(&self, playlist_service: &PlaylistService) -> Option<Playlist> {
+    pub fn playlist(&self, playlist_service: &dyn PlaylistService) -> Option<Playlist> {
         playlist_service.find_by_id(self.playlist_id.as_str())
     }
 
-    pub fn entries(&self, entry_service: &EntryService) -> Vec<Entry> {
+    pub fn entries(&self, entry_service: &dyn EntryService) -> Vec<Entry> {
         entry_service.find_by_group_id(self.id.as_str())
     }
 }

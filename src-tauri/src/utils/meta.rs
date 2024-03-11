@@ -33,8 +33,8 @@ impl Meta {
                 .to_str()
                 .ok_or_else(|| anyhow!("Invalid path"))?
                 .to_string(),
-            created_at: system_time_to_utc(&metadata.created()?),
-            updated_at: system_time_to_utc(&metadata.modified()?),
+            created_at: system_time_to_utc(&metadata.created()?)?,
+            updated_at: system_time_to_utc(&metadata.modified()?)?,
         })
     }
 

@@ -7,7 +7,7 @@ use tauri::{AppHandle, State};
 use crate::services;
 
 pub mod app_config;
-pub mod playlist;
+pub mod playlists;
 
 #[derive(Debug, Deserialize)]
 enum Method {
@@ -132,6 +132,15 @@ pub fn api(
         ["app_config"] => match request.method {
             Method::Get => app_config::index(services.app_config.read().as_ref()),
             Method::Put => app_config::update(request.args, services.app_config.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlists"] => match request.method {
+            Method::Get => playlists::index(services.playlist.read().as_ref()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["playlists", id] => match request.method {
+            Method::Get => playlists::show(id, services.playlist.read().as_ref()),
+            Method::Delete => playlists::destroy(id, services.playlist.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),
