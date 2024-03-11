@@ -2,9 +2,20 @@ use anyhow::Result;
 
 use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
-#[derive(Default)]
 pub struct GroupService {
     data: Vec<Group>,
+    last_sort_by: MetaCmpBy,
+    last_sort_ascend: bool,
+}
+
+impl Default for GroupService {
+    fn default() -> Self {
+        Self {
+            data: Vec::new(),
+            last_sort_by: MetaCmpBy::Path,
+            last_sort_ascend: true,
+        }
+    }
 }
 
 impl super::GroupService for GroupService {
@@ -17,11 +28,14 @@ impl super::GroupService for GroupService {
             *origin = group.clone();
         } else {
             self.data.push(group.clone());
+            self.sort(self.last_sort_by, self.last_sort_ascend);
         }
         Ok(group)
     }
 
     fn sort(&mut self, by: MetaCmpBy, ascend: bool) {
         self.data.sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
+        self.last_sort_by = by;
+        self.last_sort_ascend = ascend;
     }
 }

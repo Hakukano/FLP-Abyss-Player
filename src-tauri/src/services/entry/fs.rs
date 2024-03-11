@@ -9,9 +9,20 @@ use crate::{
     },
 };
 
-#[derive(Default)]
 pub struct EntryService {
     data: Vec<Entry>,
+    last_sort_by: MetaCmpBy,
+    last_sort_ascend: bool,
+}
+
+impl Default for EntryService {
+    fn default() -> Self {
+        Self {
+            data: Vec::new(),
+            last_sort_by: MetaCmpBy::Path,
+            last_sort_ascend: true,
+        }
+    }
 }
 
 impl super::EntryService for EntryService {
@@ -24,6 +35,7 @@ impl super::EntryService for EntryService {
             *origin = entry.clone();
         } else {
             self.data.push(entry.clone());
+            self.sort(self.last_sort_by, self.last_sort_ascend);
         }
         Ok(entry)
     }
@@ -51,5 +63,7 @@ impl super::EntryService for EntryService {
 
     fn sort(&mut self, by: MetaCmpBy, ascend: bool) {
         self.data.sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
+        self.last_sort_by = by;
+        self.last_sort_ascend = ascend;
     }
 }
