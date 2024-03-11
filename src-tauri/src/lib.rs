@@ -23,10 +23,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .manage(models::Models::new())
+        .manage(services::Services::new())
         .setup(|app| {
             models::app_config::initialize(
-                &mut app.state::<models::Models>().app_config.write(),
+                &mut app.state::<services::Services>().app_config.write(),
                 app,
             );
             Ok(())
