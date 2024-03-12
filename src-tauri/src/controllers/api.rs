@@ -10,6 +10,7 @@ mod app_config;
 mod entries;
 mod groups;
 mod playlists;
+mod scanner;
 
 #[derive(Debug, Deserialize)]
 enum Method {
@@ -147,6 +148,10 @@ pub fn api(
         ["app_config"] => match request.method {
             Method::Get => app_config::index(services.app_config.read().as_ref()),
             Method::Put => app_config::update(request.args, services.app_config.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["scanner"] => match request.method {
+            Method::Get => scanner::index(request.args),
             _ => Err(Response::method_not_allowed()),
         },
         ["playlists"] => match request.method {
