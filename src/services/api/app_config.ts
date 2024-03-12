@@ -7,7 +7,6 @@ export interface AppConfigImmutable {}
 
 export interface AppConfigMutable {
   locale: string;
-  playlist: string | null;
 }
 
 export interface AppConfigBrief extends AppConfigImmutable, AppConfigMutable {}
@@ -21,7 +20,7 @@ export interface AppConfigService {
   update(appConfig: AppConfigMutable): Promise<Response<void>>;
 }
 
-export function initializeAppConfigService(): AppConfigService {
+export function instantiateAppConfigService(): AppConfigService {
   return import.meta.env.MODE === "test"
     ? new TauriCommand()
     : new TauriCommand();
