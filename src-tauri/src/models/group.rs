@@ -19,7 +19,7 @@ pub struct Group {
 impl Group {
     pub fn new(meta: Meta, playlist_id: String) -> Self {
         Self {
-            id: URL_SAFE.encode(meta.path.as_str()),
+            id: playlist_id.clone() + URL_SAFE.encode(meta.path.as_str()).as_str(),
             meta,
             playlist_id,
         }
@@ -27,6 +27,10 @@ impl Group {
 
     pub fn save(self, group_service: &mut dyn GroupService) -> Result<Self> {
         group_service.save(self)
+    }
+
+    pub fn destroy(self, group_service: &mut dyn GroupService) -> Result<Self> {
+        group_service.destroy(self.id.as_str())
     }
 
     pub fn playlist(&self, playlist_service: &dyn PlaylistService) -> Option<Playlist> {

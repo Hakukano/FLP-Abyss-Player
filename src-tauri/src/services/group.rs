@@ -22,6 +22,8 @@ pub trait GroupService: Send + Sync {
     fn save(&mut self, group: Group) -> Result<Group>;
 
     fn sort(&mut self, by: MetaCmpBy, ascend: bool);
+
+    fn destroy(&mut self, id: &str) -> Result<Group>;
 }
 
 pub fn instantiate() -> Box<dyn GroupService> {

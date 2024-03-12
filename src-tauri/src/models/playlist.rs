@@ -2,24 +2,21 @@ use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    services::{group::GroupService, playlist::PlaylistService},
-    utils::meta::Meta,
-};
+use crate::services::{group::GroupService, playlist::PlaylistService};
 
 use super::group::Group;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Playlist {
     pub id: String,
-    pub meta: Meta,
+    pub name: String,
 }
 
 impl Playlist {
-    pub fn new(meta: Meta) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
-            id: URL_SAFE.encode(meta.path.as_str()),
-            meta,
+            id: URL_SAFE.encode(name.as_str()),
+            name,
         }
     }
 

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
@@ -37,5 +37,15 @@ impl super::GroupService for GroupService {
         self.data.sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
         self.last_sort_by = by;
         self.last_sort_ascend = ascend;
+    }
+
+    fn destroy(&mut self, id: &str) -> Result<Group> {
+        let (index, _) = self
+            .data
+            .iter()
+            .enumerate()
+            .find(|(_, g)| g.id == id)
+            .ok_or_else(|| anyhow!("Playlist not found"))?;
+        Ok(self.data.remove(index))
     }
 }

@@ -14,13 +14,13 @@ pub struct Entry {
     pub id: String,
     pub meta: Meta,
     pub mime: String,
-    pub group_id: Option<String>,
+    pub group_id: String,
 }
 
 impl Entry {
-    pub fn new(meta: Meta, mime: String, group_id: Option<String>) -> Self {
+    pub fn new(meta: Meta, mime: String, group_id: String) -> Self {
         Self {
-            id: URL_SAFE.encode(meta.path.as_str()),
+            id: group_id.clone() + URL_SAFE.encode(meta.path.as_str()).as_str(),
             mime,
             meta,
             group_id,
@@ -32,9 +32,7 @@ impl Entry {
     }
 
     pub fn group(&self, group_service: &dyn GroupService) -> Option<Group> {
-        self.group_id
-            .as_ref()
-            .and_then(|group_id| group_service.find_by_id(group_id))
+        group_service.find_by_id(self.group_id.as_str())
     }
 
     pub fn matches_group(&self, group: impl AsRef<str>) -> bool {

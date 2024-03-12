@@ -1,3 +1,4 @@
+pub mod fs;
 pub mod meta;
 #[cfg(test)]
 pub mod test;
@@ -39,11 +40,4 @@ pub fn system_time_to_utc(system_time: &SystemTime) -> Result<DateTime<Utc>> {
         system_time.duration_since(UNIX_EPOCH)?.as_millis() as i64
     )
     .ok_or_else(|| anyhow!("Cannot convert milliseconds to Utc time"))
-}
-
-pub fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
-    patterns
-        .as_ref()
-        .iter()
-        .any(|pattern| mime.as_ref().starts_with(pattern))
 }

@@ -1,13 +1,6 @@
-use anyhow::Result;
-use walkdir::WalkDir;
+use anyhow::{anyhow, Result};
 
-use crate::{
-    models::entry::Entry,
-    utils::{
-        match_mime,
-        meta::{Meta, MetaCmpBy},
-    },
-};
+use crate::{models::entry::Entry, utils::meta::MetaCmpBy};
 
 pub struct EntryService {
     data: Vec<Entry>,
@@ -40,30 +33,19 @@ impl super::EntryService for EntryService {
         Ok(entry)
     }
 
-    fn scan(&self, root_path: String, allowed_mimes: Vec<String>) -> Vec<Entry> {
-        WalkDir::new(root_path)
-            .into_iter()
-            .filter_map(|err| err.ok())
-            .filter_map(|entry| {
-                Meta::from_path(entry.path()).ok().and_then(|meta| {
-                    mime_guess::from_path(entry.path())
-                        .into_iter()
-                        .find_map(|guess| {
-                            let mime = guess.to_string();
-                            if match_mime(mime.as_str(), allowed_mimes.as_slice()) {
-                                Some(Entry::new(meta.clone(), mime, None))
-                            } else {
-                                None
-                            }
-                        })
-                })
-            })
-            .collect()
-    }
-
     fn sort(&mut self, by: MetaCmpBy, ascend: bool) {
         self.data.sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
         self.last_sort_by = by;
         self.last_sort_ascend = ascend;
+    }
+
+    fn destroy(&mut self, id: &str) -> Result<Entry> {
+        let (index, _) = self
+            .data
+            .iter()
+            .enumerate()
+            .find(|(_, e)| e.id == id)
+            .ok_or_else(|| anyhow!("Playlist not found"))?;
+        Ok(self.data.remove(index))
     }
 }
