@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::{models::playlist::Playlist, services::playlist::PlaylistService};
 
-use super::{ApiResult, Response};
+use super::{ApiResult, FromArgs, Response};
 
 pub fn index(playlist_service: &dyn PlaylistService) -> ApiResult {
     Response::ok(playlist_service.all())
@@ -13,9 +13,9 @@ pub fn index(playlist_service: &dyn PlaylistService) -> ApiResult {
 struct CreateArgs {
     name: String,
 }
+impl FromArgs for CreateArgs {}
 pub fn create(args: Value, playlist_service: &mut dyn PlaylistService) -> ApiResult {
-    let args: CreateArgs =
-        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    let args = CreateArgs::from_args(args)?;
     let playlist = Playlist::new(args.name);
     playlist_service
         .save(playlist)
@@ -23,14 +23,14 @@ pub fn create(args: Value, playlist_service: &mut dyn PlaylistService) -> ApiRes
             error!("Cannot save playlist: {}", err);
             Response::internal_server_error()
         })
-        .and_then(|p| Response::created(p))
+        .and_then(Response::created)
 }
 
 pub fn show(id: &str, playlist_service: &dyn PlaylistService) -> ApiResult {
     Response::ok(
         playlist_service
             .find_by_id(id)
-            .ok_or_else(|| Response::not_found())?,
+            .ok_or_else(Response::not_found)?,
     )
 }
 

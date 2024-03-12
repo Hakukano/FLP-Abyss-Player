@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::{Display, Formatter};
 use tap::Tap;
@@ -121,6 +121,12 @@ impl Response {
 
 pub type ApiResult = Result<Response, Response>;
 
+trait FromArgs: DeserializeOwned {
+    fn from_args(args: Value) -> Result<Self, Response> {
+        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))
+    }
+}
+
 #[tauri::command]
 pub fn api(
     request: Request,
@@ -156,6 +162,7 @@ pub fn api(
         ["groups"] => match request.method {
             Method::Get => groups::index(request.args, services.group.read().as_ref()),
             Method::Post => groups::create(request.args, services.group.write().as_mut()),
+            Method::Put => groups::sort(request.args, services.group.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["groups", id] => match request.method {
@@ -166,6 +173,7 @@ pub fn api(
         ["entries"] => match request.method {
             Method::Get => entries::index(request.args, services.entry.read().as_ref()),
             Method::Post => entries::create(request.args, services.entry.write().as_mut()),
+            Method::Put => entries::sort(request.args, services.entry.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["entries", id] => match request.method {

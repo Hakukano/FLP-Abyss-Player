@@ -6,8 +6,8 @@ use crate::utils::meta::Meta;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Entry {
     pub id: String,
-    pub meta: Meta,
     pub mime: String,
+    pub meta: Meta,
     pub group_id: String,
 }
 

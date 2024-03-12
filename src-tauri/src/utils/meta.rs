@@ -5,7 +5,7 @@ use std::{cmp::Ordering, path::Path};
 
 use super::system_time_to_utc;
 
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum MetaCmpBy {
     #[serde(rename = "default")]
     Default,

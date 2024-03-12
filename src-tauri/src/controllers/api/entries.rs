@@ -3,17 +3,21 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{models::entry::Entry, services::entry::EntryService, utils::meta::Meta};
+use crate::{
+    models::entry::Entry,
+    services::entry::EntryService,
+    utils::meta::{Meta, MetaCmpBy},
+};
 
-use super::{ApiResult, Response};
+use super::{ApiResult, FromArgs, Response};
 
 #[derive(Deserialize, Serialize)]
 struct IndexArgs {
     group_id: Option<String>,
 }
+impl FromArgs for IndexArgs {}
 pub fn index(args: Value, entry_service: &dyn EntryService) -> ApiResult {
-    let args: IndexArgs =
-        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    let args = IndexArgs::from_args(args)?;
     if let Some(group_id) = args.group_id {
         Response::ok(entry_service.find_by_group_id(group_id.as_str()))
     } else {
@@ -26,15 +30,14 @@ struct CreateArgs {
     group_id: String,
     path: String,
 }
+impl FromArgs for CreateArgs {}
 pub fn create(args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
-    let args: CreateArgs =
-        serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
+    let args = CreateArgs::from_args(args)?;
 
     if entry_service
         .find_by_group_id(args.group_id.as_str())
         .into_iter()
-        .find(|entry| entry.meta.path == args.path.as_str())
-        .is_some()
+        .any(|entry| entry.meta.path == args.path.as_str())
     {
         return Err(Response::conflict());
     }
@@ -54,14 +57,26 @@ pub fn create(args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
             error!("Cannot save entry: {}", err);
             Response::internal_server_error()
         })
-        .and_then(|g| Response::created(g))
+        .and_then(Response::created)
+}
+
+#[derive(Deserialize, Serialize)]
+struct SortArgs {
+    by: MetaCmpBy,
+    ascend: bool,
+}
+impl FromArgs for SortArgs {}
+pub fn sort(args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
+    let args = SortArgs::from_args(args)?;
+    entry_service.sort(args.by, args.ascend);
+    Ok(Response::no_content())
 }
 
 pub fn show(id: &str, entry_service: &dyn EntryService) -> ApiResult {
     Response::ok(
         entry_service
             .find_by_id(id)
-            .ok_or_else(|| Response::not_found())?,
+            .ok_or_else(Response::not_found)?,
     )
 }
 
