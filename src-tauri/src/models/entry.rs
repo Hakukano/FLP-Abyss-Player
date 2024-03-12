@@ -2,12 +2,7 @@ use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    services::{entry::EntryService, group::GroupService},
-    utils::meta::Meta,
-};
-
-use super::group::Group;
+use crate::{services::entry::EntryService, utils::meta::Meta};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Entry {
@@ -29,13 +24,5 @@ impl Entry {
 
     pub fn save(self, entry_service: &mut dyn EntryService) -> Result<Self> {
         entry_service.save(self)
-    }
-
-    pub fn group(&self, group_service: &dyn GroupService) -> Option<Group> {
-        group_service.find_by_id(self.group_id.as_str())
-    }
-
-    pub fn matches_group(&self, group: impl AsRef<str>) -> bool {
-        self.meta.path.starts_with(group.as_ref())
     }
 }

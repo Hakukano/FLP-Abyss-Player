@@ -2,12 +2,7 @@ use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    services::{entry::EntryService, group::GroupService, playlist::PlaylistService},
-    utils::meta::Meta,
-};
-
-use super::{entry::Entry, playlist::Playlist};
+use crate::{services::group::GroupService, utils::meta::Meta};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Group {
@@ -27,17 +22,5 @@ impl Group {
 
     pub fn save(self, group_service: &mut dyn GroupService) -> Result<Self> {
         group_service.save(self)
-    }
-
-    pub fn destroy(self, group_service: &mut dyn GroupService) -> Result<Self> {
-        group_service.destroy(self.id.as_str())
-    }
-
-    pub fn playlist(&self, playlist_service: &dyn PlaylistService) -> Option<Playlist> {
-        playlist_service.find_by_id(self.playlist_id.as_str())
-    }
-
-    pub fn entries(&self, entry_service: &dyn EntryService) -> Vec<Entry> {
-        entry_service.find_by_group_id(self.id.as_str())
     }
 }
