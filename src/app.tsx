@@ -1,10 +1,10 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import { AppConfigService } from "./services/api/app_config.ts";
 import Welcome from "./pages/welcome.tsx";
+import { ApiServices } from "./services/api.ts";
 
 interface Props {
-  appConfigService: AppConfigService;
+  apiServices: ApiServices;
 }
 
 function App(props: Props) {
@@ -13,7 +13,7 @@ function App(props: Props) {
       <Routes>
         <Route
           path="/"
-          element={<Welcome appConfigService={props.appConfigService} />}
+          element={<Welcome apiServices={props.apiServices} />}
         ></Route>
       </Routes>
     </BrowserRouter>

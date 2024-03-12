@@ -8,13 +8,11 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Stack from "react-bootstrap/Stack";
 import AppConfig from "../components/app_config.tsx";
-import {
-  AppConfigBrief,
-  AppConfigService,
-} from "../services/api/app_config.ts";
+import { AppConfigBrief } from "../services/api/app_config.ts";
+import { ApiServices } from "../services/api.ts";
 
 interface Props {
-  appConfigService: AppConfigService;
+  apiServices: ApiServices;
 }
 
 export default function Welcome(props: Props) {
@@ -34,7 +32,7 @@ export default function Welcome(props: Props) {
             <Card.Body>
               <Stack gap={3}>
                 <AppConfig
-                  appConfigService={props.appConfigService}
+                  appConfigService={props.apiServices.appConfig}
                   appConfigState={[appConfig, setAppConfig]}
                 />
                 {appConfig ? (

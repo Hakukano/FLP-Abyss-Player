@@ -7,11 +7,12 @@ import { initReactI18next } from "react-i18next";
 
 import App from "./app.tsx";
 import translations from "./translations.ts";
-import { initializeAppConfigService } from "./services/api/app_config.ts";
+import { ApiServices } from "./services/api.ts";
 
 async function main() {
-  const appConfigService = initializeAppConfigService();
-  const appConfig = (await appConfigService.index()).body;
+  const apiServices = new ApiServices();
+
+  const appConfig = (await apiServices.appConfig.index()).body;
 
   await i18next.use(initReactI18next).init({
     debug: import.meta.env.DEV,
@@ -29,7 +30,7 @@ async function main() {
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
-      <App appConfigService={appConfigService} />
+      <App apiServices={apiServices} />
     </React.StrictMode>,
   );
 }
