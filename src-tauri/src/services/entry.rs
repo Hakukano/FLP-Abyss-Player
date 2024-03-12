@@ -7,6 +7,10 @@ mod fs;
 pub trait EntryService: Send + Sync {
     fn all(&self) -> Vec<Entry>;
 
+    fn find_by_id(&self, id: &str) -> Option<Entry> {
+        self.all().iter().find(|entry| entry.id == id).cloned()
+    }
+
     fn find_by_group_id(&self, group_id: &str) -> Vec<Entry> {
         self.all()
             .iter()

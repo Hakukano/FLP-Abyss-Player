@@ -7,6 +7,7 @@ use tauri::{AppHandle, State};
 use crate::services;
 
 mod app_config;
+mod entries;
 mod groups;
 mod playlists;
 
@@ -160,6 +161,16 @@ pub fn api(
         ["groups", id] => match request.method {
             Method::Get => groups::show(id, services.group.read().as_ref()),
             Method::Delete => groups::destroy(id, services.group.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["entries"] => match request.method {
+            Method::Get => entries::index(request.args, services.entry.read().as_ref()),
+            Method::Post => entries::create(request.args, services.entry.write().as_mut()),
+            _ => Err(Response::method_not_allowed()),
+        },
+        ["entries", id] => match request.method {
+            Method::Get => entries::show(id, services.entry.read().as_ref()),
+            Method::Delete => entries::destroy(id, services.entry.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),

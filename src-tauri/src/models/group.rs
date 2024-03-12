@@ -1,8 +1,7 @@
-use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{services::group::GroupService, utils::meta::Meta};
+use crate::utils::meta::Meta;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Group {
@@ -18,9 +17,5 @@ impl Group {
             meta,
             playlist_id,
         }
-    }
-
-    pub fn save(self, group_service: &mut dyn GroupService) -> Result<Self> {
-        group_service.save(self)
     }
 }

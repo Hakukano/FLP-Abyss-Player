@@ -1,8 +1,7 @@
-use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{services::entry::EntryService, utils::meta::Meta};
+use crate::utils::meta::Meta;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Entry {
@@ -13,16 +12,15 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(meta: Meta, mime: String, group_id: String) -> Self {
+    pub fn new(meta: Meta, group_id: String) -> Self {
         Self {
             id: group_id.clone() + URL_SAFE.encode(meta.path.as_str()).as_str(),
-            mime,
+            mime: mime_guess::from_path(meta.path.as_str())
+                .first()
+                .map(|mime| mime.to_string())
+                .unwrap_or_default(),
             meta,
             group_id,
         }
-    }
-
-    pub fn save(self, entry_service: &mut dyn EntryService) -> Result<Self> {
-        entry_service.save(self)
     }
 }

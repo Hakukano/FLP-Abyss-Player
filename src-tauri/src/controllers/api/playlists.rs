@@ -17,8 +17,8 @@ pub fn create(args: Value, playlist_service: &mut dyn PlaylistService) -> ApiRes
     let args: CreateArgs =
         serde_json::from_value(args).map_err(|err| Response::bad_request(err.to_string()))?;
     let playlist = Playlist::new(args.name);
-    playlist
-        .save(playlist_service)
+    playlist_service
+        .save(playlist)
         .map_err(|err| {
             error!("Cannot save playlist: {}", err);
             Response::internal_server_error()
