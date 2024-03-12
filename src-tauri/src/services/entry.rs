@@ -1,8 +1,9 @@
 use anyhow::Result;
+use serde_json::Value;
 
 use crate::{models::entry::Entry, utils::meta::MetaCmpBy};
 
-mod fs;
+mod memory;
 
 pub trait EntryService: Send + Sync {
     fn all(&self) -> Vec<Entry>;
@@ -24,8 +25,12 @@ pub trait EntryService: Send + Sync {
     fn sort(&mut self, by: MetaCmpBy, ascend: bool);
 
     fn destroy(&mut self, id: &str) -> Result<Entry>;
+
+    fn to_json(&self) -> Value;
+
+    fn set_json(&mut self, value: Value) -> Result<()>;
 }
 
 pub fn instantiate() -> Box<dyn EntryService> {
-    Box::<fs::EntryService>::default()
+    Box::<memory::EntryService>::default()
 }

@@ -1,9 +1,11 @@
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::models::playlist::Playlist;
 
-#[derive(Default)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct PlaylistService {
     data: HashMap<String, Playlist>,
 }
@@ -26,5 +28,14 @@ impl super::PlaylistService for PlaylistService {
         self.data
             .remove(id)
             .ok_or_else(|| anyhow!("Playlist not found"))
+    }
+
+    fn to_json(&self) -> Value {
+        serde_json::to_value(self).expect("Corrupted playlist data")
+    }
+
+    fn set_json(&mut self, value: Value) -> Result<()> {
+        *self = serde_json::from_value(value)?;
+        Ok(())
     }
 }

@@ -1,7 +1,10 @@
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
+#[derive(Deserialize, Serialize)]
 pub struct GroupService {
     data: Vec<Group>,
     last_sort_by: MetaCmpBy,
@@ -47,5 +50,14 @@ impl super::GroupService for GroupService {
             .find(|(_, g)| g.id == id)
             .ok_or_else(|| anyhow!("Playlist not found"))?;
         Ok(self.data.remove(index))
+    }
+
+    fn to_json(&self) -> Value {
+        serde_json::to_value(self).expect("Corrupted playlist data")
+    }
+
+    fn set_json(&mut self, value: Value) -> Result<()> {
+        *self = serde_json::from_value(value)?;
+        Ok(())
     }
 }

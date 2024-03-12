@@ -1,8 +1,9 @@
 use anyhow::Result;
+use serde_json::Value;
 
 use crate::models::playlist::Playlist;
 
-mod fs;
+mod memory;
 
 pub trait PlaylistService: Send + Sync {
     fn all(&self) -> Vec<Playlist>;
@@ -17,8 +18,12 @@ pub trait PlaylistService: Send + Sync {
     fn save(&mut self, playlist: Playlist) -> Result<Playlist>;
 
     fn destroy(&mut self, id: &str) -> Result<Playlist>;
+
+    fn to_json(&self) -> Value;
+
+    fn set_json(&mut self, value: Value) -> Result<()>;
 }
 
 pub fn instantiate() -> Box<dyn PlaylistService> {
-    Box::<fs::PlaylistService>::default()
+    Box::<memory::PlaylistService>::default()
 }
