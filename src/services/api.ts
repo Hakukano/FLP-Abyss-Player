@@ -8,7 +8,7 @@ import { EntryService, instantiateEntryService } from "./api/entry";
 import { GroupService, instantiateGroupService } from "./api/group";
 import { PlaylistService, instantiatePlaylistService } from "./api/playlist";
 import { ScannerService, instantiateScannerService } from "./api/scanner";
-import { StorageService, instantiateStorageService } from "./api/storage";
+import { SessionService, instantiateSessionService } from "./api/session";
 
 type Method = "POST" | "GET" | "PUT" | "DELETE";
 
@@ -38,7 +38,7 @@ export interface SortArgs {
 
 export class ApiServices {
   appConfig: AppConfigService;
-  storage: StorageService;
+  session: SessionService;
   scanner: ScannerService;
   playlist: PlaylistService;
   group: GroupService;
@@ -46,7 +46,7 @@ export class ApiServices {
 
   constructor() {
     this.appConfig = instantiateAppConfigService();
-    this.storage = instantiateStorageService();
+    this.session = instantiateSessionService();
     this.scanner = instantiateScannerService();
     this.playlist = instantiatePlaylistService();
     this.group = instantiateGroupService();

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "react-bootstrap/Button";
@@ -8,7 +7,6 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Stack from "react-bootstrap/Stack";
 import AppConfig from "../components/app_config.tsx";
-import { AppConfigBrief } from "../services/api/app_config.ts";
 import { ApiServices } from "../services/api.ts";
 
 interface Props {
@@ -17,8 +15,6 @@ interface Props {
 
 export default function Welcome(props: Props) {
   const { t } = useTranslation();
-
-  const [appConfig, setAppConfig] = useState<AppConfigBrief | null>(null);
 
   return (
     <Container
@@ -31,19 +27,15 @@ export default function Welcome(props: Props) {
             <Card.Header>{t("app_name")}</Card.Header>
             <Card.Body>
               <Stack gap={3}>
-                <AppConfig
-                  appConfigService={props.apiServices.appConfig}
-                  appConfigState={[appConfig, setAppConfig]}
-                />
-                {appConfig ? (
-                  appConfig.playlist ? (
-                    <Button variant="info">{t("load_playlist")}</Button>
-                  ) : (
-                    <Button variant="warning">{t("new_playlist")}</Button>
-                  )
-                ) : (
-                  <></>
-                )}
+                <AppConfig apiServices={props.apiServices} />
+                <Row>
+                  <Col md={6}>
+                    <Button variant="warning">{t("new_session")}</Button>
+                  </Col>
+                  <Col md={6}>
+                    <Button variant="info">{t("load_session")}</Button>
+                  </Col>
+                </Row>
               </Stack>
             </Card.Body>
           </Card>

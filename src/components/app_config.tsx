@@ -11,22 +11,16 @@ import ToastContainer from "react-bootstrap/ToastContainer";
 
 import { open } from "@tauri-apps/plugin-dialog";
 
-import {
-  AppConfigBrief,
-  AppConfigService,
-} from "../services/api/app_config.ts";
+import { AppConfigBrief } from "../services/api/app_config.ts";
 import translations from "../translations.ts";
 import { PLAYLIST_EXTENSION } from "../utils/consts.ts";
+import { ApiServices } from "../services/api.ts";
 
 const FORM_LABEL_WIDTH = 3;
 const FORM_INPUT_WIDTH = 9;
 
 interface Props {
-  appConfigService: AppConfigService;
-  appConfigState?: [
-    AppConfigBrief | null,
-    Dispatch<SetStateAction<AppConfigBrief | null>>,
-  ];
+  apiServices: ApiServices;
 }
 
 export default function AppConfig(props: Props) {
@@ -34,8 +28,7 @@ export default function AppConfig(props: Props) {
 
   const [error, setError] = useState("");
   const [errorShow, setErrorShow] = useState(false);
-  const [appConfig, setAppConfig] =
-    props.appConfigState || useState<AppConfigBrief | null>(null);
+  const [appConfig, setAppConfig] = useState<AppConfigBrief | null>(null);
 
   const handleError = (err: any) => {
     if (typeof err === "string") {
@@ -47,7 +40,7 @@ export default function AppConfig(props: Props) {
   };
 
   const fetchAppConfig = async () => {
-    const resp = await props.appConfigService.index();
+    const resp = await props.apiServices.appConfig.index();
     setAppConfig(resp.body);
   };
 
@@ -55,7 +48,7 @@ export default function AppConfig(props: Props) {
     if (appConfig) {
       const config = appConfig;
       config.locale = locale;
-      await props.appConfigService.update(config);
+      await props.apiServices.appConfig.update(config);
       await fetchAppConfig();
     }
   };
@@ -69,7 +62,7 @@ export default function AppConfig(props: Props) {
       });
       const config = appConfig;
       config.playlist = path?.path || null;
-      await props.appConfigService.update(config);
+      await props.apiServices.appConfig.update(config);
       await fetchAppConfig();
     }
   };

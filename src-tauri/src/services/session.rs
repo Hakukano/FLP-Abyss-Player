@@ -4,8 +4,8 @@ use super::{entry::EntryService, group::GroupService, playlist::PlaylistService}
 
 mod fs;
 
-pub trait StorageService: Send + Sync {
-    fn write(
+pub trait SessionService: Send + Sync {
+    fn save(
         &self,
         path: &str,
         playlist_service: &dyn PlaylistService,
@@ -13,7 +13,7 @@ pub trait StorageService: Send + Sync {
         entry_service: &dyn EntryService,
     ) -> Result<()>;
 
-    fn read(
+    fn load(
         &self,
         path: &str,
         playlist_service: &mut dyn PlaylistService,
@@ -22,6 +22,6 @@ pub trait StorageService: Send + Sync {
     ) -> Result<()>;
 }
 
-pub fn instantiate() -> Box<dyn StorageService> {
-    Box::<fs::StorageService>::default()
+pub fn instantiate() -> Box<dyn SessionService> {
+    Box::<fs::SessionService>::default()
 }

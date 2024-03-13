@@ -5,13 +5,13 @@ use serde_json::Value;
 use crate::services::{entry::EntryService, group::GroupService, playlist::PlaylistService};
 
 #[derive(Deserialize, Serialize)]
-pub struct Storage {
+pub struct Session {
     pub playlists: Value,
     pub groups: Value,
     pub entries: Value,
 }
 
-impl Storage {
+impl Session {
     pub fn new(
         playlist_service: &dyn PlaylistService,
         group_service: &dyn GroupService,

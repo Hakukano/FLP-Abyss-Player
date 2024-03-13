@@ -11,7 +11,7 @@ mod entries;
 mod groups;
 mod playlists;
 mod scanner;
-mod storage;
+mod session;
 
 #[derive(Debug, Deserialize)]
 enum Method {
@@ -151,20 +151,20 @@ pub fn api(
             Method::Put => app_config::update(request.args, services.app_config.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
-        ["storage", "write"] => match request.method {
-            Method::Post => storage::write(
+        ["session", "write"] => match request.method {
+            Method::Post => session::save(
                 request.args,
-                services.storage.read().as_ref(),
+                services.session.read().as_ref(),
                 services.playlist.read().as_ref(),
                 services.group.read().as_ref(),
                 services.entry.read().as_ref(),
             ),
             _ => Err(Response::method_not_allowed()),
         },
-        ["storage", "read"] => match request.method {
-            Method::Post => storage::read(
+        ["session", "read"] => match request.method {
+            Method::Post => session::load(
                 request.args,
-                services.storage.write().as_mut(),
+                services.session.write().as_mut(),
                 services.playlist.write().as_mut(),
                 services.group.write().as_mut(),
                 services.entry.write().as_mut(),

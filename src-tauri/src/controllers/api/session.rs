@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::services::{
-    entry::EntryService, group::GroupService, playlist::PlaylistService, storage::StorageService,
+    entry::EntryService, group::GroupService, playlist::PlaylistService, session::SessionService,
 };
 
 use super::{ApiResult, FromArgs, Response};
@@ -12,16 +12,16 @@ struct WriteArgs {
     path: String,
 }
 impl FromArgs for WriteArgs {}
-pub fn write(
+pub fn save(
     args: Value,
-    storage_service: &dyn StorageService,
+    session_service: &dyn SessionService,
     playlist_service: &dyn PlaylistService,
     group_service: &dyn GroupService,
     entry_service: &dyn EntryService,
 ) -> ApiResult {
     let args = WriteArgs::from_args(args)?;
-    storage_service
-        .write(
+    session_service
+        .save(
             args.path.as_str(),
             playlist_service,
             group_service,
@@ -36,16 +36,16 @@ struct ReadArgs {
     path: String,
 }
 impl FromArgs for ReadArgs {}
-pub fn read(
+pub fn load(
     args: Value,
-    storage_service: &mut dyn StorageService,
+    session_service: &mut dyn SessionService,
     playlist_service: &mut dyn PlaylistService,
     group_service: &mut dyn GroupService,
     entry_service: &mut dyn EntryService,
 ) -> ApiResult {
     let args = ReadArgs::from_args(args)?;
-    storage_service
-        .read(
+    session_service
+        .load(
             args.path.as_str(),
             playlist_service,
             group_service,

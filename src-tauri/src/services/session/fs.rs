@@ -3,28 +3,28 @@ use std::fs::File;
 use anyhow::Result;
 
 use crate::{
-    models::storage::Storage,
+    models::session::Session,
     services::{entry::EntryService, group::GroupService, playlist::PlaylistService},
 };
 
 #[derive(Default)]
-pub struct StorageService {}
+pub struct SessionService {}
 
-impl super::StorageService for StorageService {
-    fn write(
+impl super::SessionService for SessionService {
+    fn save(
         &self,
         path: &str,
         playlist_service: &dyn PlaylistService,
         group_service: &dyn GroupService,
         entry_service: &dyn EntryService,
     ) -> Result<()> {
-        let storage = Storage::new(playlist_service, group_service, entry_service);
+        let session = Session::new(playlist_service, group_service, entry_service);
         let file = File::create(path)?;
-        serde_json::to_writer(file, &storage)?;
+        serde_json::to_writer(file, &session)?;
         Ok(())
     }
 
-    fn read(
+    fn load(
         &self,
         path: &str,
         playlist_service: &mut dyn PlaylistService,
@@ -32,7 +32,7 @@ impl super::StorageService for StorageService {
         entry_service: &mut dyn EntryService,
     ) -> Result<()> {
         let file = File::open(path)?;
-        let storage: Storage = serde_json::from_reader(file)?;
-        storage.apply(playlist_service, group_service, entry_service)
+        let session: Session = serde_json::from_reader(file)?;
+        session.apply(playlist_service, group_service, entry_service)
     }
 }
