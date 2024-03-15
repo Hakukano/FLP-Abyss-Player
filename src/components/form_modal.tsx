@@ -18,7 +18,7 @@ type FormData = {
   rows: FormRow<any>[];
 };
 
-interface UseForm {
+export interface UseForm {
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
   data: FormData | null;

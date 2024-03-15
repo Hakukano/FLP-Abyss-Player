@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { ApiServices } from "../services/api";
 import { PlaylistBrief } from "../services/api/playlist";
-import { ErrorModal, useError } from "./error_modal";
-import { Stack, Table } from "react-bootstrap";
-import { PlusCircle, XCircle } from "react-bootstrap-icons";
-import { FormModal, useForm } from "./form_modal";
+import { useError } from "./error_modal";
+import { useForm } from "./form_modal";
 import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
+import List from "./list";
 
 interface Props {
   apiServices: ApiServices;
@@ -24,7 +23,7 @@ export default function Playlist(props: Props) {
     setPlaylists((await props.apiServices.playlist.index()).body);
   };
 
-  const addPlaylist = async () => {
+  const newPlaylist = () => {
     formState.popup({
       header: t("playlist.title"),
       rows: [
@@ -58,52 +57,13 @@ export default function Playlist(props: Props) {
   }, []);
 
   return (
-    <Stack gap={2}>
-      <ErrorModal state={errorState} />
-      <FormModal
-        state={formState}
-        handleClose={() => {
-          formState.setShow(false);
-        }}
-        handleSubmit={createPlaylist}
-      />
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <td>{t("playlist.name.label")}</td>
-            <td
-              className="text-end"
-              style={{ whiteSpace: "nowrap", width: "1px" }}
-            >
-              <PlusCircle
-                className="text-info"
-                size={24}
-                onClick={addPlaylist}
-              />
-            </td>
-          </tr>
-        </thead>
-        <tbody>
-          {playlists &&
-            playlists.map((playlist) => {
-              return (
-                <tr key={playlist.id}>
-                  <td>{playlist.name}</td>
-                  <td
-                    className="text-end"
-                    style={{ whiteSpace: "nowrap", width: "1px" }}
-                  >
-                    <XCircle
-                      className="text-danger"
-                      size={24}
-                      onClick={() => deletePlaylist(playlist.id)}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </Table>
-    </Stack>
+    <List
+      createFormState={formState}
+      headers={[t("playlist.name.label")]}
+      data={playlists || []}
+      handleNew={newPlaylist}
+      handleCreate={createPlaylist}
+      handleDelete={deletePlaylist}
+    />
   );
 }
