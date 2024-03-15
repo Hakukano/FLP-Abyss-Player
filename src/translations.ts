@@ -10,6 +10,19 @@ export default {
       close: "Close",
       submit: "Submit",
     },
+    sort: {
+      title: "Sort",
+      by: {
+        label: "Sort by",
+        default: "Default",
+        path: "Path",
+        created_at: "Created at",
+        updated_at: "Updated at",
+      },
+      ascend: {
+        label: "Ascend?",
+      },
+    },
     app_config: {
       title: "Application Configuration",
       locale: {
@@ -23,11 +36,24 @@ export default {
         name_too_short: "Name is too short",
       },
       name: {
-        label: "The playlist name",
+        label: "Playlist name",
         placeholder: "Enter playlist name...",
       },
       delete: {
         confirm: "Are you sure to delete the playlist?",
+      },
+    },
+    group: {
+      title: "Group",
+      errors: {
+        playlist_not_selected: "Playlist has not been selected",
+      },
+      path: {
+        label: "Group path",
+        placeholder: "Enter group path...",
+      },
+      delete: {
+        confirm: "Are you sure to delete the group?",
       },
     },
   },

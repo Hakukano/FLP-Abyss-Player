@@ -8,9 +8,10 @@ interface FormRow<T> {
   name: string;
   type: string;
   initial: T;
-  validator: (value: T) => string | null;
   label: string;
+  validator?: (value: T) => string | null;
   placeholder?: string;
+  options?: { value: string; label: string }[];
 }
 
 type FormData = {
@@ -132,14 +133,31 @@ export function FormModal(props: Props) {
                       key={row.name}
                     >
                       <Form.Label>{row.label}</Form.Label>
-                      <Form.Control
-                        type={row.type}
-                        name={row.name}
-                        placeholder={row.placeholder}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        value={values[row.name]}
-                      />
+                      {row.options ? (
+                        <Form.Select
+                          name={row.name}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          value={values[row.name]}
+                        >
+                          {row.options.map((option) => {
+                            return (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            );
+                          })}
+                        </Form.Select>
+                      ) : (
+                        <Form.Control
+                          type={row.type}
+                          name={row.name}
+                          placeholder={row.placeholder}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          value={values[row.name]}
+                        />
+                      )}
                       {errors[row.name] && touched[row.name] && (
                         <Form.Text className="text-danger">
                           {errors[row.name]?.toString()}

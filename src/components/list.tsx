@@ -1,38 +1,70 @@
 import { Stack, Table } from "react-bootstrap";
 import { ErrorModal, useError } from "./error_modal";
-import { FormModal, UseForm } from "./form_modal";
 import {
   PlusCircle,
   XCircle,
   ArrowUpCircle,
   ArrowDownCircle,
+  SortUp,
 } from "react-bootstrap-icons";
 import { Base64 } from "js-base64";
+import { MetaCmpBy } from "../utils/meta";
+import { FormModal, useForm } from "./form_modal";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  createFormState: UseForm;
   headers: string[];
   data: { [key: string]: any }[];
 
   handleNew: () => void;
-  handleCreate: (values: { [key: string]: any }) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
+
+  handleSort?: (values: { [key: string]: any }) => Promise<void>;
   handleShift?: (id: string, offset: number) => Promise<void>;
 }
 
 export default function List(props: Props) {
+  const { t } = useTranslation();
+
   const errorState = useError();
+  const sortFormState = useForm();
+
+  const popupSortModal = () => {
+    sortFormState.popup({
+      header: t("sort.title"),
+      rows: [
+        {
+          name: "by",
+          type: "select",
+          initial: MetaCmpBy.Default,
+          label: t("sort.by.label"),
+          options: [
+            { value: MetaCmpBy.Default, label: t("sort.by.default") },
+            { value: MetaCmpBy.Path, label: t("sort.by.path") },
+            { value: MetaCmpBy.CreatedAt, label: t("sort.by.created_at") },
+            { value: MetaCmpBy.UpdatedAt, label: t("sort.by.updated_at") },
+          ],
+        },
+        {
+          name: "ascend",
+          type: "checkbox",
+          initial: true,
+          label: t("sort.ascend.label"),
+        },
+      ],
+    });
+  };
 
   return (
     <Stack gap={2}>
       <ErrorModal state={errorState} />
-      <FormModal
-        state={props.createFormState}
-        handleClose={() => {
-          props.createFormState.setShow(false);
-        }}
-        handleSubmit={props.handleCreate}
-      />
+      {props.handleSort && (
+        <FormModal
+          state={sortFormState}
+          handleClose={() => sortFormState.setShow(false)}
+          handleSubmit={props.handleSort}
+        />
+      )}
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -43,12 +75,22 @@ export default function List(props: Props) {
               className="text-end"
               style={{ whiteSpace: "nowrap", width: "1px" }}
             >
-              <PlusCircle
-                className="text-info"
-                size={24}
-                style={{ cursor: "pointer" }}
-                onClick={props.handleNew}
-              />
+              <Stack direction="horizontal" gap={1}>
+                {props.handleSort && (
+                  <SortUp
+                    className="text-warning"
+                    size={24}
+                    style={{ cursor: "pointer" }}
+                    onClick={popupSortModal}
+                  />
+                )}
+                <PlusCircle
+                  className="text-info"
+                  size={24}
+                  style={{ cursor: "pointer" }}
+                  onClick={props.handleNew}
+                />
+              </Stack>
             </td>
           </tr>
         </thead>
