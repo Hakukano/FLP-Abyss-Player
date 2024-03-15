@@ -6,6 +6,7 @@ import {
   IndexArgs,
   GroupService,
   basePath,
+  ShiftArgs,
 } from "../group";
 
 export default class TauriCommand implements GroupService {
@@ -27,5 +28,9 @@ export default class TauriCommand implements GroupService {
 
   destroy(id: string): Promise<Response<void>> {
     return sendTauriCommand(basePath.concat([id]), "DELETE", {});
+  }
+
+  shift(id: string, args: ShiftArgs): Promise<Response<void>> {
+    return sendTauriCommand(basePath.concat([id]), "PUT", args);
   }
 }

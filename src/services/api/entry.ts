@@ -26,6 +26,10 @@ export interface CreateArgs {
   path: string;
 }
 
+export interface ShiftArgs {
+  offset: number;
+}
+
 export interface EntryService {
   index(args: IndexArgs): Promise<Response<EntryBrief[]>>;
 
@@ -36,6 +40,8 @@ export interface EntryService {
   show(id: string): Promise<Response<EntryDetails>>;
 
   destroy(id: string): Promise<Response<void>>;
+
+  shift(id: string, args: ShiftArgs): Promise<Response<void>>;
 }
 
 export function instantiateEntryService(): EntryService {

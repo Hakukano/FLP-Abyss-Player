@@ -25,6 +25,10 @@ export interface CreateArgs {
   path: string;
 }
 
+export interface ShiftArgs {
+  offset: number;
+}
+
 export interface GroupService {
   index(args: IndexArgs): Promise<Response<GroupBrief[]>>;
 
@@ -35,6 +39,8 @@ export interface GroupService {
   show(id: string): Promise<Response<GroupDetails>>;
 
   destroy(id: string): Promise<Response<void>>;
+
+  shift(id: string, args: ShiftArgs): Promise<Response<void>>;
 }
 
 export function instantiateGroupService(): GroupService {

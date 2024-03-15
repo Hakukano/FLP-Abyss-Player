@@ -6,6 +6,7 @@ import {
   IndexArgs,
   EntryService,
   basePath,
+  ShiftArgs,
 } from "../entry";
 
 export default class TauriCommand implements EntryService {
@@ -27,5 +28,9 @@ export default class TauriCommand implements EntryService {
 
   destroy(id: string): Promise<Response<void>> {
     return sendTauriCommand(basePath.concat([id]), "DELETE", {});
+  }
+
+  shift(id: string, args: ShiftArgs): Promise<Response<void>> {
+    return sendTauriCommand(basePath.concat([id]), "PUT", args);
   }
 }
