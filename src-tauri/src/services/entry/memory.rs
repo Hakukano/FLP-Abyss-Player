@@ -26,6 +26,12 @@ impl super::EntryService for EntryService {
         self.data.clone()
     }
 
+    fn set_all(&mut self, entries: Vec<Entry>) {
+        self.data = entries;
+        self.last_sort_by = MetaCmpBy::Default;
+        self.last_sort_ascend = true;
+    }
+
     fn save(&mut self, entry: Entry) -> Result<Entry> {
         if let Some(origin) = self.data.iter_mut().find(|g| g.id == entry.id) {
             *origin = entry.clone();

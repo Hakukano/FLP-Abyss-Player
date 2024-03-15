@@ -194,6 +194,7 @@ pub fn api(
         ["groups", id] => match request.method {
             Method::Get => groups::show(id, services.group.read().as_ref()),
             Method::Delete => groups::destroy(id, services.group.write().as_mut()),
+            Method::Put => groups::shift(id, request.args, services.group.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         ["entries"] => match request.method {
@@ -205,6 +206,7 @@ pub fn api(
         ["entries", id] => match request.method {
             Method::Get => entries::show(id, services.entry.read().as_ref()),
             Method::Delete => entries::destroy(id, services.entry.write().as_mut()),
+            Method::Put => entries::shift(id, request.args, services.entry.write().as_mut()),
             _ => Err(Response::method_not_allowed()),
         },
         _ => Err(Response::not_found()),

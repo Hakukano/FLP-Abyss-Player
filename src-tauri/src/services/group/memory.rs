@@ -26,6 +26,12 @@ impl super::GroupService for GroupService {
         self.data.clone()
     }
 
+    fn set_all(&mut self, groups: Vec<Group>) {
+        self.data = groups;
+        self.last_sort_by = MetaCmpBy::Default;
+        self.last_sort_ascend = true;
+    }
+
     fn save(&mut self, group: Group) -> Result<Group> {
         if let Some(origin) = self.data.iter_mut().find(|g| g.id == group.id) {
             *origin = group.clone();

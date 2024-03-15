@@ -86,3 +86,24 @@ pub fn destroy(id: &str, entry_service: &mut dyn EntryService) -> ApiResult {
         .map_err(|_| Response::not_found())?;
     Ok(Response::no_content())
 }
+
+#[derive(Deserialize, Serialize)]
+struct ShiftArgs {
+    offset: i64,
+}
+impl FromArgs for ShiftArgs {}
+pub fn shift(id: &str, args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
+    let args = ShiftArgs::from_args(args)?;
+    let mut entries = entry_service.all();
+    let index = entries
+        .iter()
+        .position(|entry| entry.id == id)
+        .ok_or_else(Response::not_found)?;
+    let new_index = (index as i64 + args.offset)
+        .max(0)
+        .min(entries.len() as i64 - 1) as usize;
+    let deleted = entries.remove(index);
+    entries.insert(new_index, deleted);
+    entry_service.set_all(entries);
+    Ok(Response::no_content())
+}

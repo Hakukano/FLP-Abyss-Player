@@ -8,6 +8,8 @@ mod memory;
 pub trait GroupService: Send + Sync {
     fn all(&self) -> Vec<Group>;
 
+    fn set_all(&mut self, groups: Vec<Group>);
+
     fn find_by_id(&self, id: &str) -> Option<Group> {
         self.all().iter().find(|group| group.id == id).cloned()
     }

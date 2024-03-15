@@ -86,3 +86,24 @@ pub fn destroy(id: &str, group_service: &mut dyn GroupService) -> ApiResult {
         .map_err(|_| Response::not_found())?;
     Ok(Response::no_content())
 }
+
+#[derive(Deserialize, Serialize)]
+struct ShiftArgs {
+    offset: i64,
+}
+impl FromArgs for ShiftArgs {}
+pub fn shift(id: &str, args: Value, group_service: &mut dyn GroupService) -> ApiResult {
+    let args = ShiftArgs::from_args(args)?;
+    let mut groups = group_service.all();
+    let index = groups
+        .iter()
+        .position(|group| group.id == id)
+        .ok_or_else(Response::not_found)?;
+    let new_index = (index as i64 + args.offset)
+        .max(0)
+        .min(groups.len() as i64 - 1) as usize;
+    let deleted = groups.remove(index);
+    groups.insert(new_index, deleted);
+    group_service.set_all(groups);
+    Ok(Response::no_content())
+}
