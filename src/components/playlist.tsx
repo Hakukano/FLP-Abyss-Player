@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { ApiServices } from "../services/api";
 import { PlaylistBrief } from "../services/api/playlist";
-import { useError } from "./error_modal";
+import { ErrorModal, useError } from "./error_modal";
 import { useForm } from "./form_modal";
 import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import List from "./list";
+import { Stack } from "react-bootstrap";
 
 interface Props {
   apiServices: ApiServices;
@@ -57,13 +58,17 @@ export default function Playlist(props: Props) {
   }, []);
 
   return (
-    <List
-      createFormState={formState}
-      headers={[t("playlist.name.label")]}
-      data={playlists || []}
-      handleNew={newPlaylist}
-      handleCreate={createPlaylist}
-      handleDelete={deletePlaylist}
-    />
+    <Stack gap={3}>
+      <ErrorModal state={errorState} />
+      <h2>{t("playlist.title")}</h2>
+      <List
+        createFormState={formState}
+        headers={[t("playlist.name.label")]}
+        data={playlists || []}
+        handleNew={newPlaylist}
+        handleCreate={createPlaylist}
+        handleDelete={deletePlaylist}
+      />
+    </Stack>
   );
 }

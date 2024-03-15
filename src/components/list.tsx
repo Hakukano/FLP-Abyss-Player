@@ -7,6 +7,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
 } from "react-bootstrap-icons";
+import { Base64 } from "js-base64";
 
 interface Props {
   createFormState: UseForm;
@@ -36,7 +37,7 @@ export default function List(props: Props) {
         <thead>
           <tr>
             {props.headers.map((header) => {
-              return <td key={btoa(header)}>{header}</td>;
+              return <td key={Base64.encode(header)}>{header}</td>;
             })}
             <td
               className="text-end"
