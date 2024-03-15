@@ -20,7 +20,7 @@ export default function Playlist(props: Props) {
   const errorState = useError();
   const formState = useForm();
 
-  const fetchPlaylist = async () => {
+  const fetchPlaylists = async () => {
     setPlaylists((await props.apiServices.playlist.index()).body);
   };
 
@@ -43,18 +43,18 @@ export default function Playlist(props: Props) {
 
   const createPlaylist = async (values: { [key: string]: any }) => {
     await props.apiServices.playlist.create({ name: values["name"] });
-    await fetchPlaylist();
+    await fetchPlaylists();
   };
 
   const deletePlaylist = async (id: string) => {
     if (await confirm(t("playlist.delete.confirm"))) {
       await props.apiServices.playlist.destroy(id);
-      await fetchPlaylist();
+      await fetchPlaylists();
     }
   };
 
   useEffect(() => {
-    fetchPlaylist().catch(errorState.handleError);
+    fetchPlaylists().catch(errorState.handleError);
   }, []);
 
   return (

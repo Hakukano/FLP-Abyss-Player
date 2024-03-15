@@ -24,7 +24,7 @@ export default function Group(props: Props) {
 
   const playlist_id = searchParams.get("playlist_id");
 
-  const fetchGroup = async () => {
+  const fetchGroups = async () => {
     setGroups(
       (
         await props.apiServices.group.index({
@@ -54,23 +54,25 @@ export default function Group(props: Props) {
       throw "";
     }
     await props.apiServices.group.create({ playlist_id, path: values["path"] });
-    await fetchGroup();
+    await fetchGroups();
   };
+
+  const sortGroups = async (values: { [key: string]: any }) => {};
 
   const deleteGroup = async (id: string) => {
     if (await confirm(t("group.delete.confirm"))) {
       await props.apiServices.group.destroy(id);
-      await fetchGroup();
+      await fetchGroups();
     }
   };
 
-  const handleShift = async (id: string, offset: number) => {
+  const shiftGroup = async (id: string, offset: number) => {
     await props.apiServices.group.shift(id, { offset });
-    await fetchGroup();
+    await fetchGroups();
   };
 
   useEffect(() => {
-    fetchGroup().catch(errorState.handleError);
+    fetchGroups().catch(errorState.handleError);
   }, []);
 
   return (
@@ -89,7 +91,8 @@ export default function Group(props: Props) {
         data={groups || []}
         handleNew={newGroup}
         handleDelete={deleteGroup}
-        handleShift={handleShift}
+        handleShift={shiftGroup}
+        handleSort={sortGroups}
       />
     </Stack>
   );
