@@ -6,6 +6,10 @@ export default {
     load_session: "Load a session",
     error: "Error",
     config: "Configuration",
+    form: {
+      close: "Close",
+      submit: "Submit",
+    },
     app_config: {
       title: "Application Configuration",
       locale: {
@@ -14,9 +18,17 @@ export default {
       },
     },
     playlist: {
-      name: "Playlist",
-      description: "The playlist path",
-      placeholder: "Click to choose a playlist file",
+      title: "Playlist",
+      errors: {
+        name_too_short: "Name is too short",
+      },
+      name: {
+        label: "The playlist name",
+        placeholder: "Enter playlist name...",
+      },
+      delete: {
+        confirm: "Are you sure to delete the playlist?",
+      },
     },
   },
   "ja-JP": {
@@ -26,6 +38,10 @@ export default {
     load_session: "セッションを読み込む",
     error: "エラー",
     config: "設定",
+    form: {
+      close: "閉じる",
+      submit: "送信",
+    },
     app_config: {
       title: "アプリの設定",
       locale: {
@@ -34,9 +50,17 @@ export default {
       },
     },
     playlist: {
-      name: "プレイリスト",
-      description: "プレイリストのパス",
-      placeholder: "プレイリストを選択してください",
+      title: "プレイリスト",
+      errors: {
+        name_too_short: "名前は短すぎます",
+      },
+      name: {
+        label: "プレイリストの名前",
+        placeholder: "プレイリストの名前を入力してください",
+      },
+      delete: {
+        confirm: "プレイリストを削除しますか？",
+      },
     },
   },
 };

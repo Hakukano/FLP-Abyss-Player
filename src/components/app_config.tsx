@@ -9,7 +9,7 @@ import Stack from "react-bootstrap/Stack";
 import { AppConfigBrief } from "../services/api/app_config.ts";
 import { ApiServices } from "../services/api.ts";
 import translations from "../translations.ts";
-import { Error, useError } from "./error.tsx";
+import { ErrorModal, useError } from "./error_modal.tsx";
 
 const FORM_LABEL_WIDTH = 3;
 const FORM_INPUT_WIDTH = 9;
@@ -45,7 +45,7 @@ export default function AppConfig(props: Props) {
 
   return (
     <Stack gap={3}>
-      <Error state={errorState}></Error>
+      <ErrorModal state={errorState} />
       <h2>{t("app_config.title")}</h2>
       <Form>
         <Form.Group as={Row} className="mb-3" controlId="app-config-locale">

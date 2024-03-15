@@ -1,15 +1,16 @@
 {
   "$schema": "./schemas/desktop-schema.json",
   "identifier": "desktop-capability",
-  "windows": [
-    "main"
+  "permissions": [
+    "dialog:allow-confirm",
+    "dialog:allow-open"
   ],
   "platforms": [
     "linux",
     "macOS",
     "windows"
   ],
-  "permissions": [
-    "dialog:allow-open"
+  "windows": [
+    "main"
   ]
 }

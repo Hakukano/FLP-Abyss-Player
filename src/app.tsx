@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Welcome from "./pages/welcome.tsx";
+import Player from "./pages/player.tsx";
 import { ApiServices } from "./services/api.ts";
 
 interface Props {
@@ -14,6 +15,10 @@ function App(props: Props) {
         <Route
           path="/"
           element={<Welcome apiServices={props.apiServices} />}
+        ></Route>
+        <Route
+          path="/player"
+          element={<Player apiServices={props.apiServices} />}
         ></Route>
       </Routes>
     </BrowserRouter>

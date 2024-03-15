@@ -30,7 +30,7 @@ interface Props {
   state: UseError;
 }
 
-export function Error(props: Props) {
+export function ErrorModal(props: Props) {
   return (
     <ToastContainer className="p-3" position="top-center" style={{ zIndex: 1 }}>
       <Toast onClose={() => props.state.setShow(false)} show={props.state.show}>
