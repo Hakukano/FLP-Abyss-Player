@@ -35,7 +35,8 @@ export default {
       allowed_mimes: {
         label: "Allowed MIMEs",
       },
-      submit: "Scan",
+      scan: "Scan",
+      submit: "Submit",
     },
     app_config: {
       title: "Application Configuration",

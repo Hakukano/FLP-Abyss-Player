@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
-import { Button, Modal, Stack, Table } from "react-bootstrap";
+import { Button, Col, Modal, Row, Stack, Table } from "react-bootstrap";
 import { ApiServices } from "../services/api";
 import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
@@ -31,7 +31,7 @@ interface Props {
 
 export function ScanModal(props: Props) {
   const [rootPath, setRootPath] = useState<string | null>(null);
-  const [allowedMime, setAllowedMime] = useState<string>("");
+  const [inputMime, setInputMime] = useState<string>("");
   const [allowedMimes, setAllowedMimes] = useState<string[]>([]);
   const [fullPaths, setFullPaths] = useState<string[]>([]);
   const [oneLevelDeeper, setOneLevelDeeper] = useState(false);
@@ -55,10 +55,10 @@ export function ScanModal(props: Props) {
   };
 
   const addAllowedMime = () => {
-    if (allowedMime.trim().length === 0) {
+    if (inputMime.trim().length === 0) {
       return;
     }
-    allowedMimes.push(allowedMime);
+    allowedMimes.push(inputMime);
     setAllowedMimes(allowedMimes);
   };
 
@@ -95,16 +95,20 @@ export function ScanModal(props: Props) {
         <Modal.Body>
           {fullPaths.length === 0 ? (
             <Stack gap={3}>
-              <Stack direction="horizontal" gap={2}>
-                <span>{t("scan.root_path.label")}</span>
-                <Button
-                  className="float-end"
-                  variant={rootPath ? "info" : "danger"}
-                  onClick={popupRootPath}
-                >
-                  {rootPath ? rootPath : t("scan.errors.root_not_set")}
-                </Button>
-              </Stack>
+              <Row>
+                <Col md={3}>
+                  <span>{t("scan.root_path.label")}</span>
+                </Col>
+                <Col md={9}>
+                  <Button
+                    className="w-100"
+                    variant={rootPath ? "info" : "danger"}
+                    onClick={popupRootPath}
+                  >
+                    {rootPath ? rootPath : t("scan.errors.root_not_set")}
+                  </Button>
+                </Col>
+              </Row>
               <Stack gap={2}>
                 <span>{t("scan.allowed_mimes.label")}</span>
                 <Table striped bordered hover>
@@ -112,8 +116,9 @@ export function ScanModal(props: Props) {
                     <tr>
                       <td>
                         <input
+                          className="w-100"
                           onChange={(e) => {
-                            setAllowedMime(e.target.value);
+                            setInputMime(e.target.value);
                           }}
                           onKeyUp={(e) => {
                             if (e.key === "Enter") {
@@ -157,9 +162,6 @@ export function ScanModal(props: Props) {
                   </tbody>
                 </Table>
               </Stack>
-              <Button variant="primary" onClick={handleScan}>
-                {t("scan.submit")}
-              </Button>
             </Stack>
           ) : (
             <Stack gap={3}>
@@ -167,6 +169,17 @@ export function ScanModal(props: Props) {
             </Stack>
           )}
         </Modal.Body>
+        <Modal.Footer>
+          {fullPaths.length === 0 ? (
+            <Button variant="primary" onClick={handleScan}>
+              {t("scan.scan")}
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={handleScan}>
+              {t("scan.submit")}
+            </Button>
+          )}
+        </Modal.Footer>
       </Modal>
     </>
   );
