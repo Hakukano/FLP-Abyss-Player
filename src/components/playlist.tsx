@@ -7,15 +7,17 @@ import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import List from "./list";
 import { Stack } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   apiServices: ApiServices;
 }
 
 export default function Playlist(props: Props) {
-  const { t } = useTranslation();
-
   const [playlists, setPlaylists] = useState<PlaylistBrief[] | null>(null);
+
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const errorState = useError();
   const formState = useForm();
@@ -53,6 +55,10 @@ export default function Playlist(props: Props) {
     }
   };
 
+  const selectPlaylist = (id: string) => {
+    navigate(`/player?playlist_id=${id}`);
+  };
+
   useEffect(() => {
     fetchPlaylists().catch(errorState.popup);
   }, []);
@@ -63,10 +69,11 @@ export default function Playlist(props: Props) {
       <FormModal state={formState} handleSubmit={createPlaylist} />
       <h2>{t("playlist.title")}</h2>
       <List
-        headers={[t("playlist.name.label")]}
+        headers={{ name: t("playlist.name.label") }}
         data={playlists || []}
         handleNew={newPlaylist}
         handleDelete={deletePlaylist}
+        handleSelect={selectPlaylist}
       />
     </Stack>
   );

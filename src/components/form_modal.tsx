@@ -120,6 +120,7 @@ export function FormModal(props: Props) {
               handleChange,
               handleBlur,
               handleSubmit,
+              setFieldValue,
               isSubmitting,
             }) => (
               <Form onSubmit={handleSubmit}>
@@ -133,12 +134,23 @@ export function FormModal(props: Props) {
                       <Form.Label>{row.label}</Form.Label>
                       {row.options ? (
                         <Select
+                          className="text-dark"
                           name={row.name}
-                          onChange={handleChange}
+                          onChange={(value) => {
+                            setFieldValue(row.name, value);
+                          }}
                           onBlur={handleBlur}
                           value={values[row.name]}
                           options={row.options}
                           isSearchable
+                        />
+                      ) : row.type === "checkbox" ? (
+                        <Form.Check
+                          type={row.type}
+                          name={row.name}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          checked={values[row.name]}
                         />
                       ) : (
                         <Form.Control

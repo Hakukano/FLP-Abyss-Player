@@ -9,17 +9,24 @@ import { PlusCircle, XCircle } from "react-bootstrap-icons";
 interface UseScan {
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
+  popup: () => void;
 }
 
 export function useScan(): UseScan {
   const [show, setShow] = useState(false);
 
-  return { show, setShow };
+  const popup = () => {
+    setShow(true);
+  };
+
+  return { show, setShow, popup };
 }
 
 interface Props {
   state: UseScan;
   apiServices: ApiServices;
+
+  handleClose: () => void;
 }
 
 export function ScanModal(props: Props) {
@@ -32,10 +39,6 @@ export function ScanModal(props: Props) {
   const { t } = useTranslation();
 
   const errorState = useError();
-
-  const handleClose = () => {
-    props.state.setShow(false);
-  };
 
   const popupRootPath = () => {
     open({
@@ -82,7 +85,7 @@ export function ScanModal(props: Props) {
       <ErrorModal state={errorState} />
       <Modal
         show={props.state.show}
-        onHide={handleClose}
+        onHide={props.handleClose}
         backdrop="static"
         size="xl"
       >
@@ -154,16 +157,16 @@ export function ScanModal(props: Props) {
                   </tbody>
                 </Table>
               </Stack>
+              <Button variant="primary" onClick={handleScan}>
+                {t("scan.submit")}
+              </Button>
             </Stack>
           ) : (
-            <></>
+            <Stack gap={3}>
+              <Stack direction="horizontal" gap={2}></Stack>
+            </Stack>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={handleScan}>
-            {t("scan.submit")}
-          </Button>
-        </Modal.Footer>
       </Modal>
     </>
   );

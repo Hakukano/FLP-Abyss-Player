@@ -34,7 +34,11 @@ export function ErrorModal(props: Props) {
   const { t } = useTranslation();
 
   return (
-    <ToastContainer className="p-3" position="top-center" style={{ zIndex: 1 }}>
+    <ToastContainer
+      className="p-3"
+      position="bottom-end"
+      style={{ zIndex: 2147483647 }}
+    >
       <Toast onClose={() => props.state.setShow(false)} show={props.state.show}>
         <Toast.Header>
           <strong className="me-auto">{t("error")}</strong>

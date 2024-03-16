@@ -7,17 +7,17 @@ import {
   ArrowDownCircle,
   SortUp,
 } from "react-bootstrap-icons";
-import { Base64 } from "js-base64";
 import { MetaCmpBy } from "../utils/meta";
 import { FormModal, useForm } from "./form_modal";
 import { useTranslation } from "react-i18next";
 
 interface Props {
-  headers: string[];
+  headers: { [key: string]: string };
   data: { [key: string]: any }[];
 
   handleNew: () => void;
   handleDelete: (id: string) => Promise<void>;
+  handleSelect: (id: string) => void;
 
   handleSort?: (values: { [key: string]: any }) => Promise<void>;
   handleShift?: (id: string, offset: number) => Promise<void>;
@@ -36,7 +36,7 @@ export default function List(props: Props) {
         {
           name: "by",
           type: "select",
-          initial: MetaCmpBy.Default,
+          initial: { value: MetaCmpBy.Default, label: t("sort.by.default") },
           label: t("sort.by.label"),
           options: [
             { value: MetaCmpBy.Default, label: t("sort.by.default") },
@@ -64,8 +64,8 @@ export default function List(props: Props) {
       <Table striped bordered hover>
         <thead>
           <tr>
-            {props.headers.map((header) => {
-              return <td key={Base64.encode(header)}>{header}</td>;
+            {Object.entries(props.headers).map(([k, v]) => {
+              return <td key={k}>{v}</td>;
             })}
             <td
               className="text-end"
@@ -94,7 +94,17 @@ export default function List(props: Props) {
           {props.data.map((row) => {
             return (
               <tr key={row["id"]}>
-                <td>{row["name"]}</td>
+                {Object.entries(props.headers).map(([k, _]) => {
+                  return (
+                    <td
+                      key={k}
+                      onClick={() => props.handleSelect(row["id"])}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {row[k]}
+                    </td>
+                  );
+                })}
                 <td
                   className="text-end"
                   style={{ whiteSpace: "nowrap", width: "1px" }}
