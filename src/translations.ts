@@ -32,6 +32,10 @@ export default {
       root_path: {
         label: "Root path",
       },
+      allowed_mimes: {
+        label: "Allowed MIMEs",
+      },
+      submit: "Scan",
     },
     app_config: {
       title: "Application Configuration",

@@ -1,9 +1,10 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
-import { Button, Modal, Stack } from "react-bootstrap";
+import { Button, Modal, Stack, Table } from "react-bootstrap";
 import { ApiServices } from "../services/api";
 import { open } from "@tauri-apps/plugin-dialog";
+import { PlusCircle, XCircle } from "react-bootstrap-icons";
 
 interface UseScan {
   show: boolean;
@@ -23,6 +24,7 @@ interface Props {
 
 export function ScanModal(props: Props) {
   const [rootPath, setRootPath] = useState<string | null>(null);
+  const [allowedMime, setAllowedMime] = useState<string>("");
   const [allowedMimes, setAllowedMimes] = useState<string[]>([]);
   const [fullPaths, setFullPaths] = useState<string[]>([]);
   const [oneLevelDeeper, setOneLevelDeeper] = useState(false);
@@ -47,6 +49,19 @@ export function ScanModal(props: Props) {
       .catch((err) => {
         errorState.popup(err);
       });
+  };
+
+  const addAllowedMime = () => {
+    if (allowedMime.trim().length === 0) {
+      return;
+    }
+    allowedMimes.push(allowedMime);
+    setAllowedMimes(allowedMimes);
+  };
+
+  const removeAllowedMime = (mime: string) => {
+    allowedMimes.splice(allowedMimes.indexOf(mime), 1);
+    setAllowedMimes(allowedMimes);
   };
 
   const handleScan = () => {
@@ -75,19 +90,80 @@ export function ScanModal(props: Props) {
           <Modal.Title>{t("scan.title")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Stack gap={3}>
-            <Stack direction="horizontal" gap={2}>
-              <span>{t("scan.root_path.label")}</span>
-              <Button
-                className="float-end"
-                variant={rootPath ? "info" : "danger"}
-                onClick={popupRootPath}
-              >
-                {rootPath ? rootPath : t("scan.errors.root_not_set")}
-              </Button>
+          {fullPaths.length === 0 ? (
+            <Stack gap={3}>
+              <Stack direction="horizontal" gap={2}>
+                <span>{t("scan.root_path.label")}</span>
+                <Button
+                  className="float-end"
+                  variant={rootPath ? "info" : "danger"}
+                  onClick={popupRootPath}
+                >
+                  {rootPath ? rootPath : t("scan.errors.root_not_set")}
+                </Button>
+              </Stack>
+              <Stack gap={2}>
+                <span>{t("scan.allowed_mimes.label")}</span>
+                <Table striped bordered hover>
+                  <thead>
+                    <tr>
+                      <td>
+                        <input
+                          onChange={(e) => {
+                            setAllowedMime(e.target.value);
+                          }}
+                          onKeyUp={(e) => {
+                            if (e.key === "Enter") {
+                              addAllowedMime();
+                            }
+                          }}
+                        />
+                      </td>
+                      <td
+                        className="text-end"
+                        style={{ whiteSpace: "nowrap", width: "1px" }}
+                      >
+                        <PlusCircle
+                          className="text-info"
+                          size={24}
+                          style={{ cursor: "pointer" }}
+                          onClick={addAllowedMime}
+                        />
+                      </td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allowedMimes.map((mime) => {
+                      return (
+                        <tr key={mime}>
+                          <td>{mime}</td>
+                          <td
+                            className="text-end"
+                            style={{ whiteSpace: "nowrap", width: "1px" }}
+                          >
+                            <XCircle
+                              className="text-danger"
+                              size={24}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => removeAllowedMime(mime)}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </Stack>
             </Stack>
-          </Stack>
+          ) : (
+            <></>
+          )}
         </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={handleScan}>
+            {t("scan.submit")}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </>
   );

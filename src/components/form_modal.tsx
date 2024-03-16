@@ -2,6 +2,7 @@ import { Formik } from "formik";
 import { Dispatch, SetStateAction, useState } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
+import Select from "react-select";
 import { ErrorModal, useError } from "./error_modal";
 
 interface FormRow<T> {
@@ -131,20 +132,14 @@ export function FormModal(props: Props) {
                     >
                       <Form.Label>{row.label}</Form.Label>
                       {row.options ? (
-                        <Form.Select
+                        <Select
                           name={row.name}
                           onChange={handleChange}
                           onBlur={handleBlur}
                           value={values[row.name]}
-                        >
-                          {row.options.map((option) => {
-                            return (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            );
-                          })}
-                        </Form.Select>
+                          options={row.options}
+                          isSearchable
+                        />
                       ) : (
                         <Form.Control
                           type={row.type}

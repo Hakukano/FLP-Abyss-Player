@@ -1,1 +1,1 @@
-export const PLAYLIST_EXTENSION = "appl";
+export const SESSION_EXTENSION = "aps";
