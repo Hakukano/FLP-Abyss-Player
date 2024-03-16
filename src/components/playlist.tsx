@@ -54,19 +54,13 @@ export default function Playlist(props: Props) {
   };
 
   useEffect(() => {
-    fetchPlaylists().catch(errorState.handleError);
+    fetchPlaylists().catch(errorState.popup);
   }, []);
 
   return (
     <Stack gap={3}>
       <ErrorModal state={errorState} />
-      <FormModal
-        state={formState}
-        handleClose={() => {
-          formState.setShow(false);
-        }}
-        handleSubmit={createPlaylist}
-      />
+      <FormModal state={formState} handleSubmit={createPlaylist} />
       <h2>{t("playlist.title")}</h2>
       <List
         headers={[t("playlist.name.label")]}

@@ -59,11 +59,7 @@ export default function List(props: Props) {
     <Stack gap={2}>
       <ErrorModal state={errorState} />
       {props.handleSort && (
-        <FormModal
-          state={sortFormState}
-          handleClose={() => sortFormState.setShow(false)}
-          handleSubmit={props.handleSort}
-        />
+        <FormModal state={sortFormState} handleSubmit={props.handleSort} />
       )}
       <Table striped bordered hover>
         <thead>

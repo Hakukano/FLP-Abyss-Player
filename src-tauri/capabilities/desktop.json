@@ -3,7 +3,8 @@
   "identifier": "desktop-capability",
   "permissions": [
     "dialog:allow-confirm",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "dialog:allow-save"
   ],
   "platforms": [
     "linux",

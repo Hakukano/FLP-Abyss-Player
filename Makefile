@@ -1,7 +1,7 @@
-.PHONY: usage clean audit lint test
+.PHONY: usage clean audit lint dev test
 
 usage:
-	echo "Usage: make [coverage] [clean]"
+	echo "Usage: make [clean] [audit] [lint] [dev] [test]"
 
 FORCE: ;
 
@@ -13,6 +13,9 @@ audit: FORCE
 
 lint: FORCE
 	cargo clippy --all-features
+
+dev: FORCE
+	cargo tauri dev
 
 test: FORCE
 	cargo test --all-features -- --nocapture

@@ -57,7 +57,13 @@ export default function Group(props: Props) {
     await fetchGroups();
   };
 
-  const sortGroups = async (values: { [key: string]: any }) => {};
+  const sortGroups = async (values: { [key: string]: any }) => {
+    await props.apiServices.group.sort({
+      by: values["by"],
+      ascend: values["ascend"],
+    });
+    await fetchGroups();
+  };
 
   const deleteGroup = async (id: string) => {
     if (await confirm(t("group.delete.confirm"))) {
@@ -72,19 +78,13 @@ export default function Group(props: Props) {
   };
 
   useEffect(() => {
-    fetchGroups().catch(errorState.handleError);
+    fetchGroups().catch(errorState.popup);
   }, []);
 
   return (
     <Stack gap={3}>
       <ErrorModal state={errorState} />
-      <FormModal
-        state={formState}
-        handleClose={() => {
-          formState.setShow(false);
-        }}
-        handleSubmit={createGroup}
-      />
+      <FormModal state={formState} handleSubmit={createGroup} />
       <h2>{t("group.title")}</h2>
       <List
         headers={[t("group.path.label")]}

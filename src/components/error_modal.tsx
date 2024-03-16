@@ -1,20 +1,20 @@
-import { t } from "i18next";
 import { Dispatch, SetStateAction, useState } from "react";
 import { ToastContainer, Toast } from "react-bootstrap";
+import { useTranslation } from "react-i18next";
 
 interface UseError {
   message: string;
   setMessage: Dispatch<SetStateAction<string>>;
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
-  handleError: (err: any) => void;
+  popup: (err: any) => void;
 }
 
 export function useError(): UseError {
   const [message, setMessage] = useState("");
   const [show, setShow] = useState(false);
 
-  const handleError = (err: any) => {
+  const popup = (err: any) => {
     if (typeof err === "string") {
       setMessage(err);
     } else {
@@ -23,7 +23,7 @@ export function useError(): UseError {
     setShow(true);
   };
 
-  return { message, setMessage, show, setShow, handleError };
+  return { message, setMessage, show, setShow, popup: popup };
 }
 
 interface Props {
@@ -31,6 +31,8 @@ interface Props {
 }
 
 export function ErrorModal(props: Props) {
+  const { t } = useTranslation();
+
   return (
     <ToastContainer className="p-3" position="top-center" style={{ zIndex: 1 }}>
       <Toast onClose={() => props.state.setShow(false)} show={props.state.show}>

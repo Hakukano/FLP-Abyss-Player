@@ -23,6 +23,16 @@ export default {
         label: "Ascend?",
       },
     },
+    scan: {
+      title: "Scan for medias",
+      errors: {
+        root_not_set: "Please select a root path",
+        allowed_mimes_not_set: "Please choose at least one mime type",
+      },
+      root_path: {
+        label: "Root path",
+      },
+    },
     app_config: {
       title: "Application Configuration",
       locale: {

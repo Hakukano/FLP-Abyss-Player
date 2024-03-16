@@ -40,7 +40,7 @@ export default function AppConfig(props: Props) {
   };
 
   useEffect(() => {
-    fetchAppConfig().catch(errorState.handleError);
+    fetchAppConfig().catch(errorState.popup);
   }, []);
 
   return (
@@ -56,7 +56,7 @@ export default function AppConfig(props: Props) {
             <Form.Select
               value={appConfig?.locale}
               onChange={(event) => {
-                setLocale(event.target.value).catch(errorState.handleError);
+                setLocale(event.target.value).catch(errorState.popup);
               }}
             >
               {Object.entries(translations).map(([language, translation]) => (

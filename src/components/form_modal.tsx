@@ -47,7 +47,6 @@ export function useForm(): UseForm {
 
 interface Props {
   state: UseForm;
-  handleClose: () => void;
   handleSubmit: (values: { [key: string]: any }) => Promise<any>;
 }
 
@@ -60,6 +59,10 @@ export function FormModal(props: Props) {
   const { t } = useTranslation();
 
   const errorState = useError();
+
+  const handleClose = () => {
+    props.state.setShow(false);
+  };
 
   const initialValues = formData.rows.reduce(
     (acc, cur) => {
@@ -89,11 +92,7 @@ export function FormModal(props: Props) {
   return (
     <>
       <ErrorModal state={errorState} />
-      <Modal
-        show={props.state.show}
-        onHide={props.handleClose}
-        backdrop="static"
-      >
+      <Modal show={props.state.show} onHide={handleClose} backdrop="static">
         <Modal.Header closeButton>
           <Modal.Title>{formData.header}</Modal.Title>
         </Modal.Header>
@@ -104,11 +103,9 @@ export function FormModal(props: Props) {
             onSubmit={(values, { setSubmitting }) => {
               props
                 .handleSubmit(values)
-                .then(() => {
-                  props.handleClose();
-                })
+                .then(handleClose)
                 .catch((err) => {
-                  errorState.handleError(err);
+                  errorState.popup(err);
                 })
                 .finally(() => {
                   setSubmitting(false);
