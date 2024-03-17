@@ -1,29 +1,27 @@
 import { useEffect, useState } from "react";
-import { ApiServices } from "../services/api";
-import { PlaylistBrief } from "../services/api/playlist";
-import { ErrorModal, useError } from "./error_modal";
-import { FormModal, useForm } from "./form_modal";
 import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import List from "./list";
-import { Stack } from "react-bootstrap";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Container, Stack } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+
+import { ApiServices } from "../services/api";
+import { PlaylistBrief } from "../services/api/playlist";
+import { ErrorModal, useError } from "../components/error_modal";
+import { FormModal, useForm } from "../components/form_modal";
+import List from "../components/list";
 
 interface Props {
   apiServices: ApiServices;
 }
 
-export default function Playlist(props: Props) {
+export default function Playlists(props: Props) {
   const [playlists, setPlaylists] = useState<PlaylistBrief[] | null>(null);
 
   const { t } = useTranslation();
-  const [searchParams, _] = useSearchParams();
   const navigate = useNavigate();
 
   const errorState = useError();
   const formState = useForm();
-
-  const playlistId = searchParams.get("playlist_id");
 
   const fetchPlaylists = async () => {
     setPlaylists((await props.apiServices.playlist.index()).body);
@@ -55,9 +53,6 @@ export default function Playlist(props: Props) {
     if (await confirm(t("playlist.delete.confirm"))) {
       await props.apiServices.playlist.destroy(id);
       await fetchPlaylists();
-      if (playlistId === id) {
-        navigate(`/player`);
-      }
     }
   };
 
@@ -70,17 +65,19 @@ export default function Playlist(props: Props) {
   }, []);
 
   return (
-    <Stack gap={3}>
-      <ErrorModal state={errorState} />
-      <FormModal state={formState} handleSubmit={createPlaylist} />
-      <h2>{t("playlist.title")}</h2>
-      <List
-        headers={{ id: null, name: t("playlist.name.label") }}
-        data={playlists || []}
-        handleNew={newPlaylist}
-        handleDelete={deletePlaylist}
-        handleSelect={selectPlaylist}
-      />
-    </Stack>
+    <Container fluid className="vh-100 d-flex p-3">
+      <Stack gap={3}>
+        <ErrorModal state={errorState} />
+        <FormModal state={formState} handleSubmit={createPlaylist} />
+        <h2>{t("playlist.title")}</h2>
+        <List
+          headers={{ id: null, name: t("playlist.name.label") }}
+          data={playlists || []}
+          handleNew={newPlaylist}
+          handleDelete={deletePlaylist}
+          handleSelect={selectPlaylist}
+        />
+      </Stack>
+    </Container>
   );
 }

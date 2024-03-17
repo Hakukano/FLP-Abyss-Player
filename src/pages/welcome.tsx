@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
-
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Stack from "react-bootstrap/Stack";
+import { useNavigate } from "react-router-dom";
+
 import AppConfig from "../components/app_config.tsx";
 import { ApiServices } from "../services/api.ts";
-import { Link, useNavigate } from "react-router-dom";
 
 interface Props {
   apiServices: ApiServices;
@@ -18,8 +18,8 @@ export default function Welcome(props: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const gotoPlayer = () => {
-    navigate("/player");
+  const gotoPlaylists = () => {
+    navigate("/playlists");
   };
 
   return (
@@ -39,7 +39,7 @@ export default function Welcome(props: Props) {
                     <Button
                       className="w-100"
                       variant="warning"
-                      onClick={gotoPlayer}
+                      onClick={gotoPlaylists}
                     >
                       {t("new_session")}
                     </Button>
@@ -48,7 +48,7 @@ export default function Welcome(props: Props) {
                     <Button
                       className="w-100"
                       variant="info"
-                      onClick={gotoPlayer}
+                      onClick={gotoPlaylists}
                     >
                       {t("load_session")}
                     </Button>
