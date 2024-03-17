@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{models::playlist::Playlist, services::playlist::PlaylistService};
+use crate::{
+    models::playlist::Playlist,
+    services::{entry::EntryService, group::GroupService, playlist::PlaylistService},
+};
 
 use super::{ApiResult, FromArgs, Response};
 
@@ -34,9 +37,14 @@ pub fn show(id: &str, playlist_service: &dyn PlaylistService) -> ApiResult {
     )
 }
 
-pub fn destroy(id: &str, playlist_service: &mut dyn PlaylistService) -> ApiResult {
+pub fn destroy(
+    id: &str,
+    playlist_service: &mut dyn PlaylistService,
+    group_serivce: &mut dyn GroupService,
+    entry_service: &mut dyn EntryService,
+) -> ApiResult {
     playlist_service
-        .destroy(id)
+        .destroy(id, group_serivce, entry_service)
         .map_err(|_| Response::not_found())?;
     Ok(Response::no_content())
 }

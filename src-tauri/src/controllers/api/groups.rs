@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{
     models::group::Group,
-    services::group::GroupService,
+    services::{entry::EntryService, group::GroupService},
     utils::meta::{Meta, MetaCmpBy},
 };
 
@@ -80,9 +80,13 @@ pub fn show(id: &str, group_service: &dyn GroupService) -> ApiResult {
     )
 }
 
-pub fn destroy(id: &str, group_service: &mut dyn GroupService) -> ApiResult {
+pub fn destroy(
+    id: &str,
+    group_service: &mut dyn GroupService,
+    entry_service: &mut dyn EntryService,
+) -> ApiResult {
     group_service
-        .destroy(id)
+        .destroy(id, entry_service)
         .map_err(|_| Response::not_found())?;
     Ok(Response::no_content())
 }

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{models::group::Group, utils::meta::MetaCmpBy};
+use crate::{models::group::Group, services::entry::EntryService, utils::meta::MetaCmpBy};
 
 #[derive(Deserialize, Serialize)]
 pub struct GroupService {
@@ -48,7 +48,13 @@ impl super::GroupService for GroupService {
         self.last_sort_ascend = ascend;
     }
 
-    fn destroy(&mut self, id: &str) -> Result<Group> {
+    fn destroy(&mut self, id: &str, entry_service: &mut dyn EntryService) -> Result<Group> {
+        entry_service
+            .find_by_group_id(id)
+            .into_iter()
+            .map(|entry| entry_service.destroy(entry.id.as_str()))
+            .collect::<Result<Vec<_>, _>>()?;
+
         let (index, _) = self
             .data
             .iter()

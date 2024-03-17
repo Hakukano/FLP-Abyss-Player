@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
+use super::entry::EntryService;
+
 mod memory;
 
 pub trait GroupService: Send + Sync {
@@ -26,7 +28,7 @@ pub trait GroupService: Send + Sync {
 
     fn sort(&mut self, by: MetaCmpBy, ascend: bool);
 
-    fn destroy(&mut self, id: &str) -> Result<Group>;
+    fn destroy(&mut self, id: &str, entry_service: &mut dyn EntryService) -> Result<Group>;
 
     fn to_json(&self) -> Value;
 
