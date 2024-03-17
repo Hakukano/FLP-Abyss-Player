@@ -23,16 +23,20 @@ export default function Group(props: Props) {
   const errorState = useError();
   const scanState = useScan();
 
-  const playlist_id = searchParams.get("playlist_id");
+  const playlistId = searchParams.get("playlist_id");
 
   const fetchGroups = async () => {
-    setGroups(
-      (
-        await props.apiServices.group.index({
-          playlist_id: playlist_id,
-        })
-      ).body,
-    );
+    try {
+      setGroups(
+        (
+          await props.apiServices.group.index({
+            playlist_id: playlistId,
+          })
+        ).body,
+      );
+    } catch (_) {
+      setGroups([]);
+    }
   };
 
   const newGroup = () => {
@@ -53,7 +57,7 @@ export default function Group(props: Props) {
   };
 
   const selectGroup = (id: string) => {
-    navigate(`/player?playlist_id=${playlist_id}&group_id=${id}`);
+    navigate(`/player?playlist_id=${playlistId}&group_id=${id}`);
   };
 
   const shiftGroup = async (id: string, offset: number) => {
@@ -83,7 +87,7 @@ export default function Group(props: Props) {
       />
       <h2>{t("group.title")}</h2>
       <List
-        headers={{ path: t("group.path.label") }}
+        headers={{ id: null, path: t("group.path.label") }}
         data={groups || []}
         handleNew={newGroup}
         handleDelete={deleteGroup}

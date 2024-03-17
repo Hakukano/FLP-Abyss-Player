@@ -11,7 +11,7 @@ interface Props {
 export default function Player(props: Props) {
   const [searchParams, _] = useSearchParams();
 
-  const playlist_id = searchParams.get("playlist_id");
+  const playlistId = searchParams.get("playlist_id");
 
   return (
     <Container fluid className="vh-100 d-flex m-3">
@@ -20,7 +20,7 @@ export default function Player(props: Props) {
           <Playlist apiServices={props.apiServices} />
         </Col>
         <Col md={6}>
-          {playlist_id && <Group apiServices={props.apiServices} />}
+          {playlistId && <Group apiServices={props.apiServices} />}
         </Col>
       </Row>
     </Container>
