@@ -166,9 +166,7 @@ export function ScanModal(props: Props) {
               </Stack>
             </Stack>
           ) : (
-            <Stack gap={3}>
-              <Stack direction="horizontal" gap={2}></Stack>
-            </Stack>
+            <Stack gap={3}></Stack>
           )}
         </Modal.Body>
         <Modal.Footer>

@@ -6,8 +6,9 @@ import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import App from "./app.tsx";
-import translations from "./translations.ts";
 import { ApiServices } from "./services/api.ts";
+
+import translations from "./translations.ts";
 
 async function main() {
   const apiServices = new ApiServices();
