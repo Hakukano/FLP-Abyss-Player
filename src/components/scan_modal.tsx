@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction, useState } from "react";
-import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -11,9 +10,12 @@ import {
   Stack,
   Table,
 } from "react-bootstrap";
-import { ApiServices } from "../services/api";
 import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
+import upath from "upath";
+
+import { ApiServices } from "../services/api";
+import { ErrorModal, useError } from "./error_modal";
 
 interface ScanState {
   show: boolean;
@@ -99,7 +101,9 @@ export function ScanModal(props: Props) {
     }
     props.apiServices.scanner
       .index({ root_path: rootPath, allowed_mimes: allowedMimes })
-      .then((resp) => setUngroupedPaths(resp.body))
+      .then((resp) =>
+        setUngroupedPaths(resp.body.map((path) => upath.normalize(path))),
+      )
       .catch((err) => errorState.popup(err));
   };
 
