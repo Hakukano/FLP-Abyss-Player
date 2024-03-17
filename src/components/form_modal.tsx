@@ -52,11 +52,6 @@ interface Props {
 }
 
 export function FormModal(props: Props) {
-  const formData = props.state.data;
-  if (!formData) {
-    return <></>;
-  }
-
   const { t } = useTranslation();
 
   const errorState = useError();
@@ -64,6 +59,11 @@ export function FormModal(props: Props) {
   const handleClose = () => {
     props.state.setShow(false);
   };
+
+  const formData = props.state.data;
+  if (!formData) {
+    return <></>;
+  }
 
   const initialValues = formData.rows.reduce(
     (acc, cur) => {

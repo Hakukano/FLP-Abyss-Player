@@ -58,13 +58,15 @@ export function ScanModal(props: Props) {
     if (inputMime.trim().length === 0) {
       return;
     }
-    allowedMimes.push(inputMime);
-    setAllowedMimes(allowedMimes);
+    const newAllowedMimes = [...new Set(allowedMimes.concat([inputMime]))];
+    setAllowedMimes(newAllowedMimes);
   };
 
   const removeAllowedMime = (mime: string) => {
-    allowedMimes.splice(allowedMimes.indexOf(mime), 1);
-    setAllowedMimes(allowedMimes);
+    const newAllowedMimes = allowedMimes.filter(
+      (allowedMime) => allowedMime !== mime,
+    );
+    setAllowedMimes(newAllowedMimes);
   };
 
   const handleScan = () => {
@@ -128,7 +130,7 @@ export function ScanModal(props: Props) {
                         />
                       </td>
                       <td
-                        className="text-end"
+                        className="text-end align-middle"
                         style={{ whiteSpace: "nowrap", width: "1px" }}
                       >
                         <PlusCircle
