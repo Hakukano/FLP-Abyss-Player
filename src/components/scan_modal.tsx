@@ -101,9 +101,7 @@ export function ScanModal(props: Props) {
     }
     props.apiServices.scanner
       .index({ root_path: rootPath, allowed_mimes: allowedMimes })
-      .then((resp) =>
-        setUngroupedPaths(resp.body.map((path) => upath.normalize(path))),
-      )
+      .then((resp) => setUngroupedPaths(resp.body))
       .catch((err) => errorState.popup(err));
   };
 
