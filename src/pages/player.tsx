@@ -14,7 +14,7 @@ export default function Player(props: Props) {
   const playlistId = searchParams.get("playlist_id");
 
   return (
-    <Container fluid className="vh-100 d-flex m-3">
+    <Container fluid className="vh-100 d-flex p-3">
       <Row className="w-100">
         <Col md={6}>
           <Playlist apiServices={props.apiServices} />
