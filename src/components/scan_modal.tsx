@@ -1,7 +1,16 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
-import { Button, Col, Modal, Row, Stack, Table } from "react-bootstrap";
+import {
+  Button,
+  Col,
+  FormCheck,
+  FormControl,
+  Modal,
+  Row,
+  Stack,
+  Table,
+} from "react-bootstrap";
 import { ApiServices } from "../services/api";
 import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
@@ -33,12 +42,24 @@ export function ScanModal(props: Props) {
   const [rootPath, setRootPath] = useState<string | null>(null);
   const [inputMime, setInputMime] = useState<string>("");
   const [allowedMimes, setAllowedMimes] = useState<string[]>([]);
-  const [fullPaths, setFullPaths] = useState<string[]>([]);
+  const [ungroupedPaths, setUngroupedPaths] = useState<string[]>([]);
   const [oneLevelDeeper, setOneLevelDeeper] = useState(false);
+  const [groupPath, setGroupPath] = useState("");
+  const [groupedPath, setGroupedPath] = useState<{ [key: string]: string[] }>();
 
   const { t } = useTranslation();
 
   const errorState = useError();
+
+  const clear = () => {
+    setRootPath(null);
+    setInputMime("");
+    setAllowedMimes([]);
+    setUngroupedPaths([]);
+    setOneLevelDeeper(false);
+    setGroupPath("");
+    setGroupedPath({});
+  };
 
   const popupRootPath = () => {
     open({
@@ -78,8 +99,14 @@ export function ScanModal(props: Props) {
     }
     props.apiServices.scanner
       .index({ root_path: rootPath, allowed_mimes: allowedMimes })
-      .then((resp) => setFullPaths(resp.body))
+      .then((resp) => setUngroupedPaths(resp.body))
       .catch((err) => errorState.popup(err));
+  };
+
+  const grouping = () => {
+    const toMove = [];
+    for (const ungroupedPath of ungroupedPaths) {
+    }
   };
 
   return (
@@ -95,7 +122,7 @@ export function ScanModal(props: Props) {
           <Modal.Title>{t("scan.title")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {fullPaths.length === 0 ? (
+          {ungroupedPaths.length === 0 ? (
             <Stack gap={3}>
               <Row>
                 <Col md={3}>
@@ -117,7 +144,7 @@ export function ScanModal(props: Props) {
                   <thead>
                     <tr>
                       <td>
-                        <input
+                        <FormControl
                           className="w-100"
                           onChange={(e) => {
                             setInputMime(e.target.value);
@@ -166,18 +193,49 @@ export function ScanModal(props: Props) {
               </Stack>
             </Stack>
           ) : (
-            <Stack gap={3}></Stack>
+            <Stack gap={3}>
+              <span>{t("scan.ungrouped.title")}</span>
+              <Stack direction="horizontal" gap={2}>
+                <FormControl
+                  type="text"
+                  onChange={(e) => {
+                    setGroupPath(e.target.value);
+                  }}
+                />
+                <span style={{ whiteSpace: "nowrap" }}>
+                  {t("scan.ungrouped.one_level_deeper")}
+                </span>
+                <FormCheck
+                  type="checkbox"
+                  checked={oneLevelDeeper}
+                  onChange={(e) => setOneLevelDeeper(e.target.checked)}
+                  className="ms-auto"
+                />
+                <PlusCircle
+                  className="text-info"
+                  size={24}
+                  style={{ cursor: "pointer" }}
+                  onClick={grouping}
+                />
+              </Stack>
+              <Table striped bordered hover></Table>
+            </Stack>
           )}
         </Modal.Body>
         <Modal.Footer>
-          {fullPaths.length === 0 ? (
+          {ungroupedPaths.length === 0 ? (
             <Button variant="primary" onClick={handleScan}>
               {t("scan.scan")}
             </Button>
           ) : (
-            <Button variant="primary" onClick={handleScan}>
-              {t("scan.submit")}
-            </Button>
+            <>
+              <Button variant="secondary" onClick={clear}>
+                {t("scan.back")}
+              </Button>
+              <Button variant="primary" onClick={handleScan}>
+                {t("scan.submit")}
+              </Button>
+            </>
           )}
         </Modal.Footer>
       </Modal>

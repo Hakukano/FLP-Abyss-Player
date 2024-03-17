@@ -43,7 +43,12 @@ export default {
     allowed_mimes: {
       label: "Allowed MIMEs",
     },
+    ungrouped: {
+      title: "Ungrouped",
+      one_level_deeper: "One Level Deeper",
+    },
     scan: "Scan",
+    back: "Back",
     submit: "Submit",
   },
   app_config: {
