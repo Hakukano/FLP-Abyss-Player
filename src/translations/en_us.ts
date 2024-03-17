@@ -22,6 +22,11 @@ export default {
       label: "Ascend?",
     },
   },
+  list: {
+    pagination: {
+      go_to: "Go to page",
+    },
+  },
   scan: {
     title: "Scan for medias",
     errors: {

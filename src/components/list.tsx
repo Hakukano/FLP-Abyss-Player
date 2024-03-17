@@ -1,4 +1,4 @@
-import { Stack, Table } from "react-bootstrap";
+import { Button, Col, FormControl, Row, Stack, Table } from "react-bootstrap";
 import { ErrorModal, useError } from "./error_modal";
 import {
   PlusCircle,
@@ -17,8 +17,10 @@ import {
   flexRender,
   getPaginationRowModel,
   VisibilityState,
+  PaginationState,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import Select from "react-select";
 
 interface Props {
   headers: { [key: string]: string | null };
@@ -44,6 +46,10 @@ export default function List(props: Props) {
         {} as { [key: string]: boolean },
       ),
   );
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
 
   const { t } = useTranslation();
 
@@ -146,10 +152,12 @@ export default function List(props: Props) {
     data: props.data,
     state: {
       columnVisibility,
+      pagination,
     },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
   });
 
   return (
@@ -207,6 +215,78 @@ export default function List(props: Props) {
           ))}
         </tbody>
       </Table>
+      <Row className="align-items-center">
+        <Col md={6}>
+          <Stack direction="horizontal" gap={2}>
+            <Button
+              variant="secondary"
+              onClick={() => table.firstPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              {"<<"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              {"<"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              {">"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => table.lastPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              {">>"}
+            </Button>
+            <strong>
+              {table.getState().pagination.pageIndex + 1}&nbsp;/&nbsp;
+              {(table.getPageCount() || 1).toLocaleString()}
+            </strong>
+          </Stack>
+        </Col>
+        <Col md={6}>
+          <Stack direction="horizontal" gap={2} className="justify-content-end">
+            <span>{t("list.pagination.go_to")}:</span>
+            <FormControl
+              type="number"
+              min="1"
+              max={table.getPageCount() || 1}
+              defaultValue={table.getState().pagination.pageIndex + 1}
+              onChange={(e) => {
+                const page = e.target.value ? Number(e.target.value) - 1 : 0;
+                table.setPageIndex(page);
+              }}
+              style={{ width: "80px" }}
+            />
+            <Select
+              options={[20, 30, 40, 50].map((pageSize) => {
+                return {
+                  value: pageSize,
+                  label: pageSize,
+                };
+              })}
+              value={{
+                value: table.getState().pagination.pageSize,
+                label: table.getState().pagination.pageSize,
+              }}
+              onChange={(option) => {
+                table.setPageSize(Number(option?.value || 0));
+              }}
+              className="text-dark"
+            >
+              {}
+            </Select>
+          </Stack>
+        </Col>
+      </Row>
     </Stack>
   );
 }
