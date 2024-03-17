@@ -90,7 +90,7 @@ export function ScanModal(props: Props) {
     setAllowedMimes(newAllowedMimes);
   };
 
-  const handleScan = () => {
+  const scan = () => {
     if (!rootPath) {
       return errorState.popup(t("scan.errors.root_not_set"));
     }
@@ -224,7 +224,7 @@ export function ScanModal(props: Props) {
         </Modal.Body>
         <Modal.Footer>
           {ungroupedPaths.length === 0 ? (
-            <Button variant="primary" onClick={handleScan}>
+            <Button variant="primary" onClick={scan}>
               {t("scan.scan")}
             </Button>
           ) : (
@@ -232,7 +232,7 @@ export function ScanModal(props: Props) {
               <Button variant="secondary" onClick={clear}>
                 {t("scan.back")}
               </Button>
-              <Button variant="primary" onClick={handleScan}>
+              <Button variant="primary" onClick={scan}>
                 {t("scan.submit")}
               </Button>
             </>
