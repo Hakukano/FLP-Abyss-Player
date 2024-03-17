@@ -20,7 +20,7 @@ type FormData = {
   rows: FormRow<any>[];
 };
 
-export interface UseForm {
+export interface FormState {
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
   data: FormData | null;
@@ -28,7 +28,7 @@ export interface UseForm {
   popup: (form_data: FormData) => void;
 }
 
-export function useForm(): UseForm {
+export function useForm(): FormState {
   const [show, setShow] = useState(false);
   const [data, setData] = useState<FormData | null>(null);
 
@@ -47,7 +47,7 @@ export function useForm(): UseForm {
 }
 
 interface Props {
-  state: UseForm;
+  state: FormState;
   handleSubmit: (values: { [key: string]: any }) => Promise<any>;
 }
 

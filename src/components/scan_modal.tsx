@@ -6,13 +6,13 @@ import { ApiServices } from "../services/api";
 import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
 
-interface UseScan {
+interface ScanState {
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
   popup: () => void;
 }
 
-export function useScan(): UseScan {
+export function useScan(): ScanState {
   const [show, setShow] = useState(false);
 
   const popup = () => {
@@ -23,7 +23,7 @@ export function useScan(): UseScan {
 }
 
 interface Props {
-  state: UseScan;
+  state: ScanState;
   apiServices: ApiServices;
 
   handleClose: () => void;

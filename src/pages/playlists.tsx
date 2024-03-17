@@ -9,6 +9,8 @@ import { PlaylistBrief } from "../services/api/playlist";
 import { ErrorModal, useError } from "../components/error_modal";
 import { FormModal, useForm } from "../components/form_modal";
 import List from "../components/list";
+import { MenuButton } from "react-bootstrap-icons";
+import { MenuModal, useMenu } from "../components/menu_modal";
 
 interface Props {
   apiServices: ApiServices;
@@ -21,7 +23,12 @@ export default function Playlists(props: Props) {
   const navigate = useNavigate();
 
   const errorState = useError();
+  const menuState = useMenu();
   const formState = useForm();
+
+  const popupMenu = () => {
+    menuState.popup();
+  };
 
   const fetchPlaylists = async () => {
     setPlaylists((await props.apiServices.playlist.index()).body);
@@ -68,8 +75,17 @@ export default function Playlists(props: Props) {
     <Container fluid className="vh-100 d-flex p-3">
       <Stack gap={3}>
         <ErrorModal state={errorState} />
+        <MenuModal state={menuState} apiServices={props.apiServices} />
         <FormModal state={formState} handleSubmit={createPlaylist} />
-        <h2>{t("playlist.title")}</h2>
+        <Stack direction="horizontal" gap={2}>
+          <MenuButton
+            className="text-info"
+            size={24}
+            style={{ cursor: "pointer" }}
+            onClick={popupMenu}
+          />
+          <h2 className="m-0">{t("playlist.title")}</h2>
+        </Stack>
         <List
           headers={{ id: null, name: t("playlist.name.label") }}
           data={playlists || []}

@@ -9,6 +9,10 @@ export default {
     close: "Close",
     submit: "Submit",
   },
+  menu: {
+    title: "Menu",
+    change_playlist: "Change playlist",
+  },
   sort: {
     title: "Sort",
     by: {
@@ -74,5 +78,8 @@ export default {
     delete: {
       confirm: "Are you sure to delete the group?",
     },
+  },
+  player: {
+    title: "Now playing",
   },
 };

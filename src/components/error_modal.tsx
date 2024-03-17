@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { ToastContainer, Toast } from "react-bootstrap";
 import { useTranslation } from "react-i18next";
 
-interface UseError {
+interface ErrorState {
   message: string;
   setMessage: Dispatch<SetStateAction<string>>;
   show: boolean;
@@ -10,7 +10,7 @@ interface UseError {
   popup: (err: any) => void;
 }
 
-export function useError(): UseError {
+export function useError(): ErrorState {
   const [message, setMessage] = useState("");
   const [show, setShow] = useState(false);
 
@@ -27,7 +27,7 @@ export function useError(): UseError {
 }
 
 interface Props {
-  state: UseError;
+  state: ErrorState;
 }
 
 export function ErrorModal(props: Props) {
