@@ -9,6 +9,7 @@ import { ApiServices } from "../services/api";
 import { MenuModal, useMenu } from "../components/menu_modal";
 import { EntryDetails } from "../services/api/entry";
 import { ErrorModal, useError } from "../components/error_modal";
+import Entry from "../components/entry";
 
 interface Props {
   apiServices: ApiServices;
@@ -67,7 +68,16 @@ export default function Player(props: Props) {
               />
             )}
           </Col>
-          <Col md={6}>{entryId && <></>}</Col>
+          <Col md={6}>
+            {playlistId && groupId && (
+              <Entry
+                apiServices={props.apiServices}
+                playlistId={playlistId}
+                groupId={groupId}
+                entryId={entryId}
+              />
+            )}
+          </Col>
         </Row>
       </Stack>
     </Container>

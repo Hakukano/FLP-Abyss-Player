@@ -77,15 +77,20 @@ export default {
   },
   group: {
     title: "Group",
-    errors: {
-      playlist_not_selected: "Playlist has not been selected",
-    },
     path: {
       label: "Group path",
-      placeholder: "Enter group path...",
     },
     delete: {
       confirm: "Are you sure to delete the group?",
+    },
+  },
+  entry: {
+    title: "Entry",
+    path: {
+      label: "Entry path",
+    },
+    delete: {
+      confirm: "Are you sure to delete the entry?",
     },
   },
   player: {
