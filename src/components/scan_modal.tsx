@@ -54,6 +54,17 @@ export function ScanModal(props: Props) {
 
   const errorState = useError();
 
+  const step = () => {
+    if (
+      ungroupedPaths.length === 0 &&
+      Object.entries(groupedPaths).length === 0
+    ) {
+      return 1;
+    } else {
+      return 2;
+    }
+  };
+
   const clear = () => {
     setRootPath(null);
     setInputMime("");
@@ -122,9 +133,9 @@ export function ScanModal(props: Props) {
     } else {
       groupsToMatch.add(groupPath);
     }
-    const toMove: { [key: string]: number[] } = {};
+    const toMove: { [key: string]: string[] } = {};
     const groupsToMatchArr = [...groupsToMatch];
-    ungroupedPaths.forEach((ungroupedPath, index) => {
+    ungroupedPaths.forEach((ungroupedPath) => {
       const groupToMatch = groupsToMatchArr.find((groupToMatch) => {
         return ungroupedPath.startsWith(groupToMatch);
       });
@@ -132,7 +143,7 @@ export function ScanModal(props: Props) {
         if (!toMove[groupToMatch]) {
           toMove[groupToMatch] = [];
         }
-        toMove[groupToMatch].push(index);
+        toMove[groupToMatch].push(ungroupedPath);
       }
     });
     const clonedUngroupedPaths: string[] = JSON.parse(
@@ -141,13 +152,16 @@ export function ScanModal(props: Props) {
     const clonedGroupedPaths: { [key: string]: string[] } = JSON.parse(
       JSON.stringify(groupedPaths),
     );
-    Object.entries(toMove).forEach(([group, indexes]) => {
-      if (indexes.length > 0) {
+    Object.entries(toMove).forEach(([group, entries]) => {
+      if (entries.length > 0) {
         if (!clonedGroupedPaths[group]) {
           clonedGroupedPaths[group] = [];
         }
-        indexes.forEach((index) => {
-          const removed = clonedUngroupedPaths.splice(index, 1)[0];
+        entries.forEach((entry) => {
+          const removed = clonedUngroupedPaths.splice(
+            clonedUngroupedPaths.indexOf(entry),
+            1,
+          )[0];
           if (!!removed) {
             clonedGroupedPaths[group].push(removed);
           }
@@ -171,7 +185,7 @@ export function ScanModal(props: Props) {
           <Modal.Title>{t("scan.title")}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {ungroupedPaths.length === 0 ? (
+          {step() === 1 ? (
             <Stack gap={3}>
               <Row>
                 <Col md={3}>
@@ -313,7 +327,7 @@ export function ScanModal(props: Props) {
           )}
         </Modal.Body>
         <Modal.Footer>
-          {ungroupedPaths.length === 0 ? (
+          {step() === 1 ? (
             <Button variant="primary" onClick={scan}>
               {t("scan.scan")}
             </Button>
