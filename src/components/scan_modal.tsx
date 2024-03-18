@@ -231,7 +231,7 @@ export function ScanModal(props: Props) {
                 <Table striped bordered hover>
                   <thead>
                     <tr>
-                      <td>
+                      <th>
                         <FormControl
                           className="w-100"
                           onChange={(e) => {
@@ -243,8 +243,8 @@ export function ScanModal(props: Props) {
                             }
                           }}
                         />
-                      </td>
-                      <td
+                      </th>
+                      <th
                         className="text-end align-middle"
                         style={{ whiteSpace: "nowrap", width: "1px" }}
                       >
@@ -254,7 +254,7 @@ export function ScanModal(props: Props) {
                           style={{ cursor: "pointer" }}
                           onClick={addAllowedMime}
                         />
-                      </td>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -308,7 +308,7 @@ export function ScanModal(props: Props) {
               <Table striped bordered hover>
                 <thead>
                   <tr>
-                    <td>{t("scan.ungrouped.title")}</td>
+                    <th>{t("scan.ungrouped.title")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,8 +331,8 @@ export function ScanModal(props: Props) {
               <Table striped bordered hover>
                 <thead>
                   <tr>
-                    <td>{t("scan.grouped.title")}</td>
-                    <td>{t("scan.grouped.entry_count")}</td>
+                    <th>{t("scan.grouped.title")}</th>
+                    <th>{t("scan.grouped.entry_count")}</th>
                   </tr>
                 </thead>
                 <tbody>

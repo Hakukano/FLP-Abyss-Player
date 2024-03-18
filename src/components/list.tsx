@@ -26,6 +26,8 @@ interface Props {
   headers: { [key: string]: string | null };
   data: { [key: string]: any }[];
 
+  highlightedIds?: Set<string>;
+
   handleNew: () => void;
   handleDelete: (id: string) => Promise<void>;
   handleSelect: (id: string) => void;
@@ -205,6 +207,11 @@ export default function List(props: Props) {
                   <td
                     key={cell.id}
                     onClick={() => props.handleSelect(row.getValue("id"))}
+                    className={
+                      props.highlightedIds?.has(row.getValue("id"))
+                        ? "bg-success"
+                        : ""
+                    }
                     style={{ cursor: "pointer" }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

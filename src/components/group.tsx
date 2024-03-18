@@ -11,6 +11,7 @@ import { ScanModal, useScan } from "./scan_modal";
 interface Props {
   apiServices: ApiServices;
   playlistId: string;
+  groupId: string | null;
 }
 
 export default function Group(props: Props) {
@@ -89,6 +90,7 @@ export default function Group(props: Props) {
       <List
         headers={{ id: null, path: t("group.path.label") }}
         data={listData}
+        highlightedIds={props.groupId ? new Set([props.groupId]) : new Set()}
         handleNew={newGroup}
         handleDelete={deleteGroup}
         handleSelect={selectGroup}

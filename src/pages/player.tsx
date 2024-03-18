@@ -60,7 +60,11 @@ export default function Player(props: Props) {
         <Row className="w-100">
           <Col md={6}>
             {playlistId && (
-              <Group apiServices={props.apiServices} playlistId={playlistId} />
+              <Group
+                apiServices={props.apiServices}
+                playlistId={playlistId}
+                groupId={groupId}
+              />
             )}
           </Col>
           <Col md={6}>{entryId && <></>}</Col>
