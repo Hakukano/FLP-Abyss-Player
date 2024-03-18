@@ -281,9 +281,7 @@ export default function List(props: Props) {
                 table.setPageSize(Number(option?.value || 0));
               }}
               className="text-dark"
-            >
-              {}
-            </Select>
+            />
           </Stack>
         </Col>
       </Row>

@@ -12,7 +12,6 @@ import {
 } from "react-bootstrap";
 import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
-import upath from "upath";
 
 import { ApiServices } from "../services/api";
 import { ErrorModal, useError } from "./error_modal";
@@ -47,7 +46,9 @@ export function ScanModal(props: Props) {
   const [ungroupedPaths, setUngroupedPaths] = useState<string[]>([]);
   const [oneLevelDeeper, setOneLevelDeeper] = useState(false);
   const [groupPath, setGroupPath] = useState("");
-  const [groupedPath, setGroupedPath] = useState<{ [key: string]: string[] }>();
+  const [groupedPaths, setGroupedPaths] = useState<{
+    [key: string]: string[];
+  }>({});
 
   const { t } = useTranslation();
 
@@ -60,7 +61,7 @@ export function ScanModal(props: Props) {
     setUngroupedPaths([]);
     setOneLevelDeeper(false);
     setGroupPath("");
-    setGroupedPath({});
+    setGroupedPaths({});
   };
 
   const popupRootPath = () => {
@@ -106,9 +107,55 @@ export function ScanModal(props: Props) {
   };
 
   const grouping = () => {
-    const toMove = [];
-    for (const ungroupedPath of ungroupedPaths) {
+    const groupPathNoEnding = groupPath.replace(/\/$/, "");
+    const groupsToMatch = new Set<string>();
+    if (oneLevelDeeper) {
+      for (const ungroupedPath of ungroupedPaths) {
+        const matched = ungroupedPath.match(
+          new RegExp(`^${groupPathNoEnding}(/[^/]*)/`),
+        );
+        if (!matched || matched.length < 2) {
+          continue;
+        }
+        groupsToMatch.add(`${groupPathNoEnding}${matched[1]}`);
+      }
+    } else {
+      groupsToMatch.add(groupPath);
     }
+    const toMove: { [key: string]: number[] } = {};
+    const groupsToMatchArr = [...groupsToMatch];
+    ungroupedPaths.forEach((ungroupedPath, index) => {
+      const groupToMatch = groupsToMatchArr.find((groupToMatch) => {
+        return ungroupedPath.startsWith(groupToMatch);
+      });
+      if (!!groupToMatch) {
+        if (!toMove[groupToMatch]) {
+          toMove[groupToMatch] = [];
+        }
+        toMove[groupToMatch].push(index);
+      }
+    });
+    const clonedUngroupedPaths: string[] = JSON.parse(
+      JSON.stringify(ungroupedPaths),
+    );
+    const clonedGroupedPaths: { [key: string]: string[] } = JSON.parse(
+      JSON.stringify(groupedPaths),
+    );
+    Object.entries(toMove).forEach(([group, indexes]) => {
+      if (indexes.length > 0) {
+        if (!clonedGroupedPaths[group]) {
+          clonedGroupedPaths[group] = [];
+        }
+        indexes.forEach((index) => {
+          const removed = clonedUngroupedPaths.splice(index, 1)[0];
+          if (!!removed) {
+            clonedGroupedPaths[group].push(removed);
+          }
+        });
+      }
+    });
+    setUngroupedPaths(clonedUngroupedPaths);
+    setGroupedPaths(clonedGroupedPaths);
   };
 
   return (
@@ -196,7 +243,6 @@ export function ScanModal(props: Props) {
             </Stack>
           ) : (
             <Stack gap={3}>
-              <span>{t("scan.ungrouped.title")}</span>
               <Stack direction="horizontal" gap={2}>
                 <FormControl
                   type="text"
@@ -220,7 +266,49 @@ export function ScanModal(props: Props) {
                   onClick={grouping}
                 />
               </Stack>
-              <Table striped bordered hover></Table>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <td>{t("scan.ungrouped.title")}</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ungroupedPaths.map((ungroupedPath, index) => {
+                    return (
+                      <tr key={index}>
+                        <td
+                          onClick={() =>
+                            navigator.clipboard.writeText(ungroupedPath)
+                          }
+                          style={{ cursor: "pointer" }}
+                        >
+                          {ungroupedPath}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <td>{t("scan.grouped.title")}</td>
+                    <td>{t("scan.grouped.entry_count")}</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(groupedPaths).map(
+                    ([groupedPath, entries], index) => {
+                      return (
+                        <tr key={index}>
+                          <td>{groupedPath}</td>
+                          <td>{entries.length}</td>
+                        </tr>
+                      );
+                    },
+                  )}
+                </tbody>
+              </Table>
             </Stack>
           )}
         </Modal.Body>
