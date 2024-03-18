@@ -1,41 +1,40 @@
 import { useEffect, useState } from "react";
 import { ApiServices } from "../services/api";
-import { GroupBrief } from "../services/api/group";
 import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import List from "./list";
 import { Stack } from "react-bootstrap";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ScanModal, useScan } from "./scan_modal";
 
 interface Props {
   apiServices: ApiServices;
+  playlistId: string;
 }
 
 export default function Group(props: Props) {
-  const [groups, setGroups] = useState<GroupBrief[] | null>(null);
+  const [listData, setListData] = useState<{ id: string; path: string }[]>([]);
 
   const { t } = useTranslation();
-  const [searchParams, _] = useSearchParams();
   const navigate = useNavigate();
 
   const errorState = useError();
   const scanState = useScan();
 
-  const playlistId = searchParams.get("playlist_id");
-
   const fetchGroups = async () => {
     try {
-      setGroups(
+      setListData(
         (
           await props.apiServices.group.index({
-            playlist_id: playlistId,
+            playlist_id: props.playlistId,
           })
-        ).body,
+        ).body.map((group) => {
+          return { id: group.id, path: group.meta.path };
+        }),
       );
     } catch (_) {
-      setGroups([]);
+      setListData([]);
     }
   };
 
@@ -57,7 +56,7 @@ export default function Group(props: Props) {
   };
 
   const selectGroup = (id: string) => {
-    navigate(`/player?playlist_id=${playlistId}&group_id=${id}`);
+    navigate(`/player?playlist_id=${props.playlistId}&group_id=${id}`);
   };
 
   const shiftGroup = async (id: string, offset: number) => {
@@ -83,12 +82,13 @@ export default function Group(props: Props) {
       <ScanModal
         state={scanState}
         apiServices={props.apiServices}
+        playlistId={props.playlistId}
         handleClose={closeScan}
       />
       <h2>{t("group.title")}</h2>
       <List
         headers={{ id: null, path: t("group.path.label") }}
-        data={groups || []}
+        data={listData}
         handleNew={newGroup}
         handleDelete={deleteGroup}
         handleSelect={selectGroup}

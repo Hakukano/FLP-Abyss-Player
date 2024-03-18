@@ -34,14 +34,6 @@ impl FromArgs for CreateArgs {}
 pub fn create(args: Value, group_service: &mut dyn GroupService) -> ApiResult {
     let args = CreateArgs::from_args(args)?;
 
-    if group_service
-        .find_by_playlist_id(args.playlist_id.as_str())
-        .into_iter()
-        .any(|group| group.meta.path == args.path.as_str())
-    {
-        return Err(Response::conflict());
-    }
-
     let path = Path::new(args.path.as_str());
     if !path.exists() {
         return Err(Response::not_found());

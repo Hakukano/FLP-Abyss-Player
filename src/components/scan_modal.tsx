@@ -36,6 +36,8 @@ interface Props {
   state: ScanState;
   apiServices: ApiServices;
 
+  playlistId: string;
+
   handleClose: () => void;
 }
 
@@ -170,6 +172,29 @@ export function ScanModal(props: Props) {
     });
     setUngroupedPaths(clonedUngroupedPaths);
     setGroupedPaths(clonedGroupedPaths);
+  };
+
+  const submit = async () => {
+    try {
+      for (const [group, entries] of Object.entries(groupedPaths)) {
+        const createdGroup = (
+          await props.apiServices.group.create({
+            playlist_id: props.playlistId,
+            path: group,
+          })
+        ).body;
+        for (const entry of entries) {
+          await props.apiServices.entry.create({
+            group_id: createdGroup.id,
+            path: entry,
+          });
+        }
+      }
+      clear();
+      props.handleClose();
+    } catch (err) {
+      errorState.popup(err);
+    }
   };
 
   return (
@@ -336,7 +361,7 @@ export function ScanModal(props: Props) {
               <Button variant="secondary" onClick={clear}>
                 {t("scan.back")}
               </Button>
-              <Button variant="primary" onClick={scan}>
+              <Button variant="primary" onClick={submit}>
                 {t("scan.submit")}
               </Button>
             </>

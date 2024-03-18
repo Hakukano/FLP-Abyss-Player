@@ -106,13 +106,6 @@ impl Response {
         }
     }
 
-    pub fn conflict() -> Self {
-        Self {
-            status: 409,
-            body: serde_json::to_value("Conflict").unwrap(),
-        }
-    }
-
     pub fn internal_server_error() -> Self {
         Self {
             status: 500,
