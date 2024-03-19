@@ -12,7 +12,7 @@ mod utils;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _guard = utils::init_tracing(
-        cfg!(debug_assertions),
+        true,
         if cfg!(debug_assertions) {
             Level::DEBUG
         } else {

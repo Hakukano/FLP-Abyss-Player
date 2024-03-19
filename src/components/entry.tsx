@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
-import { ApiServices } from "../services/api";
-import { ErrorModal, useError } from "./error_modal";
 import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import List from "./list";
 import { Stack } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { ScanModal, useScan } from "./scan_modal";
 
+import { ApiServices } from "../services/api";
+import { GroupDetails } from "../services/api/group";
+import List from "./list";
+import { ErrorModal, useError } from "./error_modal";
+import { PlaylistDetails } from "../services/api/playlist";
+import { EntryBrief, EntryDetails } from "../services/api/entry";
+
 interface Props {
   apiServices: ApiServices;
-  playlistId: string;
-  groupId: string;
-  entryId: string | null;
+  playlist: PlaylistDetails;
+  group: GroupDetails;
+  entries: EntryBrief[];
+  entry: EntryDetails | null;
+
+  fetchEntries: (groupId: string) => void;
 }
 
 export default function Entry(props: Props) {
@@ -24,20 +31,15 @@ export default function Entry(props: Props) {
   const errorState = useError();
   const scanState = useScan();
 
-  const fetchEntries = async () => {
-    try {
-      setListData(
-        (
-          await props.apiServices.entry.index({
-            group_id: props.groupId,
-          })
-        ).body.map((entry) => {
-          return { id: entry.id, path: entry.meta.path };
-        }),
-      );
-    } catch (_) {
-      setListData([]);
-    }
+  const refreshListData = () => {
+    setListData(
+      props.entries.map((entry) => {
+        return {
+          id: entry.id,
+          path: entry.meta.path.replace(props.group.meta.path, ""),
+        };
+      }),
+    );
   };
 
   const newEntry = () => {
@@ -45,27 +47,26 @@ export default function Entry(props: Props) {
   };
 
   const closeScan = () => {
-    fetchEntries()
-      .then(() => scanState.setShow(false))
-      .catch((err) => errorState.popup(err));
+    scanState.setShow(false);
+    props.fetchEntries(props.group.id);
   };
 
   const deleteEntry = async (id: string) => {
     if (await confirm(t("entry.delete.confirm"))) {
       await props.apiServices.entry.destroy(id);
-      await fetchEntries();
+      props.fetchEntries(props.group.id);
     }
   };
 
   const selectEntry = (id: string) => {
     navigate(
-      `/player?playlist_id=${props.playlistId}&group_id=${props.groupId}&entry_id=${id}`,
+      `/player?playlist_id=${props.playlist.id}&group_id=${props.group.id}&entry_id=${id}`,
     );
   };
 
   const shiftEntry = async (id: string, offset: number) => {
     await props.apiServices.entry.shift(id, { offset });
-    await fetchEntries();
+    props.fetchEntries(props.group.id);
   };
 
   const sortEntries = async (values: { [key: string]: any }) => {
@@ -73,12 +74,12 @@ export default function Entry(props: Props) {
       by: values["by"].value,
       ascend: values["ascend"],
     });
-    await fetchEntries();
+    props.fetchEntries(props.group.id);
   };
 
   useEffect(() => {
-    fetchEntries().catch(errorState.popup);
-  }, []);
+    refreshListData();
+  }, [props.entries]);
 
   return (
     <Stack gap={3}>
@@ -86,14 +87,14 @@ export default function Entry(props: Props) {
       <ScanModal
         state={scanState}
         apiServices={props.apiServices}
-        playlistId={props.playlistId}
+        playlistId={props.playlist.id}
         handleClose={closeScan}
       />
       <h2>{t("entry.title")}</h2>
       <List
         headers={{ id: null, path: t("entry.path.label") }}
         data={listData}
-        highlightedIds={props.entryId ? new Set([props.entryId]) : new Set()}
+        highlightedIds={props.entry ? new Set([props.entry.id]) : new Set()}
         handleNew={newEntry}
         handleDelete={deleteEntry}
         handleSelect={selectEntry}

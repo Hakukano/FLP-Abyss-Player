@@ -16,6 +16,7 @@ pub fn init_tracing(
         let (writer, guard) = tracing_appender::non_blocking(std::io::stdout());
         (writer, guard)
     } else {
+        // FIXME: Fix the log file path
         let file_appender = tracing_appender::rolling::daily("logs", "service.log");
         let (writer, guard) = tracing_appender::non_blocking(file_appender);
         (writer, guard)

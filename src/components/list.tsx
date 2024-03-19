@@ -97,7 +97,7 @@ export default function List(props: Props) {
       columnHelper.display({
         id: "actions",
         header: () => (
-          <Stack direction="horizontal" gap={1}>
+          <Stack direction="horizontal" gap={1} className="justify-content-end">
             {props.handleSort && (
               <SortUp
                 className="text-warning"

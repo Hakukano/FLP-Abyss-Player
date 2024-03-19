@@ -7,15 +7,21 @@ import { useTranslation } from "react-i18next";
 import Group from "../components/group";
 import { ApiServices } from "../services/api";
 import { MenuModal, useMenu } from "../components/menu_modal";
-import { EntryDetails } from "../services/api/entry";
+import { EntryBrief, EntryDetails } from "../services/api/entry";
 import { ErrorModal, useError } from "../components/error_modal";
 import Entry from "../components/entry";
+import { PlaylistDetails } from "../services/api/playlist";
+import { GroupBrief, GroupDetails } from "../services/api/group";
 
 interface Props {
   apiServices: ApiServices;
 }
 
 export default function Player(props: Props) {
+  const [playlist, setPlaylist] = useState<PlaylistDetails | null>(null);
+  const [groups, setGroups] = useState<GroupBrief[]>([]);
+  const [group, setGroup] = useState<GroupDetails | null>(null);
+  const [entries, setEntries] = useState<EntryBrief[]>([]);
   const [entry, setEntry] = useState<EntryDetails | null>(null);
 
   const { t } = useTranslation();
@@ -24,19 +30,49 @@ export default function Player(props: Props) {
   const errorState = useError();
   const menuState = useMenu();
 
-  const playlistId = searchParams.get("playlist_id");
-  const groupId = searchParams.get("group_id");
-  const entryId = searchParams.get("entry_id");
+  const fetchGroups = (playlistId: string) => {
+    props.apiServices.group
+      .index({ playlist_id: playlistId })
+      .then((resp) => setGroups(resp.body))
+      .catch((err) => errorState.popup(err));
+  };
 
-  const fetchEntry = async () => {
-    if (entryId) {
-      setEntry((await props.apiServices.entry.show(entryId)).body);
-    }
+  const fetchEntries = (groupId: string) => {
+    props.apiServices.entry
+      .index({ group_id: groupId })
+      .then((resp) => setEntries(resp.body))
+      .catch((err) => errorState.popup(err));
   };
 
   useEffect(() => {
-    fetchEntry().catch(errorState.popup);
-  }, []);
+    const playlistId = searchParams.get("playlist_id");
+    const groupId = searchParams.get("group_id");
+    const entryId = searchParams.get("entry_id");
+    if (playlistId) {
+      props.apiServices.playlist
+        .show(playlistId)
+        .then((resp) => {
+          setPlaylist(resp.body);
+          fetchGroups(resp.body.id);
+        })
+        .catch((err) => errorState.popup(err));
+    }
+    if (groupId) {
+      props.apiServices.group
+        .show(groupId)
+        .then((resp) => {
+          setGroup(resp.body);
+          fetchEntries(resp.body.id);
+        })
+        .catch((err) => errorState.popup(err));
+    }
+    if (entryId) {
+      props.apiServices.entry
+        .show(entryId)
+        .then((resp) => setEntry(resp.body))
+        .catch((err) => errorState.popup(err));
+    }
+  }, [searchParams]);
 
   const popupMenu = () => {
     menuState.popup();
@@ -60,21 +96,25 @@ export default function Player(props: Props) {
         </Stack>
         <Row className="w-100">
           <Col md={6}>
-            {playlistId && (
+            {playlist && (
               <Group
                 apiServices={props.apiServices}
-                playlistId={playlistId}
-                groupId={groupId}
+                playlist={playlist}
+                groups={groups}
+                group={group}
+                fetchGroups={fetchGroups}
               />
             )}
           </Col>
           <Col md={6}>
-            {playlistId && groupId && (
+            {playlist && group && (
               <Entry
                 apiServices={props.apiServices}
-                playlistId={playlistId}
-                groupId={groupId}
-                entryId={entryId}
+                playlist={playlist}
+                group={group}
+                entries={entries}
+                entry={entry}
+                fetchEntries={fetchEntries}
               />
             )}
           </Col>
