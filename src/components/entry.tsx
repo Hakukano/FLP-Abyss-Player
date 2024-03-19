@@ -54,7 +54,13 @@ export default function Entry(props: Props) {
   const deleteEntry = async (id: string) => {
     if (await confirm(t("entry.delete.confirm"))) {
       await props.apiServices.entry.destroy(id);
-      props.fetchEntries(props.group.id);
+      if (id === props.entry?.id) {
+        navigate(
+          `/player?playlist_id=${props.playlist.id}&group_id=${props.group.id}`,
+        );
+      } else {
+        props.fetchEntries(props.group.id);
+      }
     }
   };
 

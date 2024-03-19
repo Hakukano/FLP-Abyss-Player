@@ -49,7 +49,11 @@ export default function Group(props: Props) {
   const deleteGroup = async (id: string) => {
     if (await confirm(t("group.delete.confirm"))) {
       await props.apiServices.group.destroy(id);
-      props.fetchGroups(props.playlist.id);
+      if (id === props.group?.id) {
+        navigate(`/player?playlist_id=${props.playlist.id}`);
+      } else {
+        props.fetchGroups(props.playlist.id);
+      }
     }
   };
 

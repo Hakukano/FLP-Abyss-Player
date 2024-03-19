@@ -31,6 +31,14 @@ export default function Player(props: Props) {
   const errorState = useError();
   const menuState = useMenu();
 
+  const clear = () => {
+    setPlaylist(null);
+    setGroups([]);
+    setGroup(null);
+    setEntries([]);
+    setEntry(null);
+  };
+
   const fetchGroups = (playlistId: string) => {
     props.apiServices.group
       .index({ playlist_id: playlistId })
@@ -46,6 +54,7 @@ export default function Player(props: Props) {
   };
 
   useEffect(() => {
+    clear();
     const playlistId = searchParams.get("playlist_id");
     const groupId = searchParams.get("group_id");
     const entryId = searchParams.get("entry_id");
