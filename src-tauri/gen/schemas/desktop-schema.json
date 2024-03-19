@@ -110,7 +110,7 @@
       ],
       "properties": {
         "urls": {
-          "description": "Remote domains this capability refers to using the [URLPattern standard](https://urlpattern.spec.whatwg.org/).",
+          "description": "Remote domains this capability refers to using the [URLPattern standard](https://urlpattern.spec.whatwg.org/).\n\n# Examples\n\n- \"https://*.mydomain.dev\": allows subdomains of mydomain.dev - \"https://mydomain.dev/api/*\": allows any subpath of mydomain.dev/api",
           "type": "array",
           "items": {
             "type": "string"
@@ -141,6 +141,12 @@
               "properties": {
                 "identifier": {
                   "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "shell:default"
+                      ]
+                    },
                     {
                       "description": "shell:allow-execute -> Enables the execute command without any pre-configured scope.",
                       "type": "string",
@@ -355,6 +361,12 @@
           ]
         },
         {
+          "type": "string",
+          "enum": [
+            "dialog:default"
+          ]
+        },
+        {
           "description": "dialog:allow-ask -> Enables the ask command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -502,31 +514,10 @@
           ]
         },
         {
-          "description": "image:allow-from-ico-bytes -> Enables the from_ico_bytes command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:allow-from-ico-bytes"
-          ]
-        },
-        {
           "description": "image:allow-from-path -> Enables the from_path command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "image:allow-from-path"
-          ]
-        },
-        {
-          "description": "image:allow-from-png-bytes -> Enables the from_png_bytes command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:allow-from-png-bytes"
-          ]
-        },
-        {
-          "description": "image:allow-height -> Enables the height command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:allow-height"
           ]
         },
         {
@@ -544,10 +535,10 @@
           ]
         },
         {
-          "description": "image:allow-width -> Enables the width command without any pre-configured scope.",
+          "description": "image:allow-size -> Enables the size command without any pre-configured scope.",
           "type": "string",
           "enum": [
-            "image:allow-width"
+            "image:allow-size"
           ]
         },
         {
@@ -558,31 +549,10 @@
           ]
         },
         {
-          "description": "image:deny-from-ico-bytes -> Denies the from_ico_bytes command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:deny-from-ico-bytes"
-          ]
-        },
-        {
           "description": "image:deny-from-path -> Denies the from_path command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "image:deny-from-path"
-          ]
-        },
-        {
-          "description": "image:deny-from-png-bytes -> Denies the from_png_bytes command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:deny-from-png-bytes"
-          ]
-        },
-        {
-          "description": "image:deny-height -> Denies the height command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:deny-height"
           ]
         },
         {
@@ -600,10 +570,10 @@
           ]
         },
         {
-          "description": "image:deny-width -> Denies the width command without any pre-configured scope.",
+          "description": "image:deny-size -> Denies the size command without any pre-configured scope.",
           "type": "string",
           "enum": [
-            "image:deny-width"
+            "image:deny-size"
           ]
         },
         {
@@ -1062,6 +1032,12 @@
           ]
         },
         {
+          "type": "string",
+          "enum": [
+            "shell:default"
+          ]
+        },
+        {
           "description": "shell:allow-execute -> Enables the execute command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -1125,10 +1101,24 @@
           ]
         },
         {
+          "description": "tray:allow-get-by-id -> Enables the get_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:allow-get-by-id"
+          ]
+        },
+        {
           "description": "tray:allow-new -> Enables the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "tray:allow-new"
+          ]
+        },
+        {
+          "description": "tray:allow-remove-by-id -> Enables the remove_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:allow-remove-by-id"
           ]
         },
         {
@@ -1188,10 +1178,24 @@
           ]
         },
         {
+          "description": "tray:deny-get-by-id -> Denies the get_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:deny-get-by-id"
+          ]
+        },
+        {
           "description": "tray:deny-new -> Denies the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "tray:deny-new"
+          ]
+        },
+        {
+          "description": "tray:deny-remove-by-id -> Denies the remove_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:deny-remove-by-id"
           ]
         },
         {

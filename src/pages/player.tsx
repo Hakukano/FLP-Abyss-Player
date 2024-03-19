@@ -12,6 +12,7 @@ import { ErrorModal, useError } from "../components/error_modal";
 import Entry from "../components/entry";
 import { PlaylistDetails } from "../services/api/playlist";
 import { GroupBrief, GroupDetails } from "../services/api/group";
+import { OmniPlayer } from "../components/omni_player";
 
 interface Props {
   apiServices: ApiServices;
@@ -83,6 +84,7 @@ export default function Player(props: Props) {
       <ErrorModal state={errorState} />
       <MenuModal state={menuState} apiServices={props.apiServices} />
       <Stack gap={3}>
+        <OmniPlayer entry={entry} />
         <Stack direction="horizontal" gap={2}>
           <MenuButton
             className="text-info"
