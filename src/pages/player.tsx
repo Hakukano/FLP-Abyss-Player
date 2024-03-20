@@ -89,11 +89,21 @@ export default function Player(props: Props) {
   };
 
   return (
-    <Container fluid className="vh-100 d-flex p-3">
+    <Container fluid>
       <ErrorModal state={errorState} />
       <MenuModal state={menuState} apiServices={props.apiServices} />
+      {entry && (
+        <>
+          <OmniPlayer
+            apiServices={props.apiServices}
+            groups={groups}
+            entries={entries}
+            entry={entry}
+          />
+          <hr />
+        </>
+      )}
       <Stack gap={3}>
-        <OmniPlayer entry={entry} />
         <Stack direction="horizontal" gap={2}>
           <MenuButton
             className="text-info"
