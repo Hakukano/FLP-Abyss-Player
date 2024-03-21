@@ -147,18 +147,7 @@ export function OmniPlayer(props: Props) {
           )}
         </Col>
       </Row>
-      <Row
-        className="vw-100"
-        style={{ height: "32px", alignItems: "center" }}
-        onKeyUp={(e) => {
-          if (e.key === "ArrowLeft") {
-            previousEntry();
-          }
-          if (e.key === "ArrowRight") {
-            nextEntry();
-          }
-        }}
-      >
+      <Row className="vw-100" style={{ height: "32px", alignItems: "center" }}>
         <Col md={2}>
           <ArrowLeftSquare
             size={24}
