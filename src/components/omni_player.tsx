@@ -243,7 +243,7 @@ export function OmniPlayer(props: Props) {
             />
           )}
         </Col>
-        <Col md={3}>
+        <Col md={3} className="d-flex justify-content-center">
           <Stack direction="horizontal" gap={1}>
             {auto ? (
               <PlayCircleFill
@@ -268,7 +268,7 @@ export function OmniPlayer(props: Props) {
             />
           </Stack>
         </Col>
-        <Col md={1}>
+        <Col md={1} className="d-flex justify-content-end">
           {repeat ? (
             <RCircleFill
               size={24}
@@ -285,7 +285,7 @@ export function OmniPlayer(props: Props) {
             />
           )}
         </Col>
-        <Col md={1}>
+        <Col md={1} className="d-flex justify-content-end">
           {random ? (
             <QuestionCircleFill
               size={24}
@@ -302,7 +302,7 @@ export function OmniPlayer(props: Props) {
             />
           )}
         </Col>
-        <Col md={1}>
+        <Col md={1} className="d-flex justify-content-end">
           {loop ? (
             <CircleFill
               size={24}
@@ -319,7 +319,7 @@ export function OmniPlayer(props: Props) {
             />
           )}
         </Col>
-        <Col md={2}>
+        <Col md={2} className="d-flex justify-content-end">
           <ArrowRightSquare
             size={24}
             className="text-info"
