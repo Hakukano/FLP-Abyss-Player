@@ -92,11 +92,13 @@ export default function Player(props: Props) {
     <Container fluid>
       <ErrorModal state={errorState} />
       <MenuModal state={menuState} apiServices={props.apiServices} />
-      {entry && (
+      {playlist && group && entry && (
         <>
           <OmniPlayer
             apiServices={props.apiServices}
+            playlist={playlist}
             groups={groups}
+            group={group}
             entries={entries}
             entry={entry}
           />
