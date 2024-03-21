@@ -11,6 +11,8 @@ import { ApiServices } from "./services/api.ts";
 import translations from "./translations.ts";
 
 async function main() {
+  localStorage.clear();
+
   const apiServices = new ApiServices();
 
   const appConfig = (await apiServices.appConfig.index()).body;
