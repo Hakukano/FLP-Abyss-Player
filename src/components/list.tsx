@@ -39,9 +39,9 @@ interface Props {
 export default function List(props: Props) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     Object.entries(props.headers)
-      .filter(([_, v]) => !v)
+      .filter(([, v]) => !v)
       .reduce(
-        (acc, [k, _]) => {
+        (acc, [k]) => {
           acc[k] = false;
           return acc;
         },

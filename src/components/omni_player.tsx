@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { ArrowLeftSquare, ArrowRightSquare } from "react-bootstrap-icons";
-import { Col, Row } from "react-bootstrap";
+import {
+  ArrowLeftSquare,
+  ArrowRightSquare,
+  Circle,
+  CircleFill,
+  PlayCircle,
+  PlayCircleFill,
+  QuestionCircle,
+  QuestionCircleFill,
+  RCircle,
+  RCircleFill,
+} from "react-bootstrap-icons";
+import { Col, FormControl, Row, Stack } from "react-bootstrap";
 
 import { EntryBrief, EntryDetails } from "../services/api/entry";
 import { GroupBrief, GroupDetails } from "../services/api/group";
@@ -20,16 +31,55 @@ interface Props {
 }
 
 export function OmniPlayer(props: Props) {
-  const [auto, setAuto] = useState(false);
-  const [autoInterval, setAutoInterval] = useState(0);
-  const [repeat, setRepeat] = useState(false);
-  const [random, setRandom] = useState(false);
-  const [loop, setLoop] = useState(false);
-  const [groupRandom, setGroupRandom] = useState(false);
-  const [groupLoop, setGroupLoop] = useState(false);
+  const [auto, setAuto] = useState(localStorage.getItem("auto") === "true");
+  const [autoInterval, setAutoInterval] = useState(
+    parseInt(localStorage.getItem("auto_interval") || "0"),
+  );
+  const [repeat, setRepeat] = useState(
+    localStorage.getItem("repeat") === "true",
+  );
+  const [random, setRandom] = useState(
+    localStorage.getItem("random") === "true",
+  );
+  const [loop, setLoop] = useState(localStorage.getItem("loop") === "true");
+  const [groupRandom, setGroupRandom] = useState(
+    localStorage.getItem("group_random") === "true",
+  );
+  const [groupLoop, setGroupLoop] = useState(
+    localStorage.getItem("group_loop") === "true",
+  );
 
   const errorState = useError();
   const navigate = useNavigate();
+
+  const updateAuto = (value: boolean) => {
+    localStorage.setItem("auto", value.toString());
+    setAuto(value);
+  };
+  const updateAutoInterval = (value: number) => {
+    localStorage.setItem("auto_interval", value.toString());
+    setAutoInterval(value);
+  };
+  const updateRepeat = (value: boolean) => {
+    localStorage.setItem("repeat", value.toString());
+    setRepeat(value);
+  };
+  const updateRandom = (value: boolean) => {
+    localStorage.setItem("random", value.toString());
+    setRandom(value);
+  };
+  const updateLoop = (value: boolean) => {
+    localStorage.setItem("loop", value.toString());
+    setLoop(value);
+  };
+  const updateGroupRandom = (value: boolean) => {
+    localStorage.setItem("group_random", value.toString());
+    setGroupRandom(value);
+  };
+  const updateGroupLoop = (value: boolean) => {
+    localStorage.setItem("group_loop", value.toString());
+    setGroupLoop(value);
+  };
 
   const nextEntry = async () => {
     if (repeat) {
@@ -62,7 +112,7 @@ export function OmniPlayer(props: Props) {
     if (nextGroupIndex !== groupIndex) {
       try {
         const resp = await props.apiServices.entry.index({
-          group_id: nextGroupIndex.toString(),
+          group_id: props.groups[nextGroupIndex].id,
         });
         navigate(
           `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[nextGroupIndex].id}&entry_id=${resp.body[0].id}`,
@@ -126,7 +176,7 @@ export function OmniPlayer(props: Props) {
   return (
     <>
       <ErrorModal state={errorState} />
-      <Row className="vw-100" style={{ height: "calc(100vh - 36px)" }}>
+      <Row className="vw-100" style={{ height: "calc(100vh - 40px)" }}>
         <Col
           style={{
             maxWidth: "100%",
@@ -147,7 +197,10 @@ export function OmniPlayer(props: Props) {
           )}
         </Col>
       </Row>
-      <Row className="vw-100" style={{ height: "32px", alignItems: "center" }}>
+      <Row
+        className="vw-100"
+        style={{ height: "32px", paddingTop: "4px", alignItems: "center" }}
+      >
         <Col md={2}>
           <ArrowLeftSquare
             size={24}
@@ -155,6 +208,116 @@ export function OmniPlayer(props: Props) {
             style={{ cursor: "pointer" }}
             onClick={previousEntry}
           />
+        </Col>
+        <Col md={1}>
+          {groupRandom ? (
+            <QuestionCircleFill
+              size={24}
+              className="text-warning"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateGroupRandom(false)}
+            />
+          ) : (
+            <QuestionCircle
+              size={24}
+              className="text-warning"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateGroupRandom(true)}
+            />
+          )}
+        </Col>
+        <Col md={1}>
+          {groupLoop ? (
+            <CircleFill
+              size={24}
+              className="text-warning"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateGroupLoop(false)}
+            />
+          ) : (
+            <Circle
+              size={24}
+              className="text-warning"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateGroupLoop(true)}
+            />
+          )}
+        </Col>
+        <Col md={3}>
+          <Stack direction="horizontal" gap={1}>
+            {auto ? (
+              <PlayCircleFill
+                size={24}
+                className="text-info"
+                style={{ cursor: "pointer" }}
+                onClick={() => updateAuto(false)}
+              />
+            ) : (
+              <PlayCircle
+                size={24}
+                className="text-info"
+                style={{ cursor: "pointer" }}
+                onClick={() => updateAuto(true)}
+              />
+            )}
+            <FormControl
+              type="number"
+              defaultValue={autoInterval}
+              min={0}
+              onChange={(e) => updateAutoInterval(parseInt(e.target.value))}
+            />
+          </Stack>
+        </Col>
+        <Col md={1}>
+          {repeat ? (
+            <RCircleFill
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateRepeat(false)}
+            />
+          ) : (
+            <RCircle
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateRepeat(true)}
+            />
+          )}
+        </Col>
+        <Col md={1}>
+          {random ? (
+            <QuestionCircleFill
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateRandom(false)}
+            />
+          ) : (
+            <QuestionCircle
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateRandom(true)}
+            />
+          )}
+        </Col>
+        <Col md={1}>
+          {loop ? (
+            <CircleFill
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateLoop(false)}
+            />
+          ) : (
+            <Circle
+              size={24}
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              onClick={() => updateLoop(true)}
+            />
+          )}
         </Col>
         <Col md={2}>
           <ArrowRightSquare

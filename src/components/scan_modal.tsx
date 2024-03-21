@@ -141,7 +141,7 @@ export function ScanModal(props: Props) {
       const groupToMatch = groupsToMatchArr.find((groupToMatch) => {
         return ungroupedPath.startsWith(groupToMatch);
       });
-      if (!!groupToMatch) {
+      if (groupToMatch) {
         if (!toMove[groupToMatch]) {
           toMove[groupToMatch] = [];
         }
@@ -164,7 +164,7 @@ export function ScanModal(props: Props) {
             clonedUngroupedPaths.indexOf(entry),
             1,
           )[0];
-          if (!!removed) {
+          if (removed) {
             clonedGroupedPaths[group].push(removed);
           }
         });

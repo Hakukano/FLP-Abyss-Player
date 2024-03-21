@@ -26,7 +26,7 @@ export default function Player(props: Props) {
   const [entry, setEntry] = useState<EntryDetails | null>(null);
 
   const { t } = useTranslation();
-  const [searchParams, _] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const errorState = useError();
   const menuState = useMenu();
