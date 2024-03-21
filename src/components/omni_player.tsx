@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
   ArrowLeftSquare,
@@ -33,7 +33,7 @@ interface Props {
 export function OmniPlayer(props: Props) {
   const [auto, setAuto] = useState(localStorage.getItem("auto") === "true");
   const [autoInterval, setAutoInterval] = useState(
-    parseInt(localStorage.getItem("auto_interval") || "0"),
+    parseInt(localStorage.getItem("auto_interval") || "1"),
   );
   const [repeat, setRepeat] = useState(
     localStorage.getItem("repeat") === "true",
@@ -81,7 +81,7 @@ export function OmniPlayer(props: Props) {
     setGroupLoop(value);
   };
 
-  const nextEntry = async () => {
+  const nextEntry = () => {
     if (repeat) {
       navigate(0);
     }
@@ -110,16 +110,16 @@ export function OmniPlayer(props: Props) {
       nextGroupIndex = 0;
     }
     if (nextGroupIndex !== groupIndex) {
-      try {
-        const resp = await props.apiServices.entry.index({
+      props.apiServices.entry
+        .index({
           group_id: props.groups[nextGroupIndex].id,
-        });
-        navigate(
-          `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[nextGroupIndex].id}&entry_id=${resp.body[0].id}`,
-        );
-      } catch (err) {
-        errorState.popup(err);
-      }
+        })
+        .then((resp) => {
+          navigate(
+            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[nextGroupIndex].id}&entry_id=${resp.body[0].id}`,
+          );
+        })
+        .catch((err) => errorState.popup(err));
     } else if (nextEntryIndex !== entryIndex) {
       navigate(
         `/player?playlist_id=${props.playlist.id}&group_id=${props.group.id}&entry_id=${props.entries[nextEntryIndex].id}`,
@@ -127,7 +127,7 @@ export function OmniPlayer(props: Props) {
     }
   };
 
-  const previousEntry = async () => {
+  const previousEntry = () => {
     if (repeat) {
       navigate(0);
     }
@@ -156,22 +156,29 @@ export function OmniPlayer(props: Props) {
       previousGroupIndex = props.groups.length - 1;
     }
     if (previousGroupIndex !== groupIndex) {
-      try {
-        const resp = await props.apiServices.entry.index({
+      props.apiServices.entry
+        .index({
           group_id: props.groups[previousGroupIndex].id,
-        });
-        navigate(
-          `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[previousGroupIndex].id}&entry_id=${resp.body[resp.body.length - 1].id}`,
-        );
-      } catch (err) {
-        errorState.popup(err);
-      }
+        })
+        .then((resp) => {
+          navigate(
+            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[previousGroupIndex].id}&entry_id=${resp.body[resp.body.length - 1].id}`,
+          );
+        })
+        .catch((err) => errorState.popup(err));
     } else if (previousEntryIndex !== entryIndex) {
       navigate(
         `/player?playlist_id=${props.playlist.id}&group_id=${props.group.id}&entry_id=${props.entries[previousEntryIndex].id}`,
       );
     }
   };
+
+  useEffect(() => {
+    if (auto) {
+      const interval = setTimeout(nextEntry, autoInterval * 1000);
+      return () => clearTimeout(interval);
+    }
+  }, [auto, autoInterval]);
 
   return (
     <>
@@ -263,7 +270,7 @@ export function OmniPlayer(props: Props) {
             <FormControl
               type="number"
               defaultValue={autoInterval}
-              min={0}
+              min={1}
               onChange={(e) => updateAutoInterval(parseInt(e.target.value))}
             />
           </Stack>

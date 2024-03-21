@@ -92,19 +92,23 @@ export default function Player(props: Props) {
     <Container fluid>
       <ErrorModal state={errorState} />
       <MenuModal state={menuState} apiServices={props.apiServices} />
-      {playlist && group && entry && (
-        <>
-          <OmniPlayer
-            apiServices={props.apiServices}
-            playlist={playlist}
-            groups={groups}
-            group={group}
-            entries={entries}
-            entry={entry}
-          />
-          <hr />
-        </>
-      )}
+      {playlist &&
+        groups.length > 0 &&
+        group &&
+        entries.length > 0 &&
+        entry && (
+          <>
+            <OmniPlayer
+              apiServices={props.apiServices}
+              playlist={playlist}
+              groups={groups}
+              group={group}
+              entries={entries}
+              entry={entry}
+            />
+            <hr />
+          </>
+        )}
       <Stack gap={3}>
         <Stack direction="horizontal" gap={2}>
           <MenuButton
