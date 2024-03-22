@@ -9,7 +9,7 @@ clean:
 	rm -rf $(COVERAGE_DIRECTORY)
 
 audit: FORCE
-	cargo deny --all-features check bans
+	yarn && yarn audit && cargo deny --all-features check bans
 
 lint: FORCE
 	yarn && yarn lint && cargo clippy --all-features
