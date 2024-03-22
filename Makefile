@@ -1,21 +1,30 @@
-.PHONY: usage clean audit lint test dev
+OUTPUT_DIRECTORY = out
+
+TARGET_BUNDLE_ASSETS = $(OUTPUT_DIRECTORY)/assets.zip
+SRC_BUNDLE_ASSETS = assets
+
+TARGET_BUNDLE_SCRIPTS = $(OUTPUT_DIRECTORY)/scripts.zip
+SRC_BUNDLE_SCRIPTS = scripts
+
+.PHONY: usage client bundle clean
 
 usage:
-	echo "Usage: make [clean] [audit] [lint] [test] [dev]"
-
-FORCE: ;
+	echo "Usage: make [client] [bundle] [clean]"
 
 clean:
-	rm -rf $(COVERAGE_DIRECTORY)
+	rm -rf $(OUTPUT_DIRECTORY)
 
-audit: FORCE
-	yarn && yarn audit && cargo deny --all-features check bans
+client:
+	cd ./client && yarn build && cd ..
+	rm -rf ./assets/static
+	cp -r ./client/out ./assets/static
 
-lint: FORCE
-	yarn && yarn lint && cargo clippy --all-features
+$(TARGET_BUNDLE_ASSETS):
+	mkdir -p $(OUTPUT_DIRECTORY)
+	zip -r $(TARGET_BUNDLE_ASSETS) $(SRC_BUNDLE_ASSETS)
 
-test: FORCE
-	yarn && yarn test && cargo test --all-features -- --nocapture
+$(TARGET_BUNDLE_SCRIPTS):
+	mkdir -p $(OUTPUT_DIRECTORY)
+	zip -r $(TARGET_BUNDLE_SCRIPTS) $(SRC_BUNDLE_SCRIPTS)
 
-dev: FORCE
-	cargo tauri dev
+bundle: clean $(TARGET_BUNDLE_ASSETS) $(TARGET_BUNDLE_SCRIPTS)
