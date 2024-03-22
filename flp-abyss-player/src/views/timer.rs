@@ -84,7 +84,9 @@ impl Task {
                 .send(Packet::new(PacketName::Tick, Value::Null))
                 .unwrap();
 
-            task.last_triggered = Utc::now() - chrono::Duration::milliseconds(overshot);
+            task.last_triggered = Utc::now()
+                - chrono::Duration::try_milliseconds(overshot)
+                    .unwrap_or_else(|| chrono::Duration::zero());
 
             ctx.request_repaint();
         })

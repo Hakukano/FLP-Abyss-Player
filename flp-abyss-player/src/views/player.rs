@@ -27,7 +27,7 @@ mod image;
 mod server;
 mod video;
 
-pub trait MediaPlayer: Send + Sync {
+pub trait MediaPlayer {
     fn is_loaded(&self) -> bool;
     fn is_end(&self) -> bool;
     fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &Context, state: &Player);

@@ -13,8 +13,6 @@ readme = "../README.md"
 
 [dependencies]
 # derive
-flp-abyss-player-derive = { version = "0.1", path = "../flp-abyss-player-derive" }
-
 anyhow = "1.0"
 async-trait = "0.1"
 axum = { version = "0.7", features = ["multipart", "ws"] }
@@ -22,7 +20,9 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.1", features = ["derive"] }
 derive_builder = "0.20"
 eframe = "0.26"
+egui_extras = { version = "0.26", features = ["all_loaders"] }
 egui_glow = "0.26"
+flp-abyss-player-derive = { version = "0.1", path = "../flp-abyss-player-derive" }
 fuzzy-matcher = "0.3"
 glib = "0.19"
 glow = "0.13"

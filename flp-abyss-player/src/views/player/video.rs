@@ -1,14 +1,10 @@
-mod native;
-mod vlc;
-
-use std::{collections::VecDeque, path::Path, sync::Arc};
-
 use anyhow::Result;
 use eframe::{
     egui::{self, Key, Layout, TextStyle},
     emath::Align,
     epaint::Vec2,
 };
+use std::{collections::VecDeque, path::Path, sync::Arc};
 
 use crate::{
     library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
@@ -17,9 +13,12 @@ use crate::{
     CLI,
 };
 
+mod native;
+mod vlc;
+
 const CONTROLLER_HEIGHT: f32 = 20.0;
 
-pub trait VideoPlayer: Send + Sync {
+pub trait VideoPlayer {
     fn is_paused(&self) -> bool;
     fn is_end(&self) -> bool;
     fn position(&self) -> u32;

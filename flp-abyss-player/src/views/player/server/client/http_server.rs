@@ -2,6 +2,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use anyhow::Result;
 use axum::{Extension, Router};
+use tokio::net::TcpListener;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{views::player::server::service::playlist::Playlist, CLI};
@@ -25,10 +26,12 @@ impl HttpServer {
             .nest("/playlists", playlists::route())
             .layer(Extension(self.clone()));
         let addr = SocketAddr::new(bind_host.parse().expect("Invalid bind host"), bind_port);
-        axum::Server::bind(&addr)
-            .serve(app.into_make_service())
-            .await
-            .expect("Cannot build axum server");
+        axum::serve(
+            TcpListener::bind(&addr).await.expect("Cannot bind address"),
+            app.into_make_service(),
+        )
+        .await
+        .expect("Cannot build axum server");
         Ok(())
     }
 }

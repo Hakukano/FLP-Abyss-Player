@@ -1,7 +1,6 @@
 use eframe::egui;
-use serde_json::Value;
-
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     process::exit,
     sync::{
@@ -43,7 +42,7 @@ impl Packet {
     }
 }
 
-trait View: Send + Sync {
+trait View {
     fn handle(&mut self, packet: Packet);
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame);
@@ -93,9 +92,11 @@ impl Task {
             ..Default::default()
         };
         let _ = eframe::run_native(
-            t!("ui.app_name").as_str(),
+            t!("ui.app_name").as_ref(),
             options,
             Box::new(|cc| {
+                egui_extras::install_image_loaders(&cc.egui_ctx);
+
                 let (signal_tx, signal_rx) = channel::<Signal>();
                 let _ = timer::Task::run(signal_rx, packet_tx.clone(), cc.egui_ctx.clone());
                 let task = Task::new(packet_rx, packet_tx, command_tx, signal_tx, cc);

@@ -2,7 +2,7 @@ use std::{io::SeekFrom, ops::Deref};
 
 use async_trait::async_trait;
 use axum::{
-    body::StreamBody,
+    body::Body,
     extract::{FromRequestParts, Path, Query},
     http::{header::RANGE, request::Parts, StatusCode},
     response::{AppendHeaders, IntoResponse},
@@ -100,7 +100,7 @@ async fn stream(
                         (CONTENT_TYPE, res.mime_type),
                         (CONTENT_LENGTH, meta.len().to_string()),
                     ]),
-                    StreamBody::new(ReaderStream::new(file)),
+                    Body::from_stream(ReaderStream::new(file)),
                 )
                     .into_response())
             } else if res.mime_type.starts_with("video/") || res.mime_type.starts_with("audio/") {
@@ -127,7 +127,7 @@ async fn stream(
                         (CONTENT_RANGE, content_range),
                         (ACCEPT_RANGES, "bytes".to_string()),
                     ]),
-                    StreamBody::new(ReaderStream::new(file)),
+                    Body::from_stream(ReaderStream::new(file)),
                 )
                     .into_response())
             } else {

@@ -1,6 +1,7 @@
 use std::{fmt::Display, net::TcpListener};
 
 use eframe::egui::Vec2;
+use rfd::MessageDialogResult;
 
 #[cfg(test)]
 use std::path::{Path, PathBuf};
@@ -44,6 +45,7 @@ pub fn message_dialog_error(error: impl Display) -> bool {
         .set_buttons(rfd::MessageButtons::Ok)
         .set_description(error.to_string().as_str())
         .show()
+        == MessageDialogResult::Ok
 }
 
 #[cfg(test)]

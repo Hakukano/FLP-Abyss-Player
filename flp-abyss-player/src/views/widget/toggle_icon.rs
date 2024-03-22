@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use eframe::{
-    egui,
+    egui::{self, Image, ImageSource},
     epaint::{ColorImage, TextureHandle, Vec2},
 };
 use image::RgbaImage;
@@ -70,13 +70,13 @@ impl ToggleIcon {
     pub fn show(&self, max_size: Vec2, ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
         let mut response = if *on {
             ui.add(egui::ImageButton::new(
-                self.texture_on.id(),
-                scale_fit_all(max_size, self.texture_on.size_vec2()),
+                Image::new(ImageSource::Texture((&self.texture_on).into()))
+                    .fit_to_exact_size(scale_fit_all(max_size, self.texture_on.size_vec2())),
             ))
         } else {
             ui.add(egui::ImageButton::new(
-                self.texture_off.id(),
-                scale_fit_all(max_size, self.texture_off.size_vec2()),
+                Image::new(ImageSource::Texture((&self.texture_off).into()))
+                    .fit_to_exact_size(scale_fit_all(max_size, self.texture_off.size_vec2())),
             ))
         };
 

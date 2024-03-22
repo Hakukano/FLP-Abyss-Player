@@ -92,10 +92,10 @@ impl Default for MediaType {
 impl Display for MediaType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Self::Unset => "--".to_string(),
-            Self::Server => t!("ui.config.media_type.server"),
-            Self::Image => t!("ui.config.media_type.image"),
-            Self::Video => t!("ui.config.media_type.video"),
+            Self::Unset => "--",
+            Self::Server => t!("ui.config.media_type.server").as_ref(),
+            Self::Image => t!("ui.config.media_type.image").as_ref(),
+            Self::Video => t!("ui.config.media_type.video").as_ref(),
         };
         write!(f, "{}", str)
     }
@@ -147,9 +147,9 @@ impl Default for VideoPlayer {
 impl Display for VideoPlayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Self::Unset => "--".to_string(),
-            Self::Native => t!("ui.config.video_player.native"),
-            Self::Vlc => t!("ui.config.video_player.vlc"),
+            Self::Unset => "--",
+            Self::Native => t!("ui.config.video_player.native").as_ref(),
+            Self::Vlc => t!("ui.config.video_player.vlc").as_ref(),
         };
         write!(f, "{}", str)
     }

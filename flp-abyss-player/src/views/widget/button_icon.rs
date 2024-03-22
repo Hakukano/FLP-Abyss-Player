@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use eframe::{
-    egui,
+    egui::{self, Image, ImageSource},
     epaint::{ColorImage, TextureHandle, Vec2},
 };
 use image::RgbaImage;
@@ -47,8 +47,8 @@ impl ButtonIcon {
 
     pub fn show(&self, max_size: Vec2, ui: &mut egui::Ui) -> egui::Response {
         ui.add(egui::ImageButton::new(
-            self.texture.id(),
-            scale_fit_all(max_size, self.texture.size_vec2()),
+            Image::new(ImageSource::Texture((&self.texture).into()))
+                .fit_to_exact_size(scale_fit_all(max_size, self.texture.size_vec2())),
         ))
     }
 }
