@@ -5,6 +5,7 @@ mod json;
 pub mod tests;
 
 use std::{
+    collections::HashMap,
     ffi::OsStr,
     fmt::Display,
     ops::RangeInclusive,
@@ -17,6 +18,8 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
 use crate::{impl_differ_simple, library::differ::Differ, CLI};
+
+use super::Singleton;
 
 pub const AUTO_INTERVAL_RANGE: RangeInclusive<u32> = 1..=60;
 
@@ -177,9 +180,12 @@ impl From<VideoPlayer> for u8 {
 
 impl_differ_simple!(VideoPlayer);
 
-#[derive(Clone, Deserialize, Serialize, AccessibleModel, Differ)]
-#[accessible_model(singleton = CONFIG, rw_lock)]
+#[derive(Clone, Deserialize, Serialize, StaticRecord, Differ)]
+#[static_record(singleton = SINGLETON)]
 pub struct Config {
+    pub id: String,
+
+    #[static_record(findable)]
     pub locale: String,
 
     pub repeat: bool,
@@ -233,4 +239,9 @@ impl Default for Config {
     }
 }
 
-static CONFIG: Lazy<RwLock<Config>> = Lazy::new(RwLock::default);
+static SINGLETON: Singleton<Config> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    let config = Config::default();
+    map.insert(config.id, config);
+    RwLock::new(map)
+});

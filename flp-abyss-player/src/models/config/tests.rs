@@ -6,6 +6,8 @@ use super::*;
 
 pub fn mock_default() -> Config {
     Config {
+        id: "default".to_string(),
+
         locale: "en_US".to_string(),
 
         repeat: false,

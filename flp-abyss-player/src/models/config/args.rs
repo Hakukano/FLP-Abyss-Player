@@ -2,6 +2,7 @@ use crate::CLI;
 
 pub fn new() -> super::Config {
     super::Config {
+        id: "default".to_string(),
         locale: if let Some(locale) = CLI.locale.as_ref() {
             locale.clone()
         } else {

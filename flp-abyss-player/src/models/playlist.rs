@@ -9,6 +9,8 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use flp_abyss_player_derive::Differ;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -112,7 +114,8 @@ impl Body {
     }
 }
 
-#[derive(Clone, Default, Deserialize, Serialize, Differ)]
+#[derive(Clone, Default, AccessibleModel, Deserialize, Serialize, Differ)]
+#[accessible_model(singleton = PLAYLIST, rw_lock)]
 pub struct Playlist {
     pub header: Header,
     pub body: Body,
@@ -150,3 +153,5 @@ impl Playlist {
             .collect()
     }
 }
+
+static PLAYLIST: Lazy<RwLock<Playlist>> = Lazy::new(|| RwLock::new(Playlist::default()));

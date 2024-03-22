@@ -2,8 +2,9 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use tap::Tap;
 
-use crate::{library::playlist::Playlist, models::config::Config};
+use super::{config::Config, playlist::Playlist};
 
 #[derive(Clone, Default, AccessibleModel, Deserialize, Serialize, Differ)]
 #[accessible_model(singleton = PLAYER, rw_lock)]
@@ -14,7 +15,6 @@ pub struct Player {
     pub lop: bool,
     pub random: bool,
 
-    pub playlist: Playlist,
     pub index: usize,
 }
 
@@ -29,6 +29,9 @@ impl Player {
         lock.random = config.random;
 
         if let Some(playlist_path) = config.playlist_path.as_ref() {
+            Playlist::all().tap_mut(|playlist| {
+                playlist.load(playlist_path).expect("Cannot load playlist");
+            });
             lock.playlist
                 .load(playlist_path)
                 .expect("Cannot load playlist");
