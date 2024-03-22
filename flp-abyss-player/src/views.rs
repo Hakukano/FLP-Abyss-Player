@@ -87,7 +87,7 @@ impl Task {
         command_tx: Sender<Command>,
     ) {
         let options = eframe::NativeOptions {
-            initial_window_size: Some(egui::vec2(1600.0, 900.0)),
+            viewport: egui::ViewportBuilder::default().with_inner_size(egui::vec2(1600.0, 900.0)),
             multisampling: 4,
             renderer: eframe::Renderer::Glow,
             ..Default::default()

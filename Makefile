@@ -10,20 +10,35 @@ COVERAGE_DIRECTORY = coverage
 
 TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
-.PHONY: usage client bundle clean
+.PHONY: usage clean dev audit lint test server client bundle
 
 usage:
-	echo "Usage: make [coverage] [client] [bundle] [clean]"
+	echo "Usage: make [usage] [clean] [dev] [audit] [lint] [test] [coverage] [server] [client] [bundle]"
 
 FORCE: ;
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
 
+dev:
+	cargo run
+
+audit:
+	cargo deny check bans
+
+lint:
+	cargo clippy
+
+test:
+	cargo test
+
 $(TARGET_COVERAGE_SERVER): FORCE
 	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
 
 coverage: $(TARGET_COVERAGE_SERVER);
+
+server:
+	cargo build
 
 client:
 	cd ./client && yarn build && cd ..
