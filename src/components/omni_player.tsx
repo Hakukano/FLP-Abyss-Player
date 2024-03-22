@@ -13,6 +13,7 @@ import {
   RCircleFill,
 } from "react-bootstrap-icons";
 import { Col, FormControl, Row, Stack } from "react-bootstrap";
+import ReactPlayer from "react-player";
 
 import { EntryBrief, EntryDetails } from "../services/api/entry";
 import { GroupBrief, GroupDetails } from "../services/api/group";
@@ -47,6 +48,10 @@ export function OmniPlayer(props: Props) {
   );
   const [groupLoop, setGroupLoop] = useState(
     localStorage.getItem("group_loop") === "true",
+  );
+
+  const [canProceed, setCanProceed] = useState(
+    props.entry.mime.startsWith("image"),
   );
 
   const errorState = useError();
@@ -174,11 +179,11 @@ export function OmniPlayer(props: Props) {
   };
 
   useEffect(() => {
-    if (auto) {
+    if (canProceed && auto) {
       const interval = setTimeout(nextEntry, autoInterval * 1000);
       return () => clearTimeout(interval);
     }
-  }, [auto, autoInterval]);
+  }, [canProceed, auto, autoInterval]);
 
   return (
     <>
@@ -193,14 +198,20 @@ export function OmniPlayer(props: Props) {
           {props.entry.mime.startsWith("image") ? (
             <img
               src={convertFileSrc(props.entry.meta.path)}
+              className="w-100 h-100"
               style={{
-                width: "100%",
-                height: "100%",
                 objectFit: "contain",
               }}
             />
           ) : (
-            <></>
+            <ReactPlayer
+              url={convertFileSrc(props.entry.meta.path)}
+              playing={true}
+              loop={loop}
+              controls
+              className="w-100 h-100"
+              onEnded={() => setCanProceed(true)}
+            />
           )}
         </Col>
       </Row>
