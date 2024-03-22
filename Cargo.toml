@@ -2,6 +2,6 @@
 resolver = "2"
 
 members = [
-    "flp-abyss-player",
-    "flp-abyss-player-derive",
+    "src-derive",
+    "src-tauri",
 ]

@@ -1,41 +1,21 @@
-OUTPUT_DIRECTORY = out
-
-TARGET_BUNDLE_ASSETS = $(OUTPUT_DIRECTORY)/assets.zip
-SRC_BUNDLE_ASSETS = assets
-
-TARGET_BUNDLE_SCRIPTS = $(OUTPUT_DIRECTORY)/scripts.zip
-SRC_BUNDLE_SCRIPTS = scripts
-
-COVERAGE_DIRECTORY = coverage
-
-TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
-
-.PHONY: usage client bundle clean
+.PHONY: usage clean audit lint test dev
 
 usage:
-	echo "Usage: make [coverage] [client] [bundle] [clean]"
+	echo "Usage: make [clean] [audit] [lint] [test] [dev]"
 
 FORCE: ;
 
 clean:
-	rm -rf $(OUTPUT_DIRECTORY)
+	rm -rf $(COVERAGE_DIRECTORY)
 
-$(TARGET_COVERAGE_SERVER): FORCE
-	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
+audit: FORCE
+	cargo deny --all-features check bans
 
-coverage: $(TARGET_COVERAGE_SERVER);
+lint: FORCE
+	yarn && yarn lint && cargo clippy --all-features
 
-client:
-	cd ./client && yarn build && cd ..
-	rm -rf ./assets/static
-	cp -r ./client/out ./assets/static
+test: FORCE
+	yarn && yarn test && cargo test --all-features -- --nocapture
 
-$(TARGET_BUNDLE_ASSETS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_ASSETS) $(SRC_BUNDLE_ASSETS)
-
-$(TARGET_BUNDLE_SCRIPTS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_SCRIPTS) $(SRC_BUNDLE_SCRIPTS)
-
-bundle: clean $(TARGET_BUNDLE_ASSETS) $(TARGET_BUNDLE_SCRIPTS)
+dev: FORCE
+	cargo tauri dev
