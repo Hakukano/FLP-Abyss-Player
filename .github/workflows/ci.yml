@@ -1,7 +1,7 @@
-name: CI
+name: Test
 
 on:
-  push:
+  pull_request:
     branches:
       - "master"
       - "release-*"
@@ -10,10 +10,27 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  linux:
+  audit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./.github/actions/tauri-linux
-    - uses: dtolnay/rust-toolchain@stable
-    - run: make build-linux
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo deny
+        run: cargo install cargo-deny
+      - run: make audit
+  lint:
+    needs:
+      - audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: make lint
+  test:
+    needs:
+      - lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: make test
