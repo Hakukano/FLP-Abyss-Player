@@ -1,6 +1,6 @@
 [package]
 name = "flp-abyss-player"
-version = "0.8.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Hakukano <hakukano@flp-web.org>"]
 description = "Media player that sees all"
@@ -36,7 +36,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sys-locale = "0.3"
 tap = "1.0"
-tauri = { version = "2.0.0-beta", features = [ "protocol-asset",
+tauri = { version = "2.0.0-beta", features = [
+    "protocol-asset",
     "tracing",
     "test",
     "devtools",
