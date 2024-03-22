@@ -80,7 +80,7 @@ impl Playlist {
         player_buffer: &mut Player,
         search: &mut bool,
         search_str: &mut String,
-        filtered_paths: &Vec<(usize, String)>,
+        filtered_paths: &[(usize, String)],
         save: &mut Option<PathBuf>,
         load: &mut Option<PathBuf>,
     ) {
