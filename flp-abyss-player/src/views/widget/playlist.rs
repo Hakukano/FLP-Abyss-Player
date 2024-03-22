@@ -9,12 +9,13 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-#[cfg(feature = "native")]
-use crate::models::config::VideoPlayer;
 use crate::{
     library,
     library::fonts::gen_rich_text,
-    models::{config::MediaType, player::Player},
+    models::{
+        config::{MediaType, VideoPlayer},
+        player::Player,
+    },
     CLI,
 };
 
@@ -333,7 +334,6 @@ impl Playlist {
                             ui.end_row();
 
                             match header.video_player {
-                                #[cfg(feature = "native")]
                                 VideoPlayer::Native => {}
                                 _ => {
                                     ui.label(gen_rich_text(

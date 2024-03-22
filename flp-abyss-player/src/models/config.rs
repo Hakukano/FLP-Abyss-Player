@@ -128,7 +128,6 @@ impl_differ_simple!(MediaType);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
 pub enum VideoPlayer {
     Unset,
-    #[cfg(feature = "native")]
     Native,
     Vlc,
 }
@@ -149,7 +148,6 @@ impl Display for VideoPlayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             Self::Unset => "--".to_string(),
-            #[cfg(feature = "native")]
             Self::Native => t!("ui.config.video_player.native"),
             Self::Vlc => t!("ui.config.video_player.vlc"),
         };
@@ -160,7 +158,6 @@ impl Display for VideoPlayer {
 impl From<u8> for VideoPlayer {
     fn from(n: u8) -> Self {
         match n {
-            #[cfg(feature = "native")]
             255 => Self::Native,
             1 => Self::Vlc,
             _ => Self::Unset,
@@ -171,7 +168,6 @@ impl From<u8> for VideoPlayer {
 impl From<VideoPlayer> for u8 {
     fn from(video_player: VideoPlayer) -> Self {
         match video_player {
-            #[cfg(feature = "native")]
             VideoPlayer::Native => 255,
             VideoPlayer::Vlc => 1,
             _ => 0,

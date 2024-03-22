@@ -47,7 +47,6 @@ impl ConfigVideoPlayer {
                 VideoPlayer::Unset,
                 gen_rich_text(ctx, "--", Body, None),
             );
-            #[cfg(feature = "native")]
             ui.selectable_value(
                 video_player,
                 VideoPlayer::Native,

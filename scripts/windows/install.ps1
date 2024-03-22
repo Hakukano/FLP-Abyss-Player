@@ -1,33 +1,29 @@
- param (
-   [switch]$build = $false,
-   [switch]$native = $false
- )
+param (
+  [switch]$build = $false
+)
 
 $ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 try {
-    . ("$ScriptDirectory\common.ps1")
+  . ("$ScriptDirectory\common.ps1")
 }
 catch {
-    Write-Host "Error while loading supporting PowerShell Scripts" 
+  Write-Host "Error while loading supporting PowerShell Scripts"
 }
 
 # Install binary
 rm -ErrorAction Ignore -Recurse -Force $bin_dir
-md -Force $bin_dir
+mkdir -Force $bin_dir
 if ($build) {
-  if ($native) {
-    & $cargo install --version $version --features native --root $bin_dir $package
-  } else {
-    & $cargo install --version $version --root $bin_dir $package
-  }
-} else {
-  md -Force "$bin_dir\bin"
+  & $cargo install --version $version --root $bin_dir $package
+}
+else {
+  mkdir -Force "$bin_dir\bin"
   wget -Uri $bin_url -OutFile $bin_path
 }
 
 # Create app data
 rm -ErrorAction Ignore -Recurse -Force $data_dir
-md -Force $data_dir
+mkdir -Force $data_dir
 # Download assets
 rm -ErrorAction Ignore -Force $assets_zip
 wget -Uri $assets_url -OutFile $assets_zip
@@ -38,7 +34,7 @@ rm -ErrorAction Ignore -Force $assets_zip
 # Add shortcut to start menu
 rm -ErrorAction Ignore -Force $start_menu_shortcut
 if (!(Test-Path $start_menu_dir)) {
-  md -Force $start_menu_dir
+  mkdir -Force $start_menu_dir
 }
 $obj_shell = New-Object -ComObject ("WScript.Shell")
 $obj_short_cut = $obj_shell.CreateShortcut($start_menu_shortcut)
@@ -75,15 +71,13 @@ if (Test-Path $reg_image) {
 New-Item -Path $reg_top_shell -Name $reg_image_name
 New-Item -Path $reg_image -Name $reg_image_command_name
 Set-ItemProperty -Path $reg_image_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"image`" --root-path `"%V`""
-if ($native) {
 # Video Native
-  if (Test-Path $reg_video_native) {
-    Remove-Item -Path $reg_video_native -Recurse
-  }
-  New-Item -Path $reg_top_shell -Name $reg_video_native_name
-  New-Item -Path $reg_video_native -Name $reg_video_native_command_name
-  Set-ItemProperty -Path $reg_video_native_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"video`" --root-path `"%V`" --video-player `"native`""
+if (Test-Path $reg_video_native) {
+  Remove-Item -Path $reg_video_native -Recurse
 }
+New-Item -Path $reg_top_shell -Name $reg_video_native_name
+New-Item -Path $reg_video_native -Name $reg_video_native_command_name
+Set-ItemProperty -Path $reg_video_native_command -Name '(Default)' -Value "`"$bin_path`" --assets-path `"$assets_dir`" --media-type `"video`" --root-path `"%V`" --video-player `"native`""
 # VLC
 if (Test-Path $reg_vlc) {
   Remove-Item -Path $reg_vlc -Recurse

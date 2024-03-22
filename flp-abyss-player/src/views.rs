@@ -2,11 +2,12 @@ use eframe::egui;
 use serde_json::Value;
 
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "native")]
-use std::sync::Arc;
 use std::{
     process::exit,
-    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
+    sync::{
+        mpsc::{channel, Receiver, Sender, TryRecvError},
+        Arc,
+    },
 };
 use timer::Signal;
 
@@ -54,8 +55,6 @@ pub struct Task {
     command_tx: Sender<Command>,
     signal_tx: Sender<Signal>,
     view: Box<dyn View>,
-
-    #[cfg(feature = "native")]
     gl: Arc<glow::Context>,
 }
 
@@ -78,7 +77,6 @@ impl Task {
             packet_tx,
             command_tx,
             signal_tx,
-            #[cfg(feature = "native")]
             gl: cc.gl.clone().expect("gl context should be available"),
         }
     }
@@ -90,9 +88,7 @@ impl Task {
     ) {
         let options = eframe::NativeOptions {
             initial_window_size: Some(egui::vec2(1600.0, 900.0)),
-            #[cfg(feature = "native")]
             multisampling: 4,
-            #[cfg(feature = "native")]
             renderer: eframe::Renderer::Glow,
             ..Default::default()
         };

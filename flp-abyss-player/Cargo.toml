@@ -22,7 +22,13 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.1", features = ["derive"] }
 derive_builder = "0.20"
 eframe = "0.26"
+egui_glow = "0.26"
 fuzzy-matcher = "0.3"
+glib = "0.19"
+glow = "0.13"
+gstreamer = "0.22"
+gstreamer-app = "0.22"
+gstreamer-video = "0.22"
 http-range-header = "0.4"
 image = "0.25"
 nom = "7.1"
@@ -44,23 +50,3 @@ tokio-util = { version = "0.7", features = ["io"] }
 tower = { version = "0.4", features = ["full", "tokio", "tokio-stream"] }
 tower-http = { version = "0.5", features = ["full"] }
 walkdir = "2.3"
-
-# native
-egui_glow = { version = "0.26", optional = true }
-glow = { version = "0.13", optional = true }
-
-# gstreamer
-glib = { version = "0.19", optional = true }
-gstreamer = { version = "0.22", optional = true }
-gstreamer-app = { version = "0.22", optional = true }
-gstreamer-video = { version = "0.22", optional = true }
-
-[features]
-native = [
-    "egui_glow",
-    "glow",
-    "glib",
-    "gstreamer",
-    "gstreamer-app",
-    "gstreamer-video",
-]

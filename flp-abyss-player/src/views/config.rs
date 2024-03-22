@@ -177,7 +177,6 @@ impl super::View for View {
                         });
 
                         match self.state.video_player {
-                            #[cfg(feature = "native")]
                             VideoPlayer::Native => {}
                             _ => {
                                 ui.horizontal(|ui| {

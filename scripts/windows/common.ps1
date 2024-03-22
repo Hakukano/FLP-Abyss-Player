@@ -1,8 +1,8 @@
 $ErrorActionPreference = "Stop"
 
 $cargo = "cargo.exe"
-if ((Get-Command "$cargo" -ErrorAction SilentlyContinue) -eq $null) { 
-   Write-Host "Unable to find $cargo in your PATH"
+if ($null -eq (Get-Command "$cargo" -ErrorAction SilentlyContinue)) {
+  Write-Host "Unable to find $cargo in your PATH"
 }
 
 $org = "FLProject"
@@ -53,7 +53,7 @@ $reg_vlc = "$reg_top_shell\$reg_vlc_name"
 $reg_vlc_command_name = "command"
 $reg_vlc_command = "$reg_vlc\$reg_vlc_command_name"
 $vlc_bin_path = Get-Command vlc.exe -ErrorAction SilentlyContinue
-if ($vlc_bin_path -eq $null) {
+if ($null -eq $vlc_bin_path) {
   $vlc_bin_path = ""
 }
 

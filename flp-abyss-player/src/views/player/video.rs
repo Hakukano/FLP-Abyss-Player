@@ -1,10 +1,7 @@
-#[cfg(feature = "native")]
 mod native;
 mod vlc;
 
-#[cfg(feature = "native")]
-use std::sync::Arc;
-use std::{collections::VecDeque, path::Path};
+use std::{collections::VecDeque, path::Path, sync::Arc};
 
 use anyhow::Result;
 use eframe::{
@@ -46,12 +43,11 @@ pub struct MediaPlayer {
 
     error: VecDeque<String>,
 
-    #[cfg(feature = "native")]
     gl: Arc<glow::Context>,
 }
 
 impl MediaPlayer {
-    pub fn new(ctx: &egui::Context, #[cfg(feature = "native")] gl: Arc<glow::Context>) -> Self {
+    pub fn new(ctx: &egui::Context, gl: Arc<glow::Context>) -> Self {
         Self {
             volume_icon: ButtonIcon::from_rgba_image_files(
                 "volume",
@@ -63,7 +59,6 @@ impl MediaPlayer {
             ),
             video_player: None,
             error: VecDeque::new(),
-            #[cfg(feature = "native")]
             gl,
         }
     }
@@ -90,7 +85,6 @@ impl super::MediaPlayer for MediaPlayer {
             }
         }
         let mut video_player: Box<dyn VideoPlayer> = match player {
-            #[cfg(feature = "native")]
             config::VideoPlayer::Native => {
                 Box::new(native::VideoPlayer::new(path, self.gl.clone(), ctx.clone()))
             }

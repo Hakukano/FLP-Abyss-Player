@@ -68,16 +68,12 @@ impl View {
         command_tx: Sender<Command>,
         signal_tx: Sender<Signal>,
         ctx: &Context,
-        #[cfg(feature = "native")] gl: Arc<glow::Context>,
+        gl: Arc<glow::Context>,
     ) -> Self {
         let mut media_player: Box<dyn MediaPlayer> = match player.playlist.header.media_type {
             MediaType::Server => Box::new(server::MediaPlayer::new()),
             MediaType::Image => Box::new(image::MediaPlayer::new()),
-            MediaType::Video => Box::new(video::MediaPlayer::new(
-                ctx,
-                #[cfg(feature = "native")]
-                gl,
-            )),
+            MediaType::Video => Box::new(video::MediaPlayer::new(ctx, gl)),
             _ => panic!("Unknown media type"),
         };
         media_player.reload(
