@@ -1,0 +1,16 @@
+{
+  "$schema": "./schemas/mobile-schema.json",
+  "identifier": "mobile-capability",
+  "permissions": [
+    "dialog:allow-confirm",
+    "dialog:allow-open",
+    "dialog:allow-save"
+  ],
+  "platforms": [
+    "iOS",
+    "android"
+  ],
+  "windows": [
+    "main"
+  ]
+}

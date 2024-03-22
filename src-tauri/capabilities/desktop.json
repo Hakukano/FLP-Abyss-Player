@@ -1,0 +1,17 @@
+{
+  "$schema": "./schemas/desktop-schema.json",
+  "identifier": "desktop-capability",
+  "permissions": [
+    "dialog:allow-confirm",
+    "dialog:allow-open",
+    "dialog:allow-save"
+  ],
+  "platforms": [
+    "linux",
+    "macOS",
+    "windows"
+  ],
+  "windows": [
+    "main"
+  ]
+}
