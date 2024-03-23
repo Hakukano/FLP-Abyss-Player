@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fmt::Display,
     fs::File,
     io::{BufWriter, Read, Write},
@@ -17,6 +18,8 @@ use crate::{
     models::config::{Config, MediaType, VideoPlayer},
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH,
 };
+
+use super::Singleton;
 
 mod parser;
 mod writer;
@@ -73,7 +76,7 @@ impl Header {
         }
     }
 
-    pub fn load(path: impl AsRef<Path>) -> Result<(Vec<u8>, Self)> {
+    pub fn read(path: impl AsRef<Path>) -> Result<(Vec<u8>, Self)> {
         let mut bytes = Vec::new();
         File::open(path)?.read_to_end(&mut bytes)?;
         let (bytes, header) =
@@ -81,7 +84,7 @@ impl Header {
         Ok((bytes.to_vec(), header))
     }
 
-    pub fn save(&self) -> Vec<u8> {
+    pub fn write(&self) -> Vec<u8> {
         writer::header(self)
     }
 }
@@ -101,42 +104,52 @@ impl Body {
         }
     }
 
-    pub fn load(data: impl AsRef<[u8]>) -> Result<Self> {
+    pub fn read(data: impl AsRef<[u8]>) -> Result<Self> {
         Ok(parser::body(data.as_ref())
             .map_err(|err| anyhow!(err.to_string()))?
             .1)
     }
 
-    pub fn save(&self, buffer: Vec<u8>, path: impl AsRef<Path>) -> Result<()> {
+    pub fn write(&self, buffer: Vec<u8>, path: impl AsRef<Path>) -> Result<()> {
         let bytes = writer::body(buffer, self);
         BufWriter::new(File::create(path)?).write_all(bytes.as_slice())?;
         Ok(())
     }
 }
 
-#[derive(Clone, Default, AccessibleModel, Deserialize, Serialize, Differ)]
-#[accessible_model(singleton = PLAYLIST, rw_lock)]
+#[derive(Clone, Default, StaticRecord, Deserialize, Serialize, Differ)]
+#[static_record(singleton = SINGLETON, belongs_to = ["config"])]
 pub struct Playlist {
+    pub id: String,
     pub header: Header,
     pub body: Body,
+    pub config_id: String,
 }
 
 impl Playlist {
-    pub fn load(&mut self, path: impl AsRef<Path>) -> Result<()> {
-        let (rest, header) = Header::load(path)?;
+    pub fn new(id: String, config: &Config) -> Self {
+        Self {
+            id,
+            header: Header::from_config(config),
+            body: Body::from_paths(config.find_all_paths().as_slice()),
+            config_id: config.id.clone(),
+        }
+    }
+
+    pub fn item_paths(&self) -> &[String] {
+        self.body.item_paths.as_slice()
+    }
+
+    pub fn read(&mut self, path: impl AsRef<Path>) -> Result<()> {
+        let (rest, header) = Header::read(path)?;
         self.header = header;
-        self.body = Body::load(rest)?;
+        self.body = Body::read(rest)?;
         Ok(())
     }
 
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
-        let buffer = self.header.save();
-        self.body.save(buffer, path)
-    }
-
-    pub fn set_from_config(&mut self, config: &Config) {
-        self.header = Header::from_config(config);
-        self.body = Body::from_paths(config.find_all_paths().as_slice());
+    pub fn write(&self, path: impl AsRef<Path>) -> Result<()> {
+        let buffer = self.header.write();
+        self.body.write(buffer, path)
     }
 
     pub fn filter(&self, search_str: impl AsRef<str>) -> Vec<(usize, String)> {
@@ -154,4 +167,4 @@ impl Playlist {
     }
 }
 
-static PLAYLIST: Lazy<RwLock<Playlist>> = Lazy::new(|| RwLock::new(Playlist::default()));
+static SINGLETON: Singleton<Playlist> = Lazy::new(RwLock::default);

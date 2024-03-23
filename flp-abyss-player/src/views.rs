@@ -1,5 +1,5 @@
 use eframe::egui;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use std::{
     process::exit,
@@ -17,28 +17,22 @@ mod player;
 mod timer;
 mod widget;
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize)]
-pub enum ViewType {
-    Config,
-    Player,
-}
-
-#[derive(Eq, PartialEq)]
-pub enum PacketName {
-    ChangeView(ViewType),
-    Update,
-    Filter,
-    Tick,
-}
-
 pub struct Packet {
-    pub name: PacketName,
-    pub data: Value,
+    path: Vec<String>,
+    method: String,
+    body: Value,
 }
 
 impl Packet {
-    pub fn new(name: PacketName, data: Value) -> Self {
-        Self { name, data }
+    pub fn new<Body>(path: Vec<String>, method: String, body: Body) -> Self
+    where
+        Body: Serialize,
+    {
+        Self {
+            path,
+            method,
+            body: serde_json::to_value(body).expect("Cannot serialize packet body"),
+        }
     }
 }
 

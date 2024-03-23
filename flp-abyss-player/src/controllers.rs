@@ -1,6 +1,6 @@
+use serde::Serialize;
 use serde_json::Value;
 use std::{
-    collections::HashMap,
     sync::mpsc::{Receiver, Sender},
     thread,
     thread::JoinHandle,
@@ -11,77 +11,38 @@ use crate::views::Packet;
 mod config;
 mod player;
 
-#[derive(Eq, PartialEq, Hash)]
-pub enum ControllerType {
-    Config,
-    Player,
-}
-
-#[derive(Eq, PartialEq)]
-pub enum CommandName {
-    Terminate,
-    Update,
-    Reload,
-    Search,
-    Save,
-    Load,
-}
-
+#[derive(Debug)]
 pub struct Command {
-    target: ControllerType,
-    pub name: CommandName,
-    pub arguments: Value,
+    path: Vec<String>,
+    method: String,
+    body: Value,
 }
 
 impl Command {
-    pub fn new(target: ControllerType, name: CommandName, arguments: Value) -> Self {
+    pub fn new<Body>(path: Vec<String>, method: String, body: Body) -> Self
+    where
+        Body: Serialize,
+    {
         Self {
-            target,
-            name,
-            arguments,
+            path,
+            method,
+            body: serde_json::to_value(body).expect("Cannot serialize command body"),
         }
     }
 }
 
-trait Controller: Send + Sync {
-    fn handle(&mut self, command: Command);
-}
-
-pub struct Task {
-    command_rx: Receiver<Command>,
-    controllers: HashMap<ControllerType, Box<dyn Controller>>,
-}
-
-impl Task {
-    fn new(command_rx: Receiver<Command>, packet_tx: Sender<Packet>) -> Self {
-        Self {
-            command_rx,
-            controllers: HashMap::from([
-                (
-                    ControllerType::Config,
-                    Box::new(config::Controller::new(packet_tx.clone())) as Box<dyn Controller>,
-                ),
-                (
-                    ControllerType::Player,
-                    Box::new(player::Controller::new(packet_tx.clone())) as Box<dyn Controller>,
-                ),
-            ]),
-        }
-    }
-
-    pub fn run(command_rx: Receiver<Command>, packet_tx: Sender<Packet>) -> JoinHandle<()> {
-        let mut task = Task::new(command_rx, packet_tx);
-        thread::spawn(move || {
-            for command in task.command_rx.iter() {
-                if command.name == CommandName::Terminate {
-                    break;
-                }
-
-                task.controllers
-                    .get_mut(&command.target)
-                    .unwrap()
-                    .handle(command);
+pub fn run(command_rx: Receiver<Command>, packet_tx: Sender<Packet>) -> JoinHandle<()> {
+    thread::spawn(move || {
+        for command in command_rx.iter() {
+            let packet = match command.path.iter().map(AsRef::as_ref).collect().as_slice() {
+                ["configs", id] => match command.method.as_ref() {
+                    "get" => config::get(id),
+                },
+                _ => panic!("Unknown command: {:?}", command),
+            };
+            if packet_tx.send(packet).is_err() {
+                break;
             }
-        })
-    }
+        }
+    })
 }

@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::{impl_differ_simple, library::differ::Differ, CLI};
+use crate::{impl_differ_simple, library::differ::Differ};
 
 use super::Singleton;
 
@@ -229,19 +229,4 @@ impl Config {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        if let Some(config_file) = CLI.config_file.as_ref() {
-            json::new(config_file)
-        } else {
-            args::new()
-        }
-    }
-}
-
-static SINGLETON: Singleton<Config> = Lazy::new(|| {
-    let mut map = HashMap::new();
-    let config = Config::default();
-    map.insert(config.id, config);
-    RwLock::new(map)
-});
+static SINGLETON: Singleton<Config> = Lazy::new(RwLock::default);

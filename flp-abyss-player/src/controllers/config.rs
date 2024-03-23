@@ -1,43 +1,11 @@
-#![allow(clippy::single_match)]
+use crate::{models::config::Config, views::Packet};
 
-use std::sync::mpsc::Sender;
-
-use crate::{
-    controllers::{Command, CommandName},
-    library::differ::Differ,
-    models::config::Config,
-    views::{Packet, PacketName},
-};
-
-pub struct Controller {
-    packet_tx: Sender<Packet>,
-}
-
-impl Controller {
-    pub fn new(packet_tx: Sender<Packet>) -> Self {
-        Self { packet_tx }
-    }
-
-    fn send_update_packet(&self) {
-        self.packet_tx
-            .send(Packet::new(
-                PacketName::Update,
-                serde_json::to_value(Config::all()).unwrap(),
-            ))
-            .unwrap();
-    }
-}
-
-impl super::Controller for Controller {
-    fn handle(&mut self, command: Command) {
-        match command.name {
-            CommandName::Update => {
-                let mut config = Config::all();
-                config.apply_diff(command.arguments);
-                Config::set_all(config);
-                self.send_update_packet();
-            }
-            _ => {}
-        }
-    }
+pub fn get(id: &str) -> Packet {
+    Config::find(id).map(|config| {
+        Packet::new(
+            vec!["configs".to_string(), id.to_string()],
+            "got".to_string(),
+            config,
+        )
+    })
 }

@@ -2,13 +2,15 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use tap::Tap;
+use std::collections::HashMap;
 
-use super::{config::Config, playlist::Playlist};
+use super::{playlist::Playlist, Singleton};
 
-#[derive(Clone, Default, AccessibleModel, Deserialize, Serialize, Differ)]
-#[accessible_model(singleton = PLAYER, rw_lock)]
+#[derive(Clone, Default, StaticRecord, Deserialize, Serialize, Differ)]
+#[static_record(singleton = SINGLETON, belongs_to = ["playlist"])]
 pub struct Player {
+    pub id: String,
+
     pub repeat: bool,
     pub auto: bool,
     pub auto_interval: u32,
@@ -16,38 +18,29 @@ pub struct Player {
     pub random: bool,
 
     pub index: usize,
+
+    pub playlist_id: String,
 }
 
 impl Player {
-    pub fn reload() {
-        let config = Config::all();
-        let mut lock = PLAYER.write();
-        lock.repeat = config.repeat;
-        lock.auto = config.auto;
-        lock.auto_interval = config.auto_interval;
-        lock.lop = config.lop;
-        lock.random = config.random;
+    pub fn new(id: String, playlist: &Playlist) -> Self {
+        let config = playlist.config().expect("Config not found");
 
-        if let Some(playlist_path) = config.playlist_path.as_ref() {
-            Playlist::all().tap_mut(|playlist| {
-                playlist.load(playlist_path).expect("Cannot load playlist");
-            });
-            lock.playlist
-                .load(playlist_path)
-                .expect("Cannot load playlist");
-        } else {
-            lock.playlist.set_from_config(&config);
+        Self {
+            id,
+            repeat: config.repeat,
+            auto: config.auto,
+            auto_interval: config.auto_interval,
+            lop: config.lop,
+            random: config.random,
+            index: 0,
+            playlist_id: playlist.id.clone(),
         }
-        lock.index = 0;
-    }
-
-    pub fn item_paths(&self) -> &[String] {
-        self.playlist.body.item_paths.as_slice()
     }
 
     pub fn random_next(&mut self) {
         let mut rng = rand::thread_rng();
-        self.index = rng.gen_range(0..self.item_paths().len());
+        self.index = rng.gen_range(0..self.item_count());
     }
 
     pub fn next(&mut self) {
@@ -57,9 +50,9 @@ impl Player {
         if self.random {
             return self.random_next();
         }
-        if self.index == self.item_paths().len() - 1 && self.lop {
+        if self.index == self.item_count() - 1 && self.lop {
             self.index = 0;
-        } else if self.index < self.item_paths().len() - 1 {
+        } else if self.index < self.item_count() - 1 {
             self.index += 1;
         }
     }
@@ -72,11 +65,17 @@ impl Player {
             return self.random_next();
         }
         if self.index == 0 && self.lop {
-            self.index = self.item_paths().len() - 1;
+            self.index = self.item_count() - 1;
         } else if self.index > 0 {
             self.index -= 1;
         }
     }
+
+    fn item_count(&self) -> usize {
+        self.playlist()
+            .map(|playlist| playlist.item_paths().len())
+            .unwrap_or(0)
+    }
 }
 
-static PLAYER: Lazy<RwLock<Player>> = Lazy::new(|| RwLock::new(Player::default()));
+static SINGLETON: Singleton<Player> = Lazy::new(RwLock::default);

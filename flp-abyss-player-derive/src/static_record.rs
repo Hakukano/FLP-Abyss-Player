@@ -1,8 +1,9 @@
+use convert_case::{Case, Casing};
 use darling::{ast::Data, util::Ignored, FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{ext::IdentExt, parse_macro_input, Ident, Type};
+use syn::{ext::IdentExt, parse_macro_input, Ident, LitStr, Type};
 
 #[derive(FromField)]
 struct Field {
@@ -20,6 +21,10 @@ struct Options {
     data: Data<Ignored, Field>,
 
     singleton: Ident,
+    #[darling(default)]
+    belongs_to: Vec<LitStr>,
+    #[darling(default)]
+    has_many: Vec<LitStr>,
 }
 
 pub fn handle(token: TokenStream) -> TokenStream {
@@ -56,9 +61,48 @@ pub fn handle(token: TokenStream) -> TokenStream {
         }
     });
 
+    let belongs_to = options.belongs_to.iter().map(|a| {
+        let value = a.value();
+        let function_name = Ident::new(value.to_case(Case::Snake).as_str(), Span::call_site());
+        let type_name = Ident::new(value.to_case(Case::Pascal).as_str(), Span::call_site());
+        let id_name = Ident::new(
+            format!("{}_id", value.to_case(Case::Snake)).as_str(),
+            Span::call_site(),
+        );
+        quote! {
+            pub fn #function_name(&self) -> Option<#type_name> {
+                #type_name::find(&self.#id_name)
+            }
+        }
+    });
+
+    let has_many = options.has_many.iter().map(|a| {
+        let value = a.value();
+        let function_name = Ident::new(
+            format!("{}_list", value.to_case(Case::Snake)).as_str(),
+            Span::call_site(),
+        );
+        let type_name = Ident::new(value.to_case(Case::Pascal).as_str(), Span::call_site());
+        let find_by_id_name = Ident::new(
+            format!(
+                "find_by_{}_id",
+                struct_name.to_string().to_case(Case::Snake)
+            )
+            .as_str(),
+            Span::call_site(),
+        );
+        quote! {
+            pub fn #function_name(&self) -> Option<#type_name> {
+                #type_name::#find_by_id_name(&self.id)
+            }
+        }
+    });
+
     let output = quote! {
         impl #struct_name {
             #(#find_by)*
+            #(#belongs_to)*
+            #(#has_many)*
 
             pub fn all() -> HashMap<String, #struct_name> {
                 (*#singleton.read()).clone()
