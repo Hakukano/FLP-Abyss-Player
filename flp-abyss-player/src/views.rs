@@ -17,19 +17,27 @@ mod player;
 mod timer;
 mod widget;
 
+#[derive(Clone, Copy)]
+pub enum Method {
+    Created,
+    Got,
+    Updated,
+    Deleted,
+    Error,
+    Custom(String),
+}
+
 pub struct Packet {
-    path: Vec<String>,
-    method: String,
+    method: Method,
     body: Value,
 }
 
 impl Packet {
-    pub fn new<Body>(path: Vec<String>, method: String, body: Body) -> Self
+    pub fn new<Body>(method: Method, body: Body) -> Self
     where
         Body: Serialize,
     {
         Self {
-            path,
             method,
             body: serde_json::to_value(body).expect("Cannot serialize packet body"),
         }

@@ -11,15 +11,24 @@ use crate::views::Packet;
 mod config;
 mod player;
 
+#[derive(Clone, Copy)]
+pub enum Method {
+    Create,
+    Get,
+    Update,
+    Delete,
+    Custom(String),
+}
+
 #[derive(Debug)]
 pub struct Command {
     path: Vec<String>,
-    method: String,
+    method: Method,
     body: Value,
 }
 
 impl Command {
-    pub fn new<Body>(path: Vec<String>, method: String, body: Body) -> Self
+    pub fn new<Body>(path: Vec<String>, method: Method, body: Body) -> Self
     where
         Body: Serialize,
     {
@@ -35,8 +44,13 @@ pub fn run(command_rx: Receiver<Command>, packet_tx: Sender<Packet>) -> JoinHand
     thread::spawn(move || {
         for command in command_rx.iter() {
             let packet = match command.path.iter().map(AsRef::as_ref).collect().as_slice() {
+                ["configs"] => match command.method {
+                    Method::Get => config::index(),
+                    _ => panic!("Unknown method: {:?}", command.method),
+                },
                 ["configs", id] => match command.method.as_ref() {
-                    "get" => config::get(id),
+                    Method::Get => config::get(id),
+                    _ => panic!("Unknown method: {:?}", command.method),
                 },
                 _ => panic!("Unknown command: {:?}", command),
             };
