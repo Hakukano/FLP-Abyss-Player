@@ -1,47 +1,61 @@
 use eframe::egui;
-use std::sync::{
-    mpsc::{channel, Receiver, Sender, TryRecvError},
-    Arc,
+use serde_json::Value;
+use std::{
+    collections::HashMap,
+    sync::{
+        mpsc::{channel, Receiver, Sender, TryRecvError},
+        Arc,
+    },
 };
 use timer::TimerSignal;
 
 use crate::utils;
 
 mod config;
+mod init;
 mod player;
 mod timer;
 mod widgets;
 
-struct Views {
-    config: config::View,
+struct ChangeLocation {
+    path: Vec<String>,
+    query: HashMap<String, Value>,
+}
+
+enum View {
+    Init(init::View),
+    Config(config::View),
 }
 
 pub struct Task {
-    change_location_rx: Receiver<Vec<String>>,
+    change_location_tx: Sender<ChangeLocation>,
+    change_location_rx: Receiver<ChangeLocation>,
     tick_signal_rx: Receiver<()>,
     timer_signal_tx: Sender<TimerSignal>,
     gl: Arc<glow::Context>,
 
-    views: Views,
+    view: View,
     location: Vec<String>,
 }
 
 impl Task {
     fn new(
-        change_location_rx: Receiver<Vec<String>>,
+        change_location_tx: Sender<ChangeLocation>,
+        change_location_rx: Receiver<ChangeLocation>,
         tick_signal_rx: Receiver<()>,
         timer_signal_tx: Sender<TimerSignal>,
         cc: &eframe::CreationContext<'_>,
-        views: Views,
+        view: View,
     ) -> Self {
         utils::fonts::init(&cc.egui_ctx);
         Self {
+            change_location_tx,
             change_location_rx,
             tick_signal_rx,
             timer_signal_tx,
             gl: cc.gl.clone().expect("gl context should be available"),
 
-            views,
+            view,
             location: vec!["configs".to_string(), "default".to_string()],
         }
     }
@@ -59,20 +73,19 @@ impl Task {
             Box::new(|cc| {
                 egui_extras::install_image_loaders(&cc.egui_ctx);
 
-                let (change_location_tx, change_location_rx) = channel::<Vec<String>>();
+                let (change_location_tx, change_location_rx) = channel::<ChangeLocation>();
                 let (timer_signal_tx, timer_signal_rx) = channel::<TimerSignal>();
                 let (tick_signal_tx, tick_signal_rx) = channel::<()>();
 
                 let _ =
                     timer::Task::run(timer_signal_rx, tick_signal_tx.clone(), cc.egui_ctx.clone());
                 let task = Task::new(
+                    change_location_tx.clone(),
                     change_location_rx,
                     tick_signal_rx,
                     timer_signal_tx,
                     cc,
-                    Views {
-                        config: config::View::new(change_location_tx.clone(), &cc.egui_ctx),
-                    },
+                    View::Init(init::View::new(change_location_tx)),
                 );
                 Box::new(task)
             }),
@@ -83,8 +96,14 @@ impl Task {
 impl eframe::App for Task {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match self.change_location_rx.try_recv() {
-            Err(TryRecvError::Disconnected) => panic!("View exited before the app"),
-            Ok(location) => self.location = location,
+            Ok(ChangeLocation { path, query }) => match path
+                .iter()
+                .map(AsRef::as_ref)
+                .collect::<Vec<_>>()
+                .as_slice()
+            {
+                ["configs", id] => {}
+            },
             _ => {}
         }
 
@@ -94,14 +113,10 @@ impl eframe::App for Task {
             _ => false,
         };
 
-        match self
-            .location
-            .iter()
-            .map(AsRef::as_ref)
-            .collect::<Vec<_>>()
-            .as_slice()
-        {
-            ["configs", id] => {}
+        match &mut self.view {
+            View::Init(view) => view.update(),
+            View::Config(view) => {}
+            _ => {}
         }
     }
 }
