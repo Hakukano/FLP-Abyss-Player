@@ -1,30 +1,9 @@
-#![allow(clippy::single_match)]
-
-use eframe::egui::{
-    Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel,
-};
-use serde_json::Value;
 use std::sync::mpsc::Sender;
 
-use crate::{
-    controllers::{Command, CommandName, ControllerType},
-    models::config::{Config, MediaType, VideoPlayer},
-    utils::{differ::Differ, fonts::gen_rich_text, helper::message_dialog_error},
-    views::{
-        widgets::{
-            config::{
-                media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,
-                root_path::ConfigRootPath, video_player::ConfigVideoPlayer,
-                video_player_path::ConfigVideoPlayerPath,
-            },
-            player_bar::PlayerBar,
-        },
-        Packet, PacketName,
-    },
-};
+use eframe::egui::Context;
 
 pub struct View {
-    command_tx: Sender<Command>,
+    change_location_tx: Sender<Vec<String>>,
 
     state: Config,
     state_buffer: Config,
@@ -40,9 +19,9 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(config: Config, command_tx: Sender<Command>, ctx: &Context) -> Self {
+    pub fn new(change_location_tx: Sender<Vec<String>>, ctx: &Context) -> Self {
         Self {
-            command_tx,
+            change_location_tx,
 
             state: config.clone(),
             state_buffer: config,
@@ -60,18 +39,6 @@ impl View {
 }
 
 impl super::View for View {
-    fn handle(&mut self, packet: Packet) {
-        match packet.name {
-            PacketName::Update => {
-                let config: Config = serde_json::from_value(packet.data).unwrap();
-                self.state = config;
-                self.state_buffer = self.state.clone();
-                self.can_play = self.state.can_play();
-            }
-            _ => {}
-        }
-    }
-
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {
