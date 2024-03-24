@@ -1,10 +1,7 @@
 use eframe::egui;
-use std::{
-    process::exit,
-    sync::{
-        mpsc::{channel, Receiver, Sender, TryRecvError},
-        Arc,
-    },
+use std::sync::{
+    mpsc::{channel, Receiver, Sender, TryRecvError},
+    Arc,
 };
 use timer::TimerSignal;
 
@@ -15,15 +12,12 @@ mod player;
 mod timer;
 mod widgets;
 
-trait View {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame);
-}
-
 pub struct Task {
     tick_signal_rx: Receiver<()>,
     timer_signal_tx: Sender<TimerSignal>,
-    view: Box<dyn View>,
     gl: Arc<glow::Context>,
+
+    location: Vec<String>,
 }
 
 impl Task {
@@ -34,10 +28,11 @@ impl Task {
     ) -> Self {
         utils::fonts::init(&cc.egui_ctx);
         Self {
-            view: Box::new(),
             tick_signal_rx,
             timer_signal_tx,
             gl: cc.gl.clone().expect("gl context should be available"),
+
+            location: vec!["configs".to_string(), "default".to_string()],
         }
     }
 
@@ -68,37 +63,20 @@ impl Task {
 
 impl eframe::App for Task {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        match self.tick_signal_rx.try_recv() {
-            Err(TryRecvError::Disconnected) => exit(500),
-            Ok(()) => {
-                if let PacketName::ChangeView(view) = tick_signal.name {
-                    match view {
-                        ViewType::Config => {
-                            self.view = Box::new(config::View::new(
-                                serde_json::from_value(tick_signal.data).unwrap(),
-                                self.command_tx.clone(),
-                                ctx,
-                            ))
-                        }
-                        ViewType::Player => {
-                            self.view = Box::new(player::View::new(
-                                serde_json::from_value(tick_signal.data).unwrap(),
-                                self.tick_signal_tx.clone(),
-                                self.command_tx.clone(),
-                                self.timer_signal_tx.clone(),
-                                ctx,
-                                self.gl.clone(),
-                            ))
-                        }
-                    }
-                    return;
-                }
+        let need_to_tick = match self.tick_signal_rx.try_recv() {
+            Err(TryRecvError::Disconnected) => panic!("Timer exited before the app"),
+            Ok(()) => true,
+            _ => false,
+        };
 
-                self.view.handle(tick_signal);
-            }
-            _ => {}
+        match self
+            .location
+            .iter()
+            .map(AsRef::as_ref)
+            .collect::<Vec<_>>()
+            .as_slice()
+        {
+            ["configs", id] => {}
         }
-
-        self.view.update(ctx, frame);
     }
 }
