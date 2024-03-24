@@ -17,7 +17,7 @@ use crate::{
     utils::{differ::Differ, fonts::gen_rich_text},
     views::{
         timer::{Signal, SignalName},
-        widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
+        widgets::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
         Packet, PacketName, ViewType,
     },
     CLI,

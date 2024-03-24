@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use eframe::egui::Context;
-use serde_json::Value;
 use std::{
     process::exit,
     sync::mpsc::{Receiver, Sender, TryRecvError},
@@ -9,28 +8,15 @@ use std::{
     time,
 };
 
-use crate::views::{Packet, PacketName};
-
-pub enum SignalName {
-    Start,
-    Update,
+pub enum TimerSignal {
+    Start(u32),
+    Update(u32),
     Stop,
 }
 
-pub struct Signal {
-    pub name: SignalName,
-    pub data: Value,
-}
-
-impl Signal {
-    pub fn new(name: SignalName, data: Value) -> Self {
-        Self { name, data }
-    }
-}
-
 pub struct Task {
-    signal_rx: Receiver<Signal>,
-    packet_tx: Sender<Packet>,
+    timer_signal: Receiver<TimerSignal>,
+    tick_signal: Sender<()>,
 
     running: bool,
     interval: u32,
@@ -38,10 +24,10 @@ pub struct Task {
 }
 
 impl Task {
-    fn new(signal_rx: Receiver<Signal>, packet_tx: Sender<Packet>) -> Self {
+    fn new(timer_signal: Receiver<TimerSignal>, tick_signal: Sender<()>) -> Self {
         Self {
-            signal_rx,
-            packet_tx,
+            timer_signal,
+            tick_signal,
             running: false,
             interval: 0,
             last_triggered: Utc::now(),
@@ -49,24 +35,24 @@ impl Task {
     }
 
     pub fn run(
-        signal_rx: Receiver<Signal>,
-        packet_tx: Sender<Packet>,
+        timer_signal: Receiver<TimerSignal>,
+        tick_signal: Sender<()>,
         ctx: Context,
     ) -> JoinHandle<()> {
-        let mut task = Self::new(signal_rx, packet_tx);
+        let mut task = Self::new(timer_signal, tick_signal);
         thread::spawn(move || loop {
-            match task.signal_rx.try_recv() {
+            match task.timer_signal.try_recv() {
                 Err(TryRecvError::Disconnected) => exit(500),
-                Ok(signal) => match signal.name {
-                    SignalName::Start => {
+                Ok(signal) => match signal {
+                    TimerSignal::Start(interval) => {
                         task.running = true;
-                        task.interval = serde_json::from_value(signal.data).unwrap();
+                        task.interval = interval;
                         task.last_triggered = Utc::now();
                     }
-                    SignalName::Update => {
-                        task.interval = serde_json::from_value(signal.data).unwrap();
+                    TimerSignal::Update(interval) => {
+                        task.interval = interval;
                     }
-                    SignalName::Stop => {
+                    TimerSignal::Stop => {
                         task.running = false;
                     }
                 },
@@ -76,13 +62,11 @@ impl Task {
             let delta = Utc::now() - task.last_triggered;
             let overshot = delta.num_milliseconds() - (task.interval as i64 * 1000);
             if !task.running || (overshot < 0) {
-                thread::sleep(time::Duration::from_millis(50));
+                thread::sleep(time::Duration::from_millis(20));
                 continue;
             }
 
-            task.packet_tx
-                .send(Packet::new(PacketName::Tick, Value::Null))
-                .unwrap();
+            task.tick_signal.send(()).unwrap();
 
             task.last_triggered = Utc::now()
                 - chrono::Duration::try_milliseconds(overshot)

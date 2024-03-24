@@ -1,6 +1,4 @@
 use eframe::egui;
-use serde::Serialize;
-use serde_json::Value;
 use std::{
     process::exit,
     sync::{
@@ -8,49 +6,37 @@ use std::{
         Arc,
     },
 };
-use timer::Signal;
+use timer::TimerSignal;
 
-use crate::{models::config::Config, utils};
+use crate::utils;
 
 mod config;
 mod player;
 mod timer;
-mod widget;
+mod widgets;
 
 trait View {
-    fn handle(&mut self, packet: Packet);
-
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame);
 }
 
 pub struct Task {
-    packet_rx: Receiver<Packet>,
-    packet_tx: Sender<Packet>,
-    command_tx: Sender<Command>,
-    signal_tx: Sender<Signal>,
+    tick_signal_rx: Receiver<()>,
+    timer_signal_tx: Sender<TimerSignal>,
     view: Box<dyn View>,
     gl: Arc<glow::Context>,
 }
 
 impl Task {
     fn new(
-        packet_rx: Receiver<Packet>,
-        packet_tx: Sender<Packet>,
-        command_tx: Sender<Command>,
-        signal_tx: Sender<Signal>,
+        tick_signal_rx: Receiver<()>,
+        timer_signal_tx: Sender<TimerSignal>,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
         utils::fonts::init(&cc.egui_ctx);
         Self {
-            view: Box::new(config::View::new(
-                Config::all(),
-                command_tx.clone(),
-                &cc.egui_ctx,
-            )),
-            packet_rx,
-            packet_tx,
-            command_tx,
-            signal_tx,
+            view: Box::new(),
+            tick_signal_rx,
+            timer_signal_tx,
             gl: cc.gl.clone().expect("gl context should be available"),
         }
     }
@@ -68,9 +54,12 @@ impl Task {
             Box::new(|cc| {
                 egui_extras::install_image_loaders(&cc.egui_ctx);
 
-                let (signal_tx, signal_rx) = channel::<Signal>();
-                let _ = timer::Task::run(signal_rx, packet_tx.clone(), cc.egui_ctx.clone());
-                let task = Task::new(packet_rx, packet_tx, command_tx, signal_tx, cc);
+                let (timer_signal_tx, timer_signal_rx) = channel::<TimerSignal>();
+                let (tick_signal_tx, tick_signal_rx) = channel::<()>();
+
+                let _ =
+                    timer::Task::run(timer_signal_rx, tick_signal_tx.clone(), cc.egui_ctx.clone());
+                let task = Task::new(tick_signal_rx, timer_signal_tx, cc);
                 Box::new(task)
             }),
         );
@@ -79,24 +68,24 @@ impl Task {
 
 impl eframe::App for Task {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        match self.packet_rx.try_recv() {
+        match self.tick_signal_rx.try_recv() {
             Err(TryRecvError::Disconnected) => exit(500),
-            Ok(packet) => {
-                if let PacketName::ChangeView(view) = packet.name {
+            Ok(()) => {
+                if let PacketName::ChangeView(view) = tick_signal.name {
                     match view {
                         ViewType::Config => {
                             self.view = Box::new(config::View::new(
-                                serde_json::from_value(packet.data).unwrap(),
+                                serde_json::from_value(tick_signal.data).unwrap(),
                                 self.command_tx.clone(),
                                 ctx,
                             ))
                         }
                         ViewType::Player => {
                             self.view = Box::new(player::View::new(
-                                serde_json::from_value(packet.data).unwrap(),
-                                self.packet_tx.clone(),
+                                serde_json::from_value(tick_signal.data).unwrap(),
+                                self.tick_signal_tx.clone(),
                                 self.command_tx.clone(),
-                                self.signal_tx.clone(),
+                                self.timer_signal_tx.clone(),
                                 ctx,
                                 self.gl.clone(),
                             ))
@@ -105,7 +94,7 @@ impl eframe::App for Task {
                     return;
                 }
 
-                self.view.handle(packet);
+                self.view.handle(tick_signal);
             }
             _ => {}
         }

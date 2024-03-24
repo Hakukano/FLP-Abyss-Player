@@ -11,7 +11,7 @@ use crate::{
     models::config::{Config, MediaType, VideoPlayer},
     utils::{differ::Differ, fonts::gen_rich_text, helper::message_dialog_error},
     views::{
-        widget::{
+        widgets::{
             config::{
                 media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath,
                 root_path::ConfigRootPath, video_player::ConfigVideoPlayer,
