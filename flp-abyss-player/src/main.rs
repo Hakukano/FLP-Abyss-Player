@@ -6,8 +6,8 @@ extern crate rust_i18n;
 #[macro_use]
 extern crate flp_abyss_player_derive;
 
-mod library;
 mod models;
+mod utils;
 mod views;
 
 const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
@@ -17,8 +17,10 @@ const VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 i18n!(fallback = "en_US");
 
 fn main() {
-    // Init locale
-    rust_i18n::set_locale(models::config::Config::locale().as_str());
+    utils::initializer::initialize();
 
-    views::Task::run().join();
+    // Init locale
+    rust_i18n::set_locale(models::config::Config::get_default().locale.as_str());
+
+    views::Task::run();
 }

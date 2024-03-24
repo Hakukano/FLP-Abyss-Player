@@ -7,8 +7,8 @@ use eframe::{
 use std::{collections::VecDeque, path::Path, sync::Arc};
 
 use crate::{
-    library::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
     models::{config, player::Player},
+    utils::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
     views::widget::button_icon::ButtonIcon,
     CLI,
 };

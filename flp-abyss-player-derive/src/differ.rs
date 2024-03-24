@@ -38,7 +38,7 @@ pub fn handle(token: TokenStream) -> TokenStream {
     });
 
     let output = quote! {
-        impl crate::library::differ::Differ for #struct_name {
+        impl crate::utils::differ::Differ for #struct_name {
             fn diff(&self, other: &Self) -> Option<serde_json::Value> {
                 let mut map = serde_json::Map::new();
                 #(#cmps)*

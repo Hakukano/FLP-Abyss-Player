@@ -1,6 +1,6 @@
 use tap::prelude::*;
 
-use crate::library::helper::fixtures_dir;
+use crate::utils::helper::fixtures_dir;
 
 use super::*;
 

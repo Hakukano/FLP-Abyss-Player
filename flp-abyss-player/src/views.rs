@@ -10,7 +10,7 @@ use std::{
 };
 use timer::Signal;
 
-use crate::{library, models::config::Config};
+use crate::{models::config::Config, utils};
 
 mod config;
 mod player;
@@ -40,7 +40,7 @@ impl Task {
         signal_tx: Sender<Signal>,
         cc: &eframe::CreationContext<'_>,
     ) -> Self {
-        library::fonts::init(&cc.egui_ctx);
+        utils::fonts::init(&cc.egui_ctx);
         Self {
             view: Box::new(config::View::new(
                 Config::all(),

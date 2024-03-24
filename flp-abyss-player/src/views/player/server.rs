@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use tokio::runtime::{self, Runtime};
 
 use crate::{
-    library::{fonts::gen_rich_text, helper::find_available_port},
+    utils::{fonts::gen_rich_text, helper::find_available_port},
     models::player::Player,
 };
 

@@ -12,7 +12,7 @@ use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 use parking_lot::RwLock;
 
-use crate::library::helper::scale_fit_all;
+use crate::utils::helper::scale_fit_all;
 
 use super::CONTROLLER_HEIGHT;
 

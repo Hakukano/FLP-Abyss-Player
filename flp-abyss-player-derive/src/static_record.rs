@@ -112,6 +112,10 @@ pub fn handle(token: TokenStream) -> TokenStream {
                 #singleton.read().get(id).cloned()
             }
 
+            pub fn get_default() -> #struct_name {
+                #singleton.read().get("default").cloned().unwrap()
+            }
+
             pub fn save(self) {
                 #singleton.write().insert(self.id.clone(), self);
             }

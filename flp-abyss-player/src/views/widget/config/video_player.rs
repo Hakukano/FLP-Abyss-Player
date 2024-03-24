@@ -6,7 +6,7 @@ use eframe::{
 };
 
 use crate::{
-    library::fonts::gen_rich_text, models::config::VideoPlayer,
+    models::config::VideoPlayer, utils::fonts::gen_rich_text,
     views::widget::button_icon::ButtonIcon, CLI,
 };
 

@@ -11,7 +11,7 @@ use eframe::{
     epaint::Color32,
 };
 
-use crate::CLI;
+use crate::utils::cli::CLI;
 
 pub fn init(ctx: &egui::Context) {
     let mut fd = egui::FontDefinitions::default();

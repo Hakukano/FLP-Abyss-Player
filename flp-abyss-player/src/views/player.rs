@@ -10,11 +10,11 @@ use std::{
 
 use crate::{
     controllers::{Command, CommandName, ControllerType},
-    library::{differ::Differ, fonts::gen_rich_text},
     models::{
         config::{Config, MediaType},
         player::Player,
     },
+    utils::{differ::Differ, fonts::gen_rich_text},
     views::{
         timer::{Signal, SignalName},
         widget::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},

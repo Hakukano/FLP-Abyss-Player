@@ -6,7 +6,7 @@ use eframe::{
 };
 use image::RgbaImage;
 
-use crate::library::helper::scale_fit_all;
+use crate::utils::helper::scale_fit_all;
 
 /// All the icons should have same size for better look
 pub struct ToggleIcon {

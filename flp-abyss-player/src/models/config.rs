@@ -1,5 +1,5 @@
-mod args;
-mod json;
+pub mod args;
+pub mod json;
 
 #[cfg(test)]
 pub mod tests;
@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::{impl_differ_simple, library::differ::Differ};
+use crate::{impl_differ_simple, utils::differ::Differ};
 
 use super::Singleton;
 

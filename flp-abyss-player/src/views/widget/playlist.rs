@@ -10,12 +10,12 @@ use eframe::{
 };
 
 use crate::{
-    library,
-    library::fonts::gen_rich_text,
     models::{
         config::{MediaType, VideoPlayer},
         player::Player,
     },
+    utils,
+    utils::fonts::gen_rich_text,
     CLI,
 };
 
@@ -252,10 +252,7 @@ impl Playlist {
                     {
                         if let Some(path) = rfd::FileDialog::new()
                             .set_title("SAVE")
-                            .add_filter(
-                                library::playlist::EXTENSION,
-                                &[library::playlist::EXTENSION],
-                            )
+                            .add_filter(utils::playlist::EXTENSION, &[utils::playlist::EXTENSION])
                             .save_file()
                         {
                             save.replace(path);
@@ -271,8 +268,8 @@ impl Playlist {
                             if let Some(path) = rfd::FileDialog::new()
                                 .set_title("LOAD")
                                 .add_filter(
-                                    library::playlist::EXTENSION,
-                                    &[library::playlist::EXTENSION],
+                                    utils::playlist::EXTENSION,
+                                    &[utils::playlist::EXTENSION],
                                 )
                                 .pick_file()
                             {
