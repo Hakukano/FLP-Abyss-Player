@@ -10,12 +10,6 @@ pub fn mock_default() -> Config {
 
         locale: "en_US".to_string(),
 
-        repeat: false,
-        auto: false,
-        auto_interval: 1,
-        lop: false,
-        random: false,
-
         playlist_path: None,
 
         media_type: MediaType::Unset,

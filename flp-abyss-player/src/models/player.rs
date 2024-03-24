@@ -28,11 +28,11 @@ impl Player {
 
         Self {
             id,
-            repeat: config.repeat,
-            auto: config.auto,
-            auto_interval: config.auto_interval,
-            lop: config.lop,
-            random: config.random,
+            repeat: false,
+            auto: false,
+            auto_interval: 0,
+            lop: false,
+            random: false,
             index: 0,
             playlist_id: playlist.id.clone(),
         }

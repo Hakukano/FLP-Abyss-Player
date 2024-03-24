@@ -10,39 +10,12 @@ use std::{
 };
 use timer::Signal;
 
-use crate::{controllers::Command, library, models::config::Config};
+use crate::{library, models::config::Config};
 
 mod config;
 mod player;
 mod timer;
 mod widget;
-
-#[derive(Clone, Copy)]
-pub enum Method {
-    Created,
-    Got,
-    Updated,
-    Deleted,
-    Error,
-    Custom(String),
-}
-
-pub struct Packet {
-    method: Method,
-    body: Value,
-}
-
-impl Packet {
-    pub fn new<Body>(method: Method, body: Body) -> Self
-    where
-        Body: Serialize,
-    {
-        Self {
-            method,
-            body: serde_json::to_value(body).expect("Cannot serialize packet body"),
-        }
-    }
-}
 
 trait View {
     fn handle(&mut self, packet: Packet);
@@ -82,11 +55,7 @@ impl Task {
         }
     }
 
-    pub fn run(
-        packet_rx: Receiver<Packet>,
-        packet_tx: Sender<Packet>,
-        command_tx: Sender<Command>,
-    ) {
+    pub fn run() {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size(egui::vec2(1600.0, 900.0)),
             multisampling: 4,

@@ -1,4 +1,4 @@
-use crate::CLI;
+use crate::library::cli::CLI;
 
 pub fn new() -> super::Config {
     super::Config {
@@ -10,12 +10,6 @@ pub fn new() -> super::Config {
                 .map(|l| l.replace('-', "_"))
                 .unwrap_or_else(|| "en_US".to_string())
         },
-
-        repeat: CLI.repeat,
-        auto: CLI.auto,
-        auto_interval: CLI.auto_interval,
-        lop: CLI.lop,
-        random: CLI.random,
 
         playlist_path: CLI.playlist_path.clone(),
 

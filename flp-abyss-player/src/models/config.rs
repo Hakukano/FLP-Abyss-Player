@@ -188,12 +188,6 @@ pub struct Config {
     #[static_record(findable)]
     pub locale: String,
 
-    pub repeat: bool,
-    pub auto: bool,
-    pub auto_interval: u32,
-    pub lop: bool,
-    pub random: bool,
-
     pub playlist_path: Option<String>,
 
     pub media_type: MediaType,
