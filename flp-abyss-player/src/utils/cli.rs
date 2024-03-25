@@ -1,19 +1,7 @@
 use clap::{command, Parser};
 use once_cell::sync::Lazy;
 
-use crate::models::config::{MediaType, VideoPlayer, AUTO_INTERVAL_RANGE};
-
-fn value_parser_auto_interval(s: &str) -> Result<u32, String> {
-    let auto_interval = s.parse::<u32>().map_err(|err| err.to_string())?;
-    if AUTO_INTERVAL_RANGE.contains(&auto_interval) {
-        Ok(auto_interval)
-    } else {
-        Err(format!(
-            "auto_interval should be in the range of {:?} but found {}",
-            AUTO_INTERVAL_RANGE, auto_interval
-        ))
-    }
-}
+use crate::models::config::{MediaType, VideoPlayer};
 
 #[derive(Clone, Parser, Debug)]
 #[command(author, version, about, long_about = None)]

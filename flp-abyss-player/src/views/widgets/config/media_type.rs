@@ -29,7 +29,7 @@ impl ConfigMediaType {
         }
     }
 
-    pub fn show_config(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &mut MediaType) {
+    pub fn update(&self, ui: &mut egui::Ui, ctx: &egui::Context, media_type: &mut MediaType) {
         egui::ComboBox::from_label(gen_rich_text(
             ctx,
             t!("ui.config.media_type.label"),
@@ -71,7 +71,7 @@ impl ConfigMediaType {
             ));
         } else {
             let max_height = ui.text_style_height(&Body);
-            self.checkmark.show(Vec2::new(max_height, max_height), ui);
+            self.checkmark.update(Vec2::new(max_height, max_height), ui);
         }
     }
 }

@@ -28,12 +28,7 @@ impl ConfigRootPath {
         }
     }
 
-    pub fn show_config(
-        &self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        root_path: &mut Option<String>,
-    ) {
+    pub fn update(&self, ui: &mut egui::Ui, ctx: &egui::Context, root_path: &mut Option<String>) {
         if ui
             .button(gen_rich_text(
                 ctx,
@@ -52,7 +47,7 @@ impl ConfigRootPath {
     pub fn show_hint(&self, ui: &mut egui::Ui, ctx: &egui::Context, root_path: &Option<String>) {
         if let Some(root_path) = root_path {
             let max_height = ui.text_style_height(&Body);
-            self.checkmark.show(Vec2::new(max_height, max_height), ui);
+            self.checkmark.update(Vec2::new(max_height, max_height), ui);
             ui.label(gen_rich_text(
                 ctx,
                 format!("{}: {root_path}", t!("ui.config.root_path.set")),

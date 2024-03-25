@@ -29,12 +29,7 @@ impl ConfigVideoPlayer {
         }
     }
 
-    pub fn show_config(
-        &self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        video_player: &mut VideoPlayer,
-    ) {
+    pub fn update(&self, ui: &mut egui::Ui, ctx: &egui::Context, video_player: &mut VideoPlayer) {
         egui::ComboBox::from_label(gen_rich_text(
             ctx,
             t!("ui.config.video_player.label"),
@@ -71,7 +66,7 @@ impl ConfigVideoPlayer {
             ));
         } else {
             let max_height = ui.text_style_height(&Body);
-            self.checkmark.show(Vec2::new(max_height, max_height), ui);
+            self.checkmark.update(Vec2::new(max_height, max_height), ui);
         }
     }
 }

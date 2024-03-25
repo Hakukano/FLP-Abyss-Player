@@ -45,7 +45,7 @@ impl ButtonIcon {
         )
     }
 
-    pub fn show(&self, max_size: Vec2, ui: &mut egui::Ui) -> egui::Response {
+    pub fn update(&self, max_size: Vec2, ui: &mut egui::Ui) -> egui::Response {
         ui.add(egui::ImageButton::new(
             Image::new(ImageSource::Texture((&self.texture).into()))
                 .fit_to_exact_size(scale_fit_all(max_size, self.texture.size_vec2())),

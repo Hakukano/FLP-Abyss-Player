@@ -23,7 +23,6 @@ use super::{
 pub struct PlaylistWidget {
     pub playlist: Playlist,
 
-    search: bool,
     search_str: String,
     filtered_paths: Vec<(usize, String)>,
 
@@ -57,7 +56,6 @@ impl PlaylistWidget {
         Self {
             playlist,
 
-            search: false,
             search_str: String::new(),
             filtered_paths,
 
@@ -91,7 +89,7 @@ impl PlaylistWidget {
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, current_index: &mut usize) {
+    pub fn update(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, current_index: &mut usize) {
         ui.with_layout(Layout::top_down(Align::TOP), |ui| {
             ui.group(|ui| {
                 ui.with_layout(
@@ -103,20 +101,30 @@ impl PlaylistWidget {
                         if response.lost_focus()
                             && response.ctx.input(|i| i.key_pressed(egui::Key::Enter))
                         {
-                            self.search = true;
+                            self.playlist.body.item_paths = self
+                                .playlist
+                                .filter(self.search_str.as_str())
+                                .into_iter()
+                                .map(|(_, path)| path)
+                                .collect();
                         }
                         if self
                             .search_icon
-                            .show(Vec2::new(max_height, max_height), ui)
+                            .update(Vec2::new(max_height, max_height), ui)
                             .clicked()
                         {
-                            self.search = true;
+                            self.playlist.body.item_paths = self
+                                .playlist
+                                .filter(self.search_str.as_str())
+                                .into_iter()
+                                .map(|(_, path)| path)
+                                .collect();
                         }
 
                         ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                             if self
                                 .add_many_icon
-                                .show(Vec2::new(max_height, max_height), ui)
+                                .update(Vec2::new(max_height, max_height), ui)
                                 .clicked()
                             {
                                 if let Some(paths) = rfd::FileDialog::new().pick_folders() {
@@ -137,7 +145,7 @@ impl PlaylistWidget {
 
                             if self
                                 .add_one_icon
-                                .show(Vec2::new(max_height, max_height), ui)
+                                .update(Vec2::new(max_height, max_height), ui)
                                 .clicked()
                             {
                                 if let Some(paths) = rfd::FileDialog::new()
@@ -196,7 +204,7 @@ impl PlaylistWidget {
                                         ui.spacing_mut().item_spacing.x = 5.0;
                                         if self
                                             .remove_icon
-                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .update(Vec2::new(max_height, max_height), ui)
                                             .clicked()
                                         {
                                             if *index != *current_index {
@@ -208,7 +216,7 @@ impl PlaylistWidget {
                                         }
                                         if self
                                             .down_icon
-                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .update(Vec2::new(max_height, max_height), ui)
                                             .clicked()
                                             && *index < self.playlist.body.item_paths.len() - 1
                                         {
@@ -221,7 +229,7 @@ impl PlaylistWidget {
                                         }
                                         if self
                                             .up_icon
-                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .update(Vec2::new(max_height, max_height), ui)
                                             .clicked()
                                             && *index > 0
                                         {
@@ -247,7 +255,7 @@ impl PlaylistWidget {
 
                     if self
                         .save_icon
-                        .show(Vec2::new(max_height, max_height), ui)
+                        .update(Vec2::new(max_height, max_height), ui)
                         .clicked()
                     {
                         if let Some(path) = rfd::FileDialog::new()
@@ -262,7 +270,7 @@ impl PlaylistWidget {
                     ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                         if self
                             .load_icon
-                            .show(Vec2::new(max_height, max_height), ui)
+                            .update(Vec2::new(max_height, max_height), ui)
                             .clicked()
                         {
                             if let Some(path) = rfd::FileDialog::new()
@@ -322,7 +330,7 @@ impl PlaylistWidget {
                                 None,
                             ));
                             self.config_video_player
-                                .show_config(ui, ctx, &mut header.video_player);
+                                .update(ui, ctx, &mut header.video_player);
                             self.config_video_player
                                 .show_hint(ui, ctx, &header.video_player);
                             ui.end_row();
@@ -336,7 +344,7 @@ impl PlaylistWidget {
                                         TextStyle::Body,
                                         None,
                                     ));
-                                    self.config_video_player_path.show_config(
+                                    self.config_video_player_path.update(
                                         ui,
                                         ctx,
                                         &mut header.video_player_path,

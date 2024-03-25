@@ -4,7 +4,7 @@ use eframe::{
     emath::Align,
     epaint::Vec2,
 };
-use std::{collections::VecDeque, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use crate::{
     models::{config, player::Player},
@@ -122,10 +122,6 @@ impl VideoPlayer {
 pub struct MediaPlayer {
     volume_icon: ButtonIcon,
 
-    error: VecDeque<String>,
-
-    gl: Arc<glow::Context>,
-
     video_player: VideoPlayer,
 }
 
@@ -143,8 +139,6 @@ impl MediaPlayer {
                 ctx,
             ),
             video_player,
-            error: VecDeque::new(),
-            gl,
         }
     }
     pub fn update(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
@@ -153,7 +147,7 @@ impl MediaPlayer {
         ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
             ui.set_height(CONTROLLER_HEIGHT);
 
-            self.volume_icon.show(
+            self.volume_icon.update(
                 Vec2::new(CONTROLLER_HEIGHT - 3.0, CONTROLLER_HEIGHT - 3.0),
                 ui,
             );

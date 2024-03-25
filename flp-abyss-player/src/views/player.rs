@@ -14,7 +14,7 @@ use crate::{
     views::widgets::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::PlaylistWidget},
 };
 
-use super::ChangeLocation;
+use super::{timer::TimerSignal, ChangeLocation};
 
 mod image;
 mod server;
@@ -31,11 +31,7 @@ impl MediaPlayer {
         let playlist = player.playlist().expect("Playlist not found");
         match playlist.header.media_type {
             MediaType::Server => Self::Server(server::MediaPlayer::new(
-                playlist
-                    .item_paths()
-                    .iter()
-                    .map(|path| PathBuf::from(path))
-                    .collect(),
+                playlist.item_paths().iter().map(PathBuf::from).collect(),
             )),
             MediaType::Image => Self::Image(image::MediaPlayer::new(player, ctx)),
             MediaType::Video => Self::Video(video::MediaPlayer::new(player, ctx, gl)),
@@ -54,6 +50,7 @@ impl MediaPlayer {
 
 pub struct View {
     change_location_tx: Sender<ChangeLocation>,
+    timer_signal_tx: Sender<TimerSignal>,
     gl: Arc<glow::Context>,
 
     playlist: PlaylistWidget,
@@ -73,6 +70,7 @@ impl View {
     pub fn new(
         id: &str,
         change_location_tx: Sender<ChangeLocation>,
+        timer_signal_tx: Sender<TimerSignal>,
         ctx: &Context,
         gl: Arc<glow::Context>,
     ) -> Self {
@@ -90,6 +88,7 @@ impl View {
 
         Self {
             change_location_tx,
+            timer_signal_tx,
             gl,
 
             player: player.clone(),
@@ -123,7 +122,7 @@ impl View {
             .default_size(Vec2::new(600.0, 600.0))
             .open(&mut self.show_playlist)
             .show(ctx, |ui| {
-                self.playlist.show(ui, ctx, &mut self.player.index);
+                self.playlist.update(ui, ctx, &mut self.player.index);
             });
 
         TopBottomPanel::top("title")
@@ -141,7 +140,8 @@ impl View {
                             let max_height = 20.0;
                             ui.set_height(max_height);
                             ui.style_mut().drag_value_text_style = Body;
-                            self.player_bar.show(
+                            self.player_bar.update(
+                                &self.timer_signal_tx,
                                 max_height,
                                 ui,
                                 &mut self.player.repeat,
@@ -159,10 +159,10 @@ impl View {
                             ui.spacing_mut().item_spacing = Vec2::new(8.0, 8.0);
                             ui.style_mut().drag_value_text_style = Body;
                             let max_size = Vec2::new(20.0, 20.0);
-                            if self.playlist_icon.show(max_size, ui).clicked() {
+                            if self.playlist_icon.update(max_size, ui).clicked() {
                                 self.show_playlist = true;
                             }
-                            if self.next_icon.show(max_size, ui).clicked() {
+                            if self.next_icon.update(max_size, ui).clicked() {
                                 self.player.next();
                                 need_to_reload = true;
                             }
@@ -183,7 +183,7 @@ impl View {
                                         s.parse::<usize>().map(|n| (n - 1) as f64).ok()
                                     }),
                             );
-                            if self.prev_icon.show(max_size, ui).clicked() {
+                            if self.prev_icon.update(max_size, ui).clicked() {
                                 self.player.prev();
                                 need_to_reload = true;
                             }

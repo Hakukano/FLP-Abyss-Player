@@ -70,7 +70,7 @@ impl Task {
 
             task.last_triggered = Utc::now()
                 - chrono::Duration::try_milliseconds(overshot)
-                    .unwrap_or_else(|| chrono::Duration::zero());
+                    .unwrap_or_else(chrono::Duration::zero);
 
             ctx.request_repaint();
         })

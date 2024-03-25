@@ -28,7 +28,7 @@ impl ConfigVideoPlayerPath {
         }
     }
 
-    pub fn show_config(
+    pub fn update(
         &self,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
@@ -57,7 +57,7 @@ impl ConfigVideoPlayerPath {
     ) {
         if let Some(video_player_path) = video_player_path {
             let max_height = ui.text_style_height(&Body);
-            self.checkmark.show(Vec2::new(max_height, max_height), ui);
+            self.checkmark.update(Vec2::new(max_height, max_height), ui);
             ui.label(gen_rich_text(
                 ctx,
                 format!(

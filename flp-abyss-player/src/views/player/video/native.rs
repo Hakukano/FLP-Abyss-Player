@@ -418,12 +418,12 @@ impl SourceElements {
 
     fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
         pipeline
-            .add_many(&[&self.source, &self.demux])
+            .add_many([&self.source, &self.demux])
             .expect("Cannot add source elements to pipeline");
     }
 
     fn link(&self, video_queue: gst::Element, audio_queue: gst::Element) {
-        gst::Element::link_many(&[&self.source, &self.demux]).expect("Cannot link source elements");
+        gst::Element::link_many([&self.source, &self.demux]).expect("Cannot link source elements");
 
         self.demux.connect_pad_added(move |_src, src_pad| {
             let new_pad_type = src_pad
@@ -499,7 +499,7 @@ impl VideoElements {
 
     fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
         pipeline
-            .add_many(&[
+            .add_many([
                 &self.queue,
                 &self.decode,
                 &self.convert,
@@ -510,8 +510,8 @@ impl VideoElements {
     }
 
     fn link(&self) {
-        gst::Element::link_many(&[&self.queue, &self.decode]).expect("Cannot link video elements");
-        gst::Element::link_many(&[&self.convert, &self.scale, self.sink.upcast_ref()])
+        gst::Element::link_many([&self.queue, &self.decode]).expect("Cannot link video elements");
+        gst::Element::link_many([&self.convert, &self.scale, self.sink.upcast_ref()])
             .expect("Cannot link video elements");
 
         let convert = self.convert.clone();
@@ -647,7 +647,7 @@ impl AudioElements {
 
     fn add_to_pipeline(&self, pipeline: &gst::Pipeline) {
         pipeline
-            .add_many(&[
+            .add_many([
                 &self.queue,
                 &self.decode,
                 &self.convert,
@@ -659,8 +659,8 @@ impl AudioElements {
     }
 
     fn link(&self) {
-        gst::Element::link_many(&[&self.queue, &self.decode]).expect("Cannot link audio elements");
-        gst::Element::link_many(&[&self.convert, &self.resample, &self.volume, &self.sink])
+        gst::Element::link_many([&self.queue, &self.decode]).expect("Cannot link audio elements");
+        gst::Element::link_many([&self.convert, &self.resample, &self.volume, &self.sink])
             .expect("Cannot link audio elements");
 
         let convert = self.convert.clone();
@@ -750,7 +750,7 @@ impl VideoPlayer {
                             );
                         }
                         AppToGstreamer::Volume(percent) => {
-                            let _ = audio_elements
+                            audio_elements
                                 .volume
                                 .set_property("volume", percent as f64 / 100.0);
                         }
@@ -814,6 +814,10 @@ impl VideoPlayer {
     }
 
     pub fn update(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        if let Ok(gta) = self.gta_rx.try_recv() {
+            self.gta = gta;
+        }
+
         if let Some(video_frame) = self.gta.video_frame.clone() {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 let max_size = {
@@ -904,7 +908,7 @@ impl VideoPlayer {
 
     pub fn rewind(&mut self, seconds: u32) -> Result<()> {
         self.atg_tx.send(AppToGstreamer::Position(
-            self.position().checked_sub(seconds).unwrap_or(0),
+            self.position().saturating_sub(seconds),
         ))?;
         Ok(())
     }

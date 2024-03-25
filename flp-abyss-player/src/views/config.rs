@@ -90,7 +90,7 @@ impl View {
 
                 ui.horizontal(|ui| {
                     self.config_playlist_path
-                        .show_config(ui, ctx, &mut self.config.playlist_path);
+                        .update(ui, ctx, &mut self.config.playlist_path);
                     self.config_playlist_path
                         .show_hint(ui, ctx, &self.config.playlist_path);
                 });
@@ -98,25 +98,22 @@ impl View {
                 if self.config.playlist_path.is_none() {
                     ui.horizontal(|ui| {
                         self.config_media_type
-                            .show_config(ui, ctx, &mut self.config.media_type);
+                            .update(ui, ctx, &mut self.config.media_type);
                         self.config_media_type
                             .show_hint(ui, ctx, &self.config.media_type);
                     });
 
                     ui.horizontal(|ui| {
                         self.config_root_path
-                            .show_config(ui, ctx, &mut self.config.root_path);
+                            .update(ui, ctx, &mut self.config.root_path);
                         self.config_root_path
                             .show_hint(ui, ctx, &self.config.root_path);
                     });
 
                     if self.config.media_type == MediaType::Video {
                         ui.horizontal(|ui| {
-                            self.config_video_player.show_config(
-                                ui,
-                                ctx,
-                                &mut self.config.video_player,
-                            );
+                            self.config_video_player
+                                .update(ui, ctx, &mut self.config.video_player);
                             self.config_video_player
                                 .show_hint(ui, ctx, &self.config.video_player);
                         });
@@ -125,7 +122,7 @@ impl View {
                             VideoPlayer::Native => {}
                             _ => {
                                 ui.horizontal(|ui| {
-                                    self.config_video_player_path.show_config(
+                                    self.config_video_player_path.update(
                                         ui,
                                         ctx,
                                         &mut self.config.video_player_path,

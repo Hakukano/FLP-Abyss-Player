@@ -67,7 +67,7 @@ impl ToggleIcon {
         )
     }
 
-    pub fn show(&self, max_size: Vec2, ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
+    pub fn update(&self, max_size: Vec2, ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
         let mut response = if *on {
             ui.add(egui::ImageButton::new(
                 Image::new(ImageSource::Texture((&self.texture_on).into()))

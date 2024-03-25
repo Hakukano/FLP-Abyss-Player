@@ -19,6 +19,7 @@ mod widgets;
 
 struct ChangeLocation {
     path: Vec<String>,
+    #[allow(dead_code)]
     query: HashMap<String, Value>,
 }
 
@@ -36,7 +37,6 @@ pub struct Task {
     gl: Arc<glow::Context>,
 
     view: View,
-    location: Vec<String>,
 }
 
 impl Task {
@@ -57,7 +57,6 @@ impl Task {
             gl: cc.gl.clone().expect("gl context should be available"),
 
             view,
-            location: vec!["configs".to_string(), "default".to_string()],
         }
     }
 
@@ -96,8 +95,8 @@ impl Task {
 
 impl eframe::App for Task {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-        match self.change_location_rx.try_recv() {
-            Ok(ChangeLocation { path, query: _ }) => match path
+        if let Ok(ChangeLocation { path, query: _ }) = self.change_location_rx.try_recv() {
+            match path
                 .iter()
                 .map(AsRef::as_ref)
                 .collect::<Vec<_>>()
@@ -111,13 +110,13 @@ impl eframe::App for Task {
                     self.view = View::Player(player::View::new(
                         id,
                         self.change_location_tx.clone(),
+                        self.timer_signal_tx.clone(),
                         ctx,
                         self.gl.clone(),
                     ))
                 }
                 _ => panic!("Unknown location"),
-            },
-            _ => {}
+            }
         }
 
         let need_to_tick = match self.tick_signal_rx.try_recv() {
