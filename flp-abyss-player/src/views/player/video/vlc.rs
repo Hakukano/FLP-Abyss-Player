@@ -90,10 +90,9 @@ mod status {
 }
 
 pub struct VideoPlayer {
-    command: Command,
     http_password: String,
     http_port: u16,
-    child: Option<Child>,
+    child: Child,
 
     runtime: runtime::Runtime,
     /// The video has been played at least once or is still being played
@@ -138,10 +137,9 @@ impl VideoPlayer {
             .build()
             .expect("Cannot build tokio runtime");
         let video_player = Self {
-            command,
             http_password,
             http_port,
-            child: None,
+            child: command.spawn().expect("Cannot spawn vlc"),
             runtime,
             played: Arc::new(AtomicBool::new(false)),
             status: Arc::new(RwLock::new(status::Root::default())),
@@ -275,13 +273,6 @@ impl VideoPlayer {
         ((self.status.read().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
     }
 
-    fn start(&mut self) -> Result<()> {
-        if self.child.is_none() {
-            self.child.replace(self.command.spawn()?);
-        }
-        Ok(())
-    }
-
     pub fn resume(&mut self) -> Result<()> {
         self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
         Ok(())
@@ -293,9 +284,7 @@ impl VideoPlayer {
     }
 
     fn stop(&mut self) -> Result<()> {
-        if let Some(mut child) = self.child.take() {
-            child.kill()?;
-        }
+        self.child.kill()?;
         Ok(())
     }
 
@@ -334,8 +323,6 @@ impl VideoPlayer {
 
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
-        if let Some(child) = self.child.as_mut() {
-            let _ = child.kill();
-        }
+        let _ = self.stop();
     }
 }

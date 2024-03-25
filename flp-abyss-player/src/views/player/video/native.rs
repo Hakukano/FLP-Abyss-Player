@@ -736,6 +736,8 @@ impl VideoPlayer {
                 pipeline.bus().unwrap()
             };
 
+            let _ = pipeline.set_state(state);
+
             loop {
                 match atg_rx.try_recv() {
                     Err(TryRecvError::Disconnected) => break,
@@ -872,12 +874,6 @@ impl VideoPlayer {
         self.gta.volume
     }
 
-    fn start(&mut self) -> Result<()> {
-        self.atg_tx
-            .send(AppToGstreamer::State(gst::State::Playing))?;
-        Ok(())
-    }
-
     pub fn resume(&mut self) -> Result<()> {
         self.atg_tx
             .send(AppToGstreamer::State(gst::State::Playing))?;
@@ -921,6 +917,7 @@ impl VideoPlayer {
 
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
+        let _ = self.stop();
         if let Some(video_frame) = &self.gta.video_frame {
             use glow::HasContext as _;
             unsafe {
