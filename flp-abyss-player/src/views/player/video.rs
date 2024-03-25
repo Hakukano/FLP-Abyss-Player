@@ -37,7 +37,7 @@ impl VideoPlayer {
                     .video_player_path
                     .expect("Video player path not found"),
                 player.current_path(),
-                ctx,
+                ctx.clone(),
             )),
             _ => panic!("No video player selected"),
         }

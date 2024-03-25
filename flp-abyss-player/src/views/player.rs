@@ -54,6 +54,7 @@ impl MediaPlayer {
 
 pub struct View {
     change_location_tx: Sender<ChangeLocation>,
+    gl: Arc<glow::Context>,
 
     playlist: PlaylistWidget,
     player: Player,
@@ -85,10 +86,11 @@ impl View {
             .join("image")
             .join("icon");
 
-        let media_player = MediaPlayer::new(&player, ctx, gl);
+        let media_player = MediaPlayer::new(&player, ctx, gl.clone());
 
         Self {
             change_location_tx,
+            gl,
 
             player: player.clone(),
 
@@ -108,11 +110,14 @@ impl View {
         }
     }
 
-    fn can_input(&self) -> bool {
-        !self.show_playlist
-    }
-
     pub fn update(&mut self, ctx: &Context, need_to_tick: bool) {
+        let mut need_to_reload = false;
+
+        if need_to_tick {
+            self.player.next();
+            need_to_reload = true;
+        }
+
         Window::new("playlist")
             .resizable(true)
             .default_size(Vec2::new(600.0, 600.0))
@@ -159,6 +164,7 @@ impl View {
                             }
                             if self.next_icon.show(max_size, ui).clicked() {
                                 self.player.next();
+                                need_to_reload = true;
                             }
                             ui.label(gen_rich_text(
                                 ctx,
@@ -179,6 +185,7 @@ impl View {
                             );
                             if self.prev_icon.show(max_size, ui).clicked() {
                                 self.player.prev();
+                                need_to_reload = true;
                             }
                         },
                     );
@@ -246,12 +253,15 @@ impl View {
         if self.can_input() {
             if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
                 self.player.next();
+                need_to_reload = true;
             }
             if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
                 self.player.prev();
+                need_to_reload = true;
             }
             if ctx.input(|i| i.key_pressed(Key::R)) {
                 self.player.random_next();
+                need_to_reload = true;
             }
             if ctx.input(|i| i.key_pressed(Key::Num1)) {
                 self.player.repeat = !self.player.repeat;
@@ -269,5 +279,12 @@ impl View {
 
         // Cleanup Phase
         self.player.save();
+        if need_to_reload {
+            self.media_player = MediaPlayer::new(&self.player, ctx, self.gl.clone());
+        }
+    }
+
+    fn can_input(&self) -> bool {
+        !self.show_playlist
     }
 }

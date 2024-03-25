@@ -105,7 +105,7 @@ impl VideoPlayer {
     pub fn new(
         player_path: impl AsRef<Path>,
         video_path: impl AsRef<Path>,
-        ctx: &egui::Context,
+        ctx: egui::Context,
     ) -> Self {
         let pg = PasswordGenerator {
             length: 16,
@@ -156,10 +156,10 @@ impl VideoPlayer {
                 tokio::time::interval(std::time::Duration::from_millis(STATUS_SYNC_INTERVAL_MS));
             loop {
                 timer.tick().await;
+                let ctx = ctx.clone();
                 let request = Client::new()
                     .request(Method::GET, request_url.as_str())
                     .basic_auth("", Some(request_password.as_str()));
-                let ctx = ctx.clone();
                 let played = played.clone();
                 let status = status.clone();
                 let _ = tokio::spawn(async move {

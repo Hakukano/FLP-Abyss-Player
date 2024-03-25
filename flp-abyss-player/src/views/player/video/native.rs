@@ -542,8 +542,8 @@ impl VideoElements {
     fn set_sink_callback(
         &self,
         ctx: egui::Context,
-        mut video_frame: Option<VideoFrame>,
-        video_frame_tx: Sender<Option<VideoFrame>>,
+        video_frame: VideoFrame,
+        video_frame_tx: Sender<VideoFrame>,
     ) {
         self.sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
@@ -590,12 +590,11 @@ impl VideoElements {
 
                     let rgbas = map.as_slice();
 
-                    if let Some(mut video_frame) = video_frame {
-                        video_frame.width = width;
-                        video_frame.height = height;
-                        video_frame.rgbas = rgbas.to_vec();
-                        let _ = video_frame_tx.send(Some(video_frame));
-                    }
+                    let mut video_frame = video_frame.clone();
+                    video_frame.width = width;
+                    video_frame.height = height;
+                    video_frame.rgbas = rgbas.to_vec();
+                    let _ = video_frame_tx.send(video_frame);
 
                     ctx.request_repaint();
 
@@ -702,6 +701,7 @@ pub struct VideoPlayer {
 impl VideoPlayer {
     pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: egui::Context) -> Self {
         let video_path = video_path.as_ref().to_path_buf();
+        let video_frame = VideoFrame::new(gl.as_ref());
 
         let (gta_tx, gta_rx) = channel::<GstreamerToApp>();
         let (atg_tx, atg_rx) = channel::<AppToGstreamer>();
@@ -715,9 +715,8 @@ impl VideoPlayer {
 
             let pipeline = &gst::Pipeline::default();
             let mut state = gst::State::Playing;
-            let mut video_frame = None;
 
-            let (video_frame_tx, video_frame_rx) = channel::<Option<VideoFrame>>();
+            let (video_frame_tx, video_frame_rx) = channel::<VideoFrame>();
 
             let bus = {
                 source_elements.add_to_pipeline(pipeline);
@@ -795,7 +794,7 @@ impl VideoPlayer {
                         .unwrap_or(0) as u32,
                     volume: (audio_elements.volume.property::<f64>("volume").max(0.0) * 100.0)
                         .min(u8::MAX as f64) as u8,
-                    video_frame,
+                    video_frame: video_frame_rx.try_recv().ok(),
                 });
             }
 
