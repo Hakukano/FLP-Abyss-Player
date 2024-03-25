@@ -85,7 +85,7 @@ impl View {
             .join("image")
             .join("icon");
 
-        let mut media_player = MediaPlayer::new(&player, ctx, gl);
+        let media_player = MediaPlayer::new(&player, ctx, gl);
 
         Self {
             change_location_tx,

@@ -97,7 +97,7 @@ impl Task {
 impl eframe::App for Task {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         match self.change_location_rx.try_recv() {
-            Ok(ChangeLocation { path, query }) => match path
+            Ok(ChangeLocation { path, query: _ }) => match path
                 .iter()
                 .map(AsRef::as_ref)
                 .collect::<Vec<_>>()
@@ -115,6 +115,7 @@ impl eframe::App for Task {
                         self.gl.clone(),
                     ))
                 }
+                _ => panic!("Unknown location"),
             },
             _ => {}
         }
@@ -129,7 +130,6 @@ impl eframe::App for Task {
             View::Init(view) => view.update(),
             View::Config(view) => view.update(ctx),
             View::Player(view) => view.update(ctx, need_to_tick),
-            _ => {}
         }
     }
 }
