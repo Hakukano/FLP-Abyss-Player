@@ -24,8 +24,6 @@ pub struct Player {
 
 impl Player {
     pub fn new(id: String, playlist: &Playlist) -> Self {
-        let config = playlist.config().expect("Config not found");
-
         Self {
             id,
             repeat: false,
@@ -38,12 +36,13 @@ impl Player {
         }
     }
 
-    pub fn current_path(&self) -> &str {
+    pub fn current_path(&self) -> String {
         let playlist = self.playlist().expect("Playlist not found");
         playlist
             .item_paths()
             .get(self.index.max(0).min(playlist.item_paths().len() - 1))
             .unwrap()
+            .clone()
     }
 
     pub fn random_next(&mut self) {

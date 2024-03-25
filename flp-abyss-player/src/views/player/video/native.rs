@@ -1,7 +1,10 @@
 use std::{
     mem::{size_of, size_of_val},
     path::Path,
-    sync::Arc,
+    sync::{
+        mpsc::{channel, Receiver, Sender, TryRecvError},
+        Arc,
+    },
 };
 
 use anyhow::Result;
@@ -10,7 +13,6 @@ use gst::prelude::*;
 use gstreamer::{self as gst, element_error};
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
-use parking_lot::RwLock;
 
 use crate::utils::helper::scale_fit_all;
 
@@ -26,6 +28,324 @@ macro_rules! gl_strict {
             }
         }
     };
+}
+
+#[derive(Clone)]
+struct VideoFrame {
+    vertex_shader: glow::NativeShader,
+    fragment_shader: glow::NativeShader,
+    program: glow::Program,
+    attr_position: u32,
+    attr_texture: u32,
+    vertex_array: glow::VertexArray,
+    vertex_buffer: glow::Buffer,
+    index_buffer: glow::Buffer,
+    texture: glow::Texture,
+
+    width: i32,
+    height: i32,
+    rgbas: Vec<u8>,
+}
+
+impl VideoFrame {
+    fn new(gl: &glow::Context) -> Self {
+        use glow::HasContext as _;
+
+        unsafe {
+            let vertex_shader = gl
+                .create_shader(glow::VERTEX_SHADER)
+                .expect("Cannot create shader");
+            gl_strict!(
+                gl,
+                gl.shader_source(vertex_shader, &format!("{}\n{}", SHADER_VERSION, VS_SRC))
+            );
+            gl_strict!(gl, gl.compile_shader(vertex_shader));
+            assert!(
+                gl.get_shader_compile_status(vertex_shader),
+                "Failed to compile {}: {}",
+                glow::VERTEX_SHADER,
+                gl.get_shader_info_log(vertex_shader)
+            );
+
+            let fragment_shader = gl
+                .create_shader(glow::FRAGMENT_SHADER)
+                .expect("Cannot create shader");
+            gl_strict!(
+                gl,
+                gl.shader_source(fragment_shader, &format!("{}\n{}", SHADER_VERSION, FS_SRC))
+            );
+            gl_strict!(gl, gl.compile_shader(fragment_shader));
+            assert!(
+                gl.get_shader_compile_status(fragment_shader),
+                "Failed to compile {}: {}",
+                glow::FRAGMENT_SHADER,
+                gl.get_shader_info_log(fragment_shader)
+            );
+
+            let program = gl.create_program().expect("Cannot create program");
+            gl_strict!(gl, gl.attach_shader(program, vertex_shader));
+            gl_strict!(gl, gl.attach_shader(program, fragment_shader));
+            gl_strict!(gl, gl.link_program(program));
+            if !gl.get_program_link_status(program) {
+                panic!("{}", gl.get_program_info_log(program));
+            }
+
+            let attr_position = gl
+                .get_attrib_location(program, "a_position")
+                .expect("Cannot find attribute");
+            let attr_texture = gl
+                .get_attrib_location(program, "a_texcoord")
+                .expect("Cannot find attribute");
+
+            let vertex_array = gl
+                .create_vertex_array()
+                .expect("Cannot create vertex_array");
+            gl_strict!(gl, gl.bind_vertex_array(Some(vertex_array)));
+
+            let vertex_buffer = gl.create_buffer().expect("Cannot create buffer");
+            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer)));
+            let data =
+                std::slice::from_raw_parts(VERTICES.as_ptr() as *const u8, size_of_val(VERTICES));
+            gl_strict!(
+                gl,
+                gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, data, glow::STATIC_DRAW)
+            );
+
+            let index_buffer = gl.create_buffer().expect("Cannot create buffer");
+            gl_strict!(
+                gl,
+                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(index_buffer))
+            );
+            let data = std::slice::from_raw_parts(
+                INDICES.as_ptr() as *const u8,
+                INDICES.len() * size_of::<usize>(),
+            );
+            gl_strict!(
+                gl,
+                gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, data, glow::STATIC_DRAW)
+            );
+
+            gl_strict!(
+                gl,
+                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(index_buffer))
+            );
+            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer)));
+
+            gl_strict!(
+                gl,
+                gl.vertex_attrib_pointer_f32(
+                    attr_position,
+                    3,
+                    glow::FLOAT,
+                    false,
+                    5 * size_of::<f32>() as i32,
+                    0
+                )
+            );
+
+            gl_strict!(
+                gl,
+                gl.vertex_attrib_pointer_f32(
+                    attr_texture,
+                    2,
+                    glow::FLOAT,
+                    false,
+                    5 * size_of::<f32>() as i32,
+                    3 * size_of::<f32>() as i32,
+                )
+            );
+
+            gl_strict!(gl, gl.enable_vertex_attrib_array(attr_position));
+            gl_strict!(gl, gl.enable_vertex_attrib_array(attr_texture));
+
+            gl_strict!(gl, gl.bind_vertex_array(None));
+            gl_strict!(gl, gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, None));
+            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, None));
+
+            let texture = gl.create_texture().expect("Cannot create texture");
+
+            Self {
+                vertex_shader,
+                fragment_shader,
+                program,
+                attr_position,
+                attr_texture,
+                vertex_array,
+                vertex_buffer,
+                index_buffer,
+                texture,
+                width: 0,
+                height: 0,
+                rgbas: Vec::new(),
+            }
+        }
+    }
+
+    fn paint(&self, gl: &glow::Context) {
+        if self.width == 0 || self.height == 0 {
+            return;
+        }
+        use glow::HasContext as _;
+        unsafe {
+            gl_strict!(gl, gl.blend_color(0.0, 0.0, 0.0, 1.0));
+            gl_strict!(
+                gl,
+                gl.blend_func_separate(
+                    glow::SRC_ALPHA,
+                    glow::CONSTANT_COLOR,
+                    glow::ONE,
+                    glow::ONE_MINUS_SRC_ALPHA,
+                )
+            );
+            gl_strict!(gl, gl.blend_equation(glow::FUNC_ADD));
+            gl_strict!(gl, gl.enable(glow::BLEND));
+
+            gl_strict!(gl, gl.use_program(Some(self.program)));
+
+            gl_strict!(gl, gl.bind_vertex_array(Some(self.vertex_array)));
+            gl_strict!(
+                gl,
+                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.index_buffer))
+            );
+            gl_strict!(
+                gl,
+                gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.vertex_buffer))
+            );
+
+            gl_strict!(
+                gl,
+                gl.vertex_attrib_pointer_f32(
+                    self.attr_position,
+                    3,
+                    glow::FLOAT,
+                    false,
+                    5 * size_of::<f32>() as i32,
+                    0
+                )
+            );
+
+            gl_strict!(
+                gl,
+                gl.vertex_attrib_pointer_f32(
+                    self.attr_texture,
+                    2,
+                    glow::FLOAT,
+                    false,
+                    5 * size_of::<f32>() as i32,
+                    3 * size_of::<f32>() as i32,
+                )
+            );
+
+            gl_strict!(gl, gl.enable_vertex_attrib_array(self.attr_position));
+            gl_strict!(gl, gl.enable_vertex_attrib_array(self.attr_texture));
+
+            gl_strict!(gl, gl.active_texture(glow::TEXTURE0));
+            gl_strict!(gl, gl.bind_texture(glow::TEXTURE_2D, Some(self.texture)));
+            gl_strict!(
+                gl,
+                gl.tex_parameter_i32(
+                    glow::TEXTURE_2D,
+                    glow::TEXTURE_MIN_FILTER,
+                    glow::LINEAR as i32
+                )
+            );
+            gl_strict!(
+                gl,
+                gl.tex_parameter_i32(
+                    glow::TEXTURE_2D,
+                    glow::TEXTURE_MAG_FILTER,
+                    glow::LINEAR as i32
+                )
+            );
+            gl_strict!(
+                gl,
+                gl.tex_parameter_i32(
+                    glow::TEXTURE_2D,
+                    glow::TEXTURE_WRAP_S,
+                    glow::CLAMP_TO_BORDER as i32
+                )
+            );
+            gl_strict!(
+                gl,
+                gl.tex_parameter_i32(
+                    glow::TEXTURE_2D,
+                    glow::TEXTURE_WRAP_T,
+                    glow::CLAMP_TO_BORDER as i32
+                )
+            );
+            gl_strict!(
+                gl,
+                gl.tex_image_2d(
+                    glow::TEXTURE_2D,
+                    0,
+                    glow::RGBA as i32,
+                    self.width,
+                    self.height,
+                    0,
+                    glow::RGBA,
+                    glow::UNSIGNED_BYTE,
+                    Some(self.rgbas.as_slice()),
+                )
+            );
+
+            let texture_location = gl
+                .get_uniform_location(self.program, "tex")
+                .expect("Cannot find uniform location");
+            gl_strict!(gl, gl.uniform_1_i32(Some(&texture_location), 0));
+
+            let transform_location = gl
+                .get_uniform_location(self.program, "u_transformation")
+                .expect("Cannot find uniform location");
+            #[rustfmt::skip]
+            let transform = &[
+                  1.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0,
+                  0.0, 0.0, 0.0, 1.0,
+            ];
+            gl_strict!(
+                gl,
+                gl.uniform_matrix_4_f32_slice(Some(&transform_location), false, transform)
+            );
+
+            gl_strict!(
+                gl,
+                gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_SHORT, 0)
+            );
+
+            gl_strict!(gl, gl.bind_texture(glow::TEXTURE_2D, None));
+            gl_strict!(gl, gl.use_program(None));
+            gl_strict!(gl, gl.bind_vertex_array(None));
+            gl_strict!(gl, gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, None));
+            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, None));
+        }
+    }
+}
+
+struct GstreamerToApp {
+    state: gst::State,
+    position: u32,
+    duration: u32,
+    volume: u8,
+    video_frame: Option<VideoFrame>,
+}
+
+impl Default for GstreamerToApp {
+    fn default() -> Self {
+        Self {
+            state: gst::State::Null,
+            position: 0,
+            duration: 0,
+            volume: 0,
+            video_frame: None,
+        }
+    }
+}
+
+enum AppToGstreamer {
+    State(gst::State),
+    Position(u32),
+    Volume(u8),
 }
 
 #[rustfmt::skip]
@@ -219,7 +539,12 @@ impl VideoElements {
         });
     }
 
-    fn set_sink_callback(&self, video_frame: Arc<RwLock<VideoFrame>>, ctx: egui::Context) {
+    fn set_sink_callback(
+        &self,
+        ctx: egui::Context,
+        mut video_frame: Option<VideoFrame>,
+        video_frame_tx: Sender<Option<VideoFrame>>,
+    ) {
         self.sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(move |appsink| {
@@ -265,11 +590,11 @@ impl VideoElements {
 
                     let rgbas = map.as_slice();
 
-                    {
-                        let mut video_frame_guard = video_frame.write();
-                        video_frame_guard.width = width;
-                        video_frame_guard.height = height;
-                        video_frame_guard.rgbas = rgbas.to_vec();
+                    if let Some(mut video_frame) = video_frame {
+                        video_frame.width = width;
+                        video_frame.height = height;
+                        video_frame.rgbas = rgbas.to_vec();
+                        let _ = video_frame_tx.send(Some(video_frame));
                     }
 
                     ctx.request_repaint();
@@ -365,339 +690,22 @@ impl AudioElements {
     }
 }
 
-struct VideoFrame {
+pub struct VideoPlayer {
     gl: Arc<glow::Context>,
 
-    vertex_shader: glow::NativeShader,
-    fragment_shader: glow::NativeShader,
-    program: glow::Program,
-    attr_position: u32,
-    attr_texture: u32,
-    vertex_array: glow::VertexArray,
-    vertex_buffer: glow::Buffer,
-    index_buffer: glow::Buffer,
-    texture: glow::Texture,
+    gta_rx: Receiver<GstreamerToApp>,
+    atg_tx: Sender<AppToGstreamer>,
 
-    width: i32,
-    height: i32,
-    rgbas: Vec<u8>,
-}
-
-impl VideoFrame {
-    fn new(gl: Arc<glow::Context>) -> Self {
-        use glow::HasContext as _;
-
-        unsafe {
-            let vertex_shader = gl
-                .create_shader(glow::VERTEX_SHADER)
-                .expect("Cannot create shader");
-            gl_strict!(
-                gl,
-                gl.shader_source(vertex_shader, &format!("{}\n{}", SHADER_VERSION, VS_SRC))
-            );
-            gl_strict!(gl, gl.compile_shader(vertex_shader));
-            assert!(
-                gl.get_shader_compile_status(vertex_shader),
-                "Failed to compile {}: {}",
-                glow::VERTEX_SHADER,
-                gl.get_shader_info_log(vertex_shader)
-            );
-
-            let fragment_shader = gl
-                .create_shader(glow::FRAGMENT_SHADER)
-                .expect("Cannot create shader");
-            gl_strict!(
-                gl,
-                gl.shader_source(fragment_shader, &format!("{}\n{}", SHADER_VERSION, FS_SRC))
-            );
-            gl_strict!(gl, gl.compile_shader(fragment_shader));
-            assert!(
-                gl.get_shader_compile_status(fragment_shader),
-                "Failed to compile {}: {}",
-                glow::FRAGMENT_SHADER,
-                gl.get_shader_info_log(fragment_shader)
-            );
-
-            let program = gl.create_program().expect("Cannot create program");
-            gl_strict!(gl, gl.attach_shader(program, vertex_shader));
-            gl_strict!(gl, gl.attach_shader(program, fragment_shader));
-            gl_strict!(gl, gl.link_program(program));
-            if !gl.get_program_link_status(program) {
-                panic!("{}", gl.get_program_info_log(program));
-            }
-
-            let attr_position = gl
-                .get_attrib_location(program, "a_position")
-                .expect("Cannot find attribute");
-            let attr_texture = gl
-                .get_attrib_location(program, "a_texcoord")
-                .expect("Cannot find attribute");
-
-            let vertex_array = gl
-                .create_vertex_array()
-                .expect("Cannot create vertex_array");
-            gl_strict!(gl, gl.bind_vertex_array(Some(vertex_array)));
-
-            let vertex_buffer = gl.create_buffer().expect("Cannot create buffer");
-            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer)));
-            let data =
-                std::slice::from_raw_parts(VERTICES.as_ptr() as *const u8, size_of_val(VERTICES));
-            gl_strict!(
-                gl,
-                gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, data, glow::STATIC_DRAW)
-            );
-
-            let index_buffer = gl.create_buffer().expect("Cannot create buffer");
-            gl_strict!(
-                gl,
-                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(index_buffer))
-            );
-            let data = std::slice::from_raw_parts(
-                INDICES.as_ptr() as *const u8,
-                INDICES.len() * size_of::<usize>(),
-            );
-            gl_strict!(
-                gl,
-                gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, data, glow::STATIC_DRAW)
-            );
-
-            gl_strict!(
-                gl,
-                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(index_buffer))
-            );
-            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer)));
-
-            gl_strict!(
-                gl,
-                gl.vertex_attrib_pointer_f32(
-                    attr_position,
-                    3,
-                    glow::FLOAT,
-                    false,
-                    5 * size_of::<f32>() as i32,
-                    0
-                )
-            );
-
-            gl_strict!(
-                gl,
-                gl.vertex_attrib_pointer_f32(
-                    attr_texture,
-                    2,
-                    glow::FLOAT,
-                    false,
-                    5 * size_of::<f32>() as i32,
-                    3 * size_of::<f32>() as i32,
-                )
-            );
-
-            gl_strict!(gl, gl.enable_vertex_attrib_array(attr_position));
-            gl_strict!(gl, gl.enable_vertex_attrib_array(attr_texture));
-
-            gl_strict!(gl, gl.bind_vertex_array(None));
-            gl_strict!(gl, gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, None));
-            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, None));
-
-            let texture = gl.create_texture().expect("Cannot create texture");
-
-            Self {
-                gl,
-                vertex_shader,
-                fragment_shader,
-                program,
-                attr_position,
-                attr_texture,
-                vertex_array,
-                vertex_buffer,
-                index_buffer,
-                texture,
-                width: 0,
-                height: 0,
-                rgbas: Vec::new(),
-            }
-        }
-    }
-
-    fn paint(&self) {
-        if self.width == 0 || self.height == 0 {
-            return;
-        }
-        use glow::HasContext as _;
-        unsafe {
-            let gl = &self.gl;
-
-            gl_strict!(gl, gl.blend_color(0.0, 0.0, 0.0, 1.0));
-            gl_strict!(
-                gl,
-                gl.blend_func_separate(
-                    glow::SRC_ALPHA,
-                    glow::CONSTANT_COLOR,
-                    glow::ONE,
-                    glow::ONE_MINUS_SRC_ALPHA,
-                )
-            );
-            gl_strict!(gl, gl.blend_equation(glow::FUNC_ADD));
-            gl_strict!(gl, gl.enable(glow::BLEND));
-
-            gl_strict!(gl, gl.use_program(Some(self.program)));
-
-            gl_strict!(gl, gl.bind_vertex_array(Some(self.vertex_array)));
-            gl_strict!(
-                gl,
-                gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.index_buffer))
-            );
-            gl_strict!(
-                gl,
-                gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.vertex_buffer))
-            );
-
-            gl_strict!(
-                gl,
-                gl.vertex_attrib_pointer_f32(
-                    self.attr_position,
-                    3,
-                    glow::FLOAT,
-                    false,
-                    5 * size_of::<f32>() as i32,
-                    0
-                )
-            );
-
-            gl_strict!(
-                gl,
-                gl.vertex_attrib_pointer_f32(
-                    self.attr_texture,
-                    2,
-                    glow::FLOAT,
-                    false,
-                    5 * size_of::<f32>() as i32,
-                    3 * size_of::<f32>() as i32,
-                )
-            );
-
-            gl_strict!(gl, gl.enable_vertex_attrib_array(self.attr_position));
-            gl_strict!(gl, gl.enable_vertex_attrib_array(self.attr_texture));
-
-            gl_strict!(gl, gl.active_texture(glow::TEXTURE0));
-            gl_strict!(gl, gl.bind_texture(glow::TEXTURE_2D, Some(self.texture)));
-            gl_strict!(
-                gl,
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MIN_FILTER,
-                    glow::LINEAR as i32
-                )
-            );
-            gl_strict!(
-                gl,
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MAG_FILTER,
-                    glow::LINEAR as i32
-                )
-            );
-            gl_strict!(
-                gl,
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_S,
-                    glow::CLAMP_TO_BORDER as i32
-                )
-            );
-            gl_strict!(
-                gl,
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_T,
-                    glow::CLAMP_TO_BORDER as i32
-                )
-            );
-            gl_strict!(
-                gl,
-                gl.tex_image_2d(
-                    glow::TEXTURE_2D,
-                    0,
-                    glow::RGBA as i32,
-                    self.width,
-                    self.height,
-                    0,
-                    glow::RGBA,
-                    glow::UNSIGNED_BYTE,
-                    Some(self.rgbas.as_slice()),
-                )
-            );
-
-            let texture_location = gl
-                .get_uniform_location(self.program, "tex")
-                .expect("Cannot find uniform location");
-            gl_strict!(gl, gl.uniform_1_i32(Some(&texture_location), 0));
-
-            let transform_location = gl
-                .get_uniform_location(self.program, "u_transformation")
-                .expect("Cannot find uniform location");
-            #[rustfmt::skip]
-            let transform = &[
-                  1.0, 0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0, 0.0,
-                  0.0, 0.0, 1.0, 0.0,
-                  0.0, 0.0, 0.0, 1.0,
-            ];
-            gl_strict!(
-                gl,
-                gl.uniform_matrix_4_f32_slice(Some(&transform_location), false, transform)
-            );
-
-            gl_strict!(
-                gl,
-                gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_SHORT, 0)
-            );
-
-            gl_strict!(gl, gl.bind_texture(glow::TEXTURE_2D, None));
-            gl_strict!(gl, gl.use_program(None));
-            gl_strict!(gl, gl.bind_vertex_array(None));
-            gl_strict!(gl, gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, None));
-            gl_strict!(gl, gl.bind_buffer(glow::ARRAY_BUFFER, None));
-        }
-    }
-}
-
-impl Drop for VideoFrame {
-    fn drop(&mut self) {
-        use glow::HasContext as _;
-        unsafe {
-            self.gl.delete_texture(self.texture);
-            self.gl.delete_buffer(self.index_buffer);
-            self.gl.delete_buffer(self.vertex_buffer);
-            self.gl.delete_vertex_array(self.vertex_array);
-            self.gl.delete_program(self.program);
-            self.gl.delete_shader(self.fragment_shader);
-            self.gl.delete_shader(self.vertex_shader);
-        }
-    }
-}
-
-pub struct VideoPlayer {
-    audio_volume: Arc<RwLock<Option<gst::Element>>>,
-    pipeline: Arc<RwLock<Option<gst::Pipeline>>>,
-    state: Arc<RwLock<gst::State>>,
-
-    video_frame: Arc<RwLock<VideoFrame>>,
+    gta: GstreamerToApp,
 }
 
 impl VideoPlayer {
-    pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: &egui::Context) -> Self {
-        let video_player = Self {
-            audio_volume: Arc::new(RwLock::new(None)),
-            pipeline: Arc::new(RwLock::new(None)),
-            state: Arc::new(RwLock::new(gst::State::Playing)),
-            video_frame: Arc::new(RwLock::new(VideoFrame::new(gl))),
-        };
-
+    pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: egui::Context) -> Self {
         let video_path = video_path.as_ref().to_path_buf();
-        let audio_volume = video_player.audio_volume.clone();
-        let pipeline = video_player.pipeline.clone();
-        let state = video_player.state.clone();
-        let video_frame = video_player.video_frame.clone();
+
+        let (gta_tx, gta_rx) = channel::<GstreamerToApp>();
+        let (atg_tx, atg_rx) = channel::<AppToGstreamer>();
+
         std::thread::spawn(move || {
             gst::init().expect("Cannot initialize gstream");
 
@@ -705,12 +713,13 @@ impl VideoPlayer {
             let video_elements = VideoElements::new();
             let audio_elements = AudioElements::new();
 
-            audio_volume.write().replace(audio_elements.volume.clone());
-            pipeline.write().replace(gst::Pipeline::default());
+            let pipeline = &gst::Pipeline::default();
+            let mut state = gst::State::Playing;
+            let mut video_frame = None;
+
+            let (video_frame_tx, video_frame_rx) = channel::<Option<VideoFrame>>();
 
             let bus = {
-                let pipeline_guard = pipeline.read();
-                let pipeline = pipeline_guard.as_ref().unwrap();
                 source_elements.add_to_pipeline(pipeline);
                 video_elements.add_to_pipeline(pipeline);
                 audio_elements.add_to_pipeline(pipeline);
@@ -719,7 +728,7 @@ impl VideoPlayer {
                 audio_elements.link();
                 source_elements.link(video_elements.queue.clone(), audio_elements.queue);
 
-                video_elements.set_sink_callback(video_frame, ctx);
+                video_elements.set_sink_callback(ctx, video_frame.clone(), video_frame_tx);
 
                 pipeline
                     .set_state(gst::State::Playing)
@@ -728,209 +737,198 @@ impl VideoPlayer {
                 pipeline.bus().unwrap()
             };
 
-            for msg in bus.iter_timed(gst::ClockTime::NONE) {
-                use gst::MessageView;
-
-                match msg.view() {
-                    MessageView::Error(err) => {
-                        eprintln!(
-                            "Error received from element {:?} {}",
-                            err.src().map(|s| s.path_string()),
-                            err.error()
-                        );
-                        eprintln!("Debugging information: {:?}", err.debug());
-                        break;
-                    }
-                    MessageView::StateChanged(state_changed) => {
-                        if state_changed
-                            .src()
-                            .map(|s| {
-                                s == pipeline
-                                    .read()
-                                    .as_ref()
-                                    .expect("pipeline should be available during message handling")
-                            })
-                            .unwrap_or(false)
-                        {
-                            *state.write() = state_changed.current();
+            loop {
+                match atg_rx.try_recv() {
+                    Err(TryRecvError::Disconnected) => break,
+                    Ok(atg) => match atg {
+                        AppToGstreamer::State(new_state) => {
+                            let _ = pipeline.set_state(new_state);
                         }
-                    }
-                    MessageView::Eos(..) => break,
-                    _ => (),
+                        AppToGstreamer::Position(position) => {
+                            let _ = pipeline.seek_simple(
+                                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
+                                position as u64 * gst::ClockTime::SECOND,
+                            );
+                        }
+                        AppToGstreamer::Volume(percent) => {
+                            let _ = audio_elements
+                                .volume
+                                .set_property("volume", percent as f64 / 100.0);
+                        }
+                    },
+                    _ => {}
                 }
+
+                if let Some(msg) = bus.peek() {
+                    use gst::MessageView;
+
+                    match msg.view() {
+                        MessageView::Error(err) => {
+                            eprintln!(
+                                "Error received from element {:?} {}",
+                                err.src().map(|s| s.path_string()),
+                                err.error()
+                            );
+                            eprintln!("Debugging information: {:?}", err.debug());
+                            break;
+                        }
+                        MessageView::StateChanged(state_changed) => {
+                            if state_changed.src().map(|s| s == pipeline).unwrap_or(false) {
+                                state = state_changed.current();
+                            }
+                        }
+                        MessageView::Eos(..) => break,
+                        _ => (),
+                    }
+                }
+
+                // Send states to app
+                let _ = gta_tx.send(GstreamerToApp {
+                    state,
+                    position: pipeline
+                        .query_position::<gst::ClockTime>()
+                        .map(|c| c.seconds())
+                        .unwrap_or(0) as u32,
+                    duration: pipeline
+                        .query_duration::<gst::ClockTime>()
+                        .map(|c| c.seconds())
+                        .unwrap_or(0) as u32,
+                    volume: (audio_elements.volume.property::<f64>("volume").max(0.0) * 100.0)
+                        .min(u8::MAX as f64) as u8,
+                    video_frame,
+                });
             }
 
-            audio_volume.write().take();
             pipeline
-                .read()
-                .as_ref()
-                .expect("pipeline has not been taken yet")
                 .set_state(gst::State::Null)
                 .expect("Unable to set the pipeline to the `Null` state");
-            pipeline.write().take();
-            *state.write() = gst::State::Null;
         });
 
-        video_player
+        Self {
+            gl,
+
+            gta_rx,
+            atg_tx,
+
+            gta: GstreamerToApp::default(),
+        }
     }
 
     pub fn update(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
-        egui::Frame::canvas(ui.style()).show(ui, |ui| {
-            let max_size = {
-                let video_frame_guard = self.video_frame.read();
-                if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
-                    scale_fit_all(
-                        Vec2::new(
-                            ui.available_width(),
-                            ui.available_height() - CONTROLLER_HEIGHT,
-                        ),
-                        Vec2::new(
-                            video_frame_guard.width as f32,
-                            video_frame_guard.height as f32,
-                        ),
-                    )
-                } else {
-                    ui.available_size()
+        if let Some(video_frame) = self.gta.video_frame.clone() {
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                let max_size = {
+                    if video_frame.width > 0 && video_frame.height > 0 {
+                        scale_fit_all(
+                            Vec2::new(
+                                ui.available_width(),
+                                ui.available_height() - CONTROLLER_HEIGHT,
+                            ),
+                            Vec2::new(video_frame.width as f32, video_frame.height as f32),
+                        )
+                    } else {
+                        ui.available_size()
+                    }
+                };
+                let (rect, response) = ui.allocate_exact_size(max_size, egui::Sense::click());
+                if response.clicked() {
+                    if self.is_paused() {
+                        let _ = self.resume();
+                    } else {
+                        let _ = self.pause();
+                    }
                 }
-            };
-            let (rect, response) = ui.allocate_exact_size(max_size, egui::Sense::click());
-            if response.clicked() {
-                if self.is_paused() {
-                    let _ = self.resume();
-                } else {
-                    let _ = self.pause();
-                }
-            }
-            let video_frame = self.video_frame.clone();
-            let callback = egui::PaintCallback {
-                callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
-                    video_frame.read().paint();
-                })),
-                rect,
-            };
-            ui.painter().add(callback);
-        });
+                let callback = egui::PaintCallback {
+                    callback: Arc::new(egui_glow::CallbackFn::new(move |_info, painter| {
+                        video_frame.paint(painter.gl().as_ref());
+                    })),
+                    rect,
+                };
+                ui.painter().add(callback);
+            });
+        }
     }
 
     pub fn is_paused(&self) -> bool {
-        *self.state.read() == gst::State::Paused
+        self.gta.state == gst::State::Paused
     }
 
     fn is_end(&self) -> bool {
-        *self.state.read() == gst::State::Null
+        self.gta.state == gst::State::Null
     }
 
     pub fn position(&self) -> u32 {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline
-                .query_position::<gst::ClockTime>()
-                .map(|c| c.seconds())
-                .unwrap_or(0) as u32
-        } else {
-            0
-        }
+        self.gta.position
     }
 
     pub fn duration(&self) -> u32 {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline
-                .query_duration::<gst::ClockTime>()
-                .map(|c| c.seconds())
-                .unwrap_or(0) as u32
-        } else {
-            0
-        }
+        self.gta.duration
     }
 
     pub fn volume(&self) -> u8 {
-        if let Some(audio_volume) = self.audio_volume.read().as_ref() {
-            (audio_volume.property::<f64>("volume").max(0.0) * 100.0).min(u8::MAX as f64) as u8
-        } else {
-            0
-        }
+        self.gta.volume
     }
 
     fn start(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.set_state(gst::State::Playing)?;
-        }
+        self.atg_tx
+            .send(AppToGstreamer::State(gst::State::Playing))?;
         Ok(())
     }
 
     pub fn resume(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.set_state(gst::State::Playing)?;
-        }
+        self.atg_tx
+            .send(AppToGstreamer::State(gst::State::Playing))?;
         Ok(())
     }
 
     pub fn pause(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.set_state(gst::State::Paused)?;
-        }
+        self.atg_tx
+            .send(AppToGstreamer::State(gst::State::Paused))?;
         Ok(())
     }
 
     fn stop(&mut self) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.set_state(gst::State::Null)?;
-        }
-        Ok(())
-    }
-
-    pub fn set_volume(&mut self, percent: u8) -> Result<()> {
-        if let Some(audio_volume) = self.audio_volume.read().as_ref() {
-            audio_volume.set_property("volume", percent as f64 / 100.0);
-        }
+        self.atg_tx.send(AppToGstreamer::State(gst::State::Null))?;
         Ok(())
     }
 
     pub fn seek(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.seek_simple(
-                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
-                seconds as u64 * gst::ClockTime::SECOND,
-            )?;
-        }
+        self.atg_tx.send(AppToGstreamer::Position(seconds))?;
         Ok(())
     }
 
     pub fn fast_forward(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.seek_simple(
-                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
-                (pipeline
-                    .query_position::<gst::ClockTime>()
-                    .map(|c| c.seconds())
-                    .unwrap_or(0)
-                    + seconds as u64)
-                    * gst::ClockTime::SECOND,
-            )?;
-        }
+        self.atg_tx
+            .send(AppToGstreamer::Position(self.position() + seconds))?;
         Ok(())
     }
 
     pub fn rewind(&mut self, seconds: u32) -> Result<()> {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            pipeline.seek_simple(
-                gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
-                (pipeline
-                    .query_position::<gst::ClockTime>()
-                    .map(|c| c.seconds())
-                    .unwrap_or(0)
-                    .max(seconds as u64)
-                    - seconds as u64)
-                    * gst::ClockTime::SECOND,
-            )?;
-        }
+        self.atg_tx.send(AppToGstreamer::Position(
+            self.position().checked_sub(seconds).unwrap_or(0),
+        ))?;
+        Ok(())
+    }
+
+    pub fn set_volume(&mut self, percent: u8) -> Result<()> {
+        self.atg_tx.send(AppToGstreamer::Volume(percent))?;
         Ok(())
     }
 }
 
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            let _ = pipeline.set_state(gst::State::Null);
+        if let Some(video_frame) = &self.gta.video_frame {
+            use glow::HasContext as _;
+            unsafe {
+                self.gl.delete_texture(video_frame.texture);
+                self.gl.delete_buffer(video_frame.index_buffer);
+                self.gl.delete_buffer(video_frame.vertex_buffer);
+                self.gl.delete_vertex_array(video_frame.vertex_array);
+                self.gl.delete_program(video_frame.program);
+                self.gl.delete_shader(video_frame.fragment_shader);
+                self.gl.delete_shader(video_frame.vertex_shader);
+            }
         }
     }
 }

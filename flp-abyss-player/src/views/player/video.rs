@@ -26,9 +26,11 @@ impl VideoPlayer {
     fn new(player: &Player, ctx: &Context, gl: Arc<glow::Context>) -> Self {
         let playlist = player.playlist().expect("Playlist not found");
         match playlist.header.video_player {
-            config::VideoPlayer::Native => {
-                Self::Native(native::VideoPlayer::new(player.current_path(), gl, ctx))
-            }
+            config::VideoPlayer::Native => Self::Native(native::VideoPlayer::new(
+                player.current_path(),
+                gl,
+                ctx.clone(),
+            )),
             config::VideoPlayer::Vlc => Self::Vlc(vlc::VideoPlayer::new(
                 playlist
                     .header
@@ -129,7 +131,7 @@ pub struct MediaPlayer {
 
 impl MediaPlayer {
     pub fn new(player: &Player, ctx: &Context, gl: Arc<glow::Context>) -> Self {
-        let video_player = VideoPlayer::new(player, ctx, gl);
+        let video_player = VideoPlayer::new(player, ctx, gl.clone());
 
         Self {
             volume_icon: ButtonIcon::from_rgba_image_files(
