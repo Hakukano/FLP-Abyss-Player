@@ -38,7 +38,7 @@ impl Player {
         }
     }
 
-    pub fn current_path(&self) -> PathBuf {
+    pub fn current_path(&self) -> &str {
         let playlist = self.playlist().expect("Playlist not found");
         playlist
             .item_paths()

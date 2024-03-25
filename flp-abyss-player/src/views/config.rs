@@ -17,7 +17,7 @@ use super::{
 };
 
 pub struct View {
-    change_location_tx: Sender<Vec<String>>,
+    change_location_tx: Sender<ChangeLocation>,
 
     config: Config,
 
@@ -29,7 +29,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(id: &str, change_location_tx: Sender<Vec<String>>, ctx: &Context) -> Self {
+    pub fn new(id: &str, change_location_tx: Sender<ChangeLocation>, ctx: &Context) -> Self {
         Self {
             change_location_tx,
 

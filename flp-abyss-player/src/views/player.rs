@@ -1,10 +1,10 @@
 use eframe::egui::{
     Align, CentralPanel, Context, DragValue, Frame, Key, Layout, Margin, TextStyle::*,
-    TopBottomPanel, Vec2, Window,
+    TopBottomPanel, Ui, Vec2, Window,
 };
 use std::{
     collections::HashMap,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{mpsc::Sender, Arc},
 };
 
@@ -23,22 +23,37 @@ mod video;
 enum MediaPlayer {
     Server(server::MediaPlayer),
     Image(image::MediaPlayer),
-    Video(image::MediaPlayer),
+    Video(video::MediaPlayer),
 }
 
 impl MediaPlayer {
-    fn new(player: &Player, ctx: &Context) -> Self {
-        match player.playlist().expect("Playlist not found").media_type {
-            MediaType::Server => Self::Server(server::MediaPlayer::new()),
+    fn new(player: &Player, ctx: &Context, gl: Arc<glow::Context>) -> Self {
+        let playlist = player.playlist().expect("Playlist not found");
+        match playlist.header.media_type {
+            MediaType::Server => Self::Server(server::MediaPlayer::new(
+                playlist
+                    .item_paths()
+                    .iter()
+                    .map(|path| PathBuf::from(path))
+                    .collect(),
+            )),
             MediaType::Image => Self::Image(image::MediaPlayer::new(player, ctx)),
-            MediaType::Video => Self::Video(video::MediaPlayer::new(ctx, gl)),
+            MediaType::Video => Self::Video(video::MediaPlayer::new(player, ctx, gl)),
             _ => panic!("Unknown media type"),
+        }
+    }
+
+    fn update(&mut self, ui: &mut Ui, ctx: &Context, can_input: bool) {
+        match self {
+            MediaPlayer::Server(media_player) => media_player.update(ui, ctx),
+            MediaPlayer::Image(media_player) => media_player.update(ui),
+            MediaPlayer::Video(media_player) => media_player.update(ui, ctx, can_input),
         }
     }
 }
 
 pub struct View {
-    change_location_tx: Sender<Vec<String>>,
+    change_location_tx: Sender<ChangeLocation>,
 
     playlist: PlaylistWidget,
     player: Player,
@@ -56,7 +71,7 @@ pub struct View {
 impl View {
     pub fn new(
         id: &str,
-        change_location_tx: Sender<Vec<String>>,
+        change_location_tx: Sender<ChangeLocation>,
         ctx: &Context,
         gl: Arc<glow::Context>,
     ) -> Self {
@@ -70,7 +85,7 @@ impl View {
             .join("image")
             .join("icon");
 
-        let mut media_player = MediaPlayer::new(&player, ctx);
+        let mut media_player = MediaPlayer::new(&player, ctx, gl);
 
         Self {
             change_location_tx,
@@ -143,7 +158,7 @@ impl View {
                                 self.show_playlist = true;
                             }
                             if self.next_icon.show(max_size, ui).clicked() {
-                                self.state_buffer.next();
+                                self.player.next();
                             }
                             ui.label(gen_rich_text(
                                 ctx,
@@ -182,11 +197,11 @@ impl View {
                     ui.add_space(10.0);
                     ui.label(gen_rich_text(
                         ctx,
-                        self.state
+                        self.playlist
                             .playlist
                             .body
                             .item_paths
-                            .get(self.state.index)
+                            .get(self.player.index)
                             .expect("Out of bound: paths"),
                         Body,
                         None,
@@ -222,34 +237,33 @@ impl View {
                 left: 10.0,
             }))
             .show(ctx, |ui| {
-                if self.state.item_paths().is_empty() {
+                if self.playlist.playlist.item_paths().is_empty() {
                     return;
                 }
-                self.media_player
-                    .show_central_panel(ui, ctx, self.can_input());
+                self.media_player.update(ui, ctx, self.can_input());
             });
 
         if self.can_input() {
-            if ctx.input(|i| i.key_pressed(Key::J)) {
-                self.state_buffer.next();
+            if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
+                self.player.next();
             }
-            if ctx.input(|i| i.key_pressed(Key::K)) {
-                self.state_buffer.prev();
+            if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
+                self.player.prev();
             }
             if ctx.input(|i| i.key_pressed(Key::R)) {
-                self.state_buffer.random_next();
+                self.player.random_next();
             }
             if ctx.input(|i| i.key_pressed(Key::Num1)) {
-                self.state_buffer.repeat = !self.state_buffer.repeat;
+                self.player.repeat = !self.player.repeat;
             }
             if ctx.input(|i| i.key_pressed(Key::Num2)) {
-                self.state_buffer.auto = !self.state_buffer.auto;
+                self.player.auto = !self.player.auto;
             }
             if ctx.input(|i| i.key_pressed(Key::Num3)) {
-                self.state_buffer.lop = !self.state_buffer.lop;
+                self.player.lop = !self.player.lop;
             }
             if ctx.input(|i| i.key_pressed(Key::Num4)) {
-                self.state_buffer.random = !self.state_buffer.random;
+                self.player.random = !self.player.random;
             }
         }
 
