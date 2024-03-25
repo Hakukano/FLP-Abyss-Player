@@ -26,6 +26,17 @@ enum MediaPlayer {
     Video(image::MediaPlayer),
 }
 
+impl MediaPlayer {
+    pub fn new(player: &Player, ctx: &Context) -> Self {
+        match player.playlist().expect("Playlist not found").media_type {
+            MediaType::Server => MediaPlayer::Server(server::MediaPlayer::new()),
+            MediaType::Image => MediaPlayer::Image(image::MediaPlayer::new(player, ctx)),
+            MediaType::Video => MediaPlayer::Video(video::MediaPlayer::new(ctx, gl)),
+            _ => panic!("Unknown media type"),
+        }
+    }
+}
+
 pub struct View {
     change_location_tx: Sender<Vec<String>>,
 
@@ -59,12 +70,7 @@ impl View {
             .join("image")
             .join("icon");
 
-        let mut media_player = match playlist.header.media_type {
-            MediaType::Server => MediaPlayer::Server(server::MediaPlayer::new()),
-            MediaType::Image => MediaPlayer::Image(image::MediaPlayer::new()),
-            MediaType::Video => MediaPlayer::Video(video::MediaPlayer::new(ctx, gl)),
-            _ => panic!("Unknown media type"),
-        };
+        let mut media_player = MediaPlayer::new(&player, ctx);
 
         Self {
             change_location_tx,
@@ -91,20 +97,7 @@ impl View {
         !self.show_playlist
     }
 
-    pub fn reload_media_player(&mut self, ctx: &Context) {
-        self.media_player.reload(
-            self.state
-                .playlist
-                .body
-                .item_paths
-                .get(self.state_buffer.index)
-                .expect("Out of bound: paths"),
-            ctx,
-            &self.state_buffer,
-        );
-    }
-
-    pub fn update(&mut self, ctx: &Context) {
+    pub fn update(&mut self, ctx: &Context, need_to_tick: bool) {
         Window::new("playlist")
             .resizable(true)
             .default_size(Vec2::new(600.0, 600.0))

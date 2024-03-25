@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use super::{playlist::Playlist, Singleton};
 
@@ -36,6 +36,14 @@ impl Player {
             index: 0,
             playlist_id: playlist.id.clone(),
         }
+    }
+
+    pub fn current_path(&self) -> PathBuf {
+        let playlist = self.playlist().expect("Playlist not found");
+        playlist
+            .item_paths()
+            .get(self.index.max(0).min(playlist.item_paths().len() - 1))
+            .unwrap()
     }
 
     pub fn random_next(&mut self) {

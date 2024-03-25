@@ -128,7 +128,7 @@ impl eframe::App for Task {
         match &mut self.view {
             View::Init(view) => view.update(),
             View::Config(view) => view.update(ctx),
-            View::Player(view) => view.update(ctx),
+            View::Player(view) => view.update(ctx, need_to_tick),
             _ => {}
         }
     }
