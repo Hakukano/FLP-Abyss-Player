@@ -2,20 +2,19 @@ use eframe::egui::{
     Align, CentralPanel, Context, DragValue, Frame, Key, Layout, Margin, TextStyle::*,
     TopBottomPanel, Vec2, Window,
 };
-use serde_json::Value;
 use std::{
-    path::{Path, PathBuf},
+    collections::HashMap,
+    path::Path,
     sync::{mpsc::Sender, Arc},
 };
 
 use crate::{
-    models::{
-        config::{Config, MediaType},
-        player::Player,
-    },
-    utils::{cli::CLI, differ::Differ, fonts::gen_rich_text},
+    models::{config::MediaType, player::Player},
+    utils::{cli::CLI, fonts::gen_rich_text},
     views::widgets::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::PlaylistWidget},
 };
+
+use super::ChangeLocation;
 
 mod image;
 mod server;
@@ -28,15 +27,10 @@ enum MediaPlayer {
 }
 
 pub struct View {
+    change_location_tx: Sender<Vec<String>>,
+
     playlist: PlaylistWidget,
     player: Player,
-
-    search: bool,
-    search_str: String,
-    filtered_paths: Vec<(usize, String)>,
-
-    save: Option<PathBuf>,
-    load: Option<PathBuf>,
 
     player_bar: PlayerBar,
     prev_icon: ButtonIcon,
@@ -49,16 +43,17 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(id: &str, ctx: &Context, gl: Arc<glow::Context>) -> Self {
+    pub fn new(
+        id: &str,
+        change_location_tx: Sender<Vec<String>>,
+        ctx: &Context,
+        gl: Arc<glow::Context>,
+    ) -> Self {
         let player = Player::find(id).expect("Player not found");
-        let playlist = player.playlist().expect("Playlist not found");
-
-        let filtered_paths = playlist
-            .item_paths()
-            .iter()
-            .enumerate()
-            .map(|(i, p)| (i, p.clone()))
-            .collect();
+        let playlist = PlaylistWidget::new(
+            player.playlist().expect("Playlist not found").id.as_str(),
+            ctx,
+        );
 
         let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
@@ -72,14 +67,9 @@ impl View {
         };
 
         Self {
+            change_location_tx,
+
             player: player.clone(),
-
-            search: false,
-            search_str: String::new(),
-            filtered_paths,
-
-            save: None,
-            load: None,
 
             player_bar: PlayerBar::new(ctx),
             prev_icon: ButtonIcon::from_rgba_image_files("prev", icon_path.join("prev.png"), ctx),
@@ -89,7 +79,7 @@ impl View {
                 icon_path.join("playlist.png"),
                 ctx,
             ),
-            playlist: PlaylistWidget::new(playlist, ctx),
+            playlist,
 
             show_playlist: false,
 
@@ -114,22 +104,13 @@ impl View {
         );
     }
 
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    pub fn update(&mut self, ctx: &Context) {
         Window::new("playlist")
             .resizable(true)
             .default_size(Vec2::new(600.0, 600.0))
             .open(&mut self.show_playlist)
             .show(ctx, |ui| {
-                self.playlist.show(
-                    ui,
-                    ctx,
-                    &mut self.state_buffer,
-                    &mut self.search,
-                    &mut self.search_str,
-                    &self.filtered_paths,
-                    &mut self.save,
-                    &mut self.load,
-                );
+                self.playlist.show(ui, ctx, &mut self.player.index);
             });
 
         TopBottomPanel::top("title")
@@ -150,11 +131,11 @@ impl View {
                             self.player_bar.show(
                                 max_height,
                                 ui,
-                                &mut self.state_buffer.repeat,
-                                &mut self.state_buffer.auto,
-                                &mut self.state_buffer.auto_interval,
-                                &mut self.state_buffer.lop,
-                                &mut self.state_buffer.random,
+                                &mut self.player.repeat,
+                                &mut self.player.auto,
+                                &mut self.player.auto_interval,
+                                &mut self.player.lop,
+                                &mut self.player.random,
                             );
                         },
                     );
@@ -173,21 +154,23 @@ impl View {
                             }
                             ui.label(gen_rich_text(
                                 ctx,
-                                format!("/{}", self.state.item_paths().len()),
+                                format!("/{}", self.playlist.playlist.item_paths().len()),
                                 Body,
                                 None,
                             ));
                             ui.add(
-                                DragValue::new(&mut self.state_buffer.index)
+                                DragValue::new(&mut self.player.index)
                                     .speed(1)
-                                    .clamp_range(0..=(self.state.item_paths().len() - 1))
+                                    .clamp_range(
+                                        0..=(self.playlist.playlist.item_paths().len() - 1),
+                                    )
                                     .custom_formatter(|n, _| (n as usize + 1).to_string())
                                     .custom_parser(|s| {
                                         s.parse::<usize>().map(|n| (n - 1) as f64).ok()
                                     }),
                             );
                             if self.prev_icon.show(max_size, ui).clicked() {
-                                self.state_buffer.prev();
+                                self.player.prev();
                             }
                         },
                     );
@@ -220,11 +203,18 @@ impl View {
                             .button(gen_rich_text(ctx, t!("ui.view.home"), Body, None))
                             .clicked()
                         {
-                            self.packet_tx
-                                .send(Packet::new(
-                                    PacketName::ChangeView(ViewType::Config),
-                                    serde_json::to_value(Config::all()).unwrap(),
-                                ))
+                            self.change_location_tx
+                                .send(ChangeLocation {
+                                    path: vec![
+                                        "configs".to_string(),
+                                        self.playlist
+                                            .playlist
+                                            .config()
+                                            .expect("Config not found")
+                                            .id,
+                                    ],
+                                    query: HashMap::new(),
+                                })
                                 .unwrap();
                         }
                     });
@@ -271,67 +261,6 @@ impl View {
         }
 
         // Cleanup Phase
-        if self.state.auto != self.state_buffer.auto {
-            if self.state_buffer.auto {
-                self.signal_tx
-                    .send(Signal::new(
-                        SignalName::Start,
-                        serde_json::to_value(self.state_buffer.auto_interval).unwrap(),
-                    ))
-                    .unwrap();
-            } else {
-                self.signal_tx
-                    .send(Signal::new(SignalName::Stop, Value::Null))
-                    .unwrap();
-            }
-        }
-        if self.state.auto_interval != self.state_buffer.auto_interval {
-            self.signal_tx
-                .send(Signal::new(
-                    SignalName::Update,
-                    serde_json::to_value(self.state_buffer.auto_interval).unwrap(),
-                ))
-                .unwrap();
-        }
-        if self.state.index != self.state_buffer.index {
-            self.reload_media_player(ctx);
-        }
-        if let Some(diff) = self.state.diff(&self.state_buffer) {
-            self.command_tx
-                .send(Command::new(
-                    ControllerType::Player,
-                    CommandName::Update,
-                    diff,
-                ))
-                .unwrap();
-        }
-        if self.search {
-            self.command_tx
-                .send(Command::new(
-                    ControllerType::Player,
-                    CommandName::Search,
-                    serde_json::to_value(self.search_str.as_str()).unwrap(),
-                ))
-                .unwrap();
-            self.search = false;
-        }
-        if let Some(path) = self.save.take() {
-            self.command_tx
-                .send(Command::new(
-                    ControllerType::Player,
-                    CommandName::Save,
-                    serde_json::to_value(path.to_str().unwrap()).unwrap(),
-                ))
-                .unwrap();
-        }
-        if let Some(path) = self.load.take() {
-            self.command_tx
-                .send(Command::new(
-                    ControllerType::Player,
-                    CommandName::Load,
-                    serde_json::to_value(path.to_str().unwrap()).unwrap(),
-                ))
-                .unwrap();
-        }
+        self.player.save();
     }
 }

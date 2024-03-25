@@ -25,6 +25,7 @@ struct ChangeLocation {
 enum View {
     Init(init::View),
     Config(config::View),
+    Player(player::View),
 }
 
 pub struct Task {
@@ -94,7 +95,7 @@ impl Task {
 }
 
 impl eframe::App for Task {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         match self.change_location_rx.try_recv() {
             Ok(ChangeLocation { path, query }) => match path
                 .iter()
@@ -105,6 +106,14 @@ impl eframe::App for Task {
                 ["configs", id] => {
                     self.view =
                         View::Config(config::View::new(id, self.change_location_tx.clone(), ctx))
+                }
+                ["players", id] => {
+                    self.view = View::Player(player::View::new(
+                        id,
+                        self.change_location_tx.clone(),
+                        ctx,
+                        self.gl.clone(),
+                    ))
                 }
             },
             _ => {}
@@ -119,6 +128,7 @@ impl eframe::App for Task {
         match &mut self.view {
             View::Init(view) => view.update(),
             View::Config(view) => view.update(ctx),
+            View::Player(view) => view.update(ctx),
             _ => {}
         }
     }

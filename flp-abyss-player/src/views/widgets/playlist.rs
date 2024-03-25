@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use chrono::{DateTime, Local};
 use eframe::{
@@ -12,7 +12,6 @@ use eframe::{
 use crate::{
     models::{
         config::{MediaType, VideoPlayer},
-        player::Player,
         playlist::{self, Playlist},
     },
     utils::{cli::CLI, fonts::gen_rich_text},
@@ -24,7 +23,11 @@ use super::{
 };
 
 pub struct PlaylistWidget {
-    playlist: Playlist,
+    pub playlist: Playlist,
+
+    search: bool,
+    search_str: String,
+    filtered_paths: Vec<(usize, String)>,
 
     search_icon: ButtonIcon,
     add_one_icon: ButtonIcon,
@@ -40,12 +43,25 @@ pub struct PlaylistWidget {
 }
 
 impl PlaylistWidget {
-    pub fn new(playlist: Playlist, ctx: &egui::Context) -> Self {
+    pub fn new(id: &str, ctx: &egui::Context) -> Self {
         let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
+
+        let playlist = Playlist::find(id).expect("Playlist not found");
+
+        let filtered_paths = playlist
+            .item_paths()
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (i, p.clone()))
+            .collect();
         Self {
             playlist,
+
+            search: false,
+            search_str: String::new(),
+            filtered_paths,
 
             search_icon: ButtonIcon::from_rgba_image_files(
                 "search",
@@ -77,17 +93,7 @@ impl PlaylistWidget {
         }
     }
 
-    pub fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        ctx: &egui::Context,
-        player_buffer: &mut Player,
-        search: &mut bool,
-        search_str: &mut String,
-        filtered_paths: &[(usize, String)],
-        save: &mut Option<PathBuf>,
-        load: &mut Option<PathBuf>,
-    ) {
+    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, index: &mut usize) {
         ui.with_layout(Layout::top_down(Align::TOP), |ui| {
             ui.group(|ui| {
                 ui.with_layout(
@@ -95,18 +101,18 @@ impl PlaylistWidget {
                     |ui| {
                         let max_height = 20.0;
                         ui.set_height(max_height);
-                        let response = ui.text_edit_singleline(search_str);
+                        let response = ui.text_edit_singleline(&mut self.search_str);
                         if response.lost_focus()
                             && response.ctx.input(|i| i.key_pressed(egui::Key::Enter))
                         {
-                            *search = true;
+                            self.search = true;
                         }
                         if self
                             .search_icon
                             .show(Vec2::new(max_height, max_height), ui)
                             .clicked()
                         {
-                            *search = true;
+                            self.search = true;
                         }
 
                         ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
@@ -117,8 +123,8 @@ impl PlaylistWidget {
                             {
                                 if let Some(paths) = rfd::FileDialog::new().pick_folders() {
                                     for path in paths.into_iter() {
-                                        player_buffer.playlist.body.item_paths.append(
-                                            &mut player_buffer
+                                        self.playlist.body.item_paths.append(
+                                            &mut self
                                                 .playlist
                                                 .header
                                                 .media_type
@@ -139,15 +145,11 @@ impl PlaylistWidget {
                                 if let Some(paths) = rfd::FileDialog::new()
                                     .add_filter(
                                         "Media",
-                                        player_buffer
-                                            .playlist
-                                            .header
-                                            .media_type
-                                            .supported_extensions(),
+                                        self.playlist.header.media_type.supported_extensions(),
                                     )
                                     .pick_files()
                                 {
-                                    player_buffer.playlist.body.item_paths.append(
+                                    self.playlist.body.item_paths.append(
                                         &mut paths
                                             .into_iter()
                                             .map(|p| p.to_str().unwrap().to_string())
@@ -167,79 +169,76 @@ impl PlaylistWidget {
                 ui.spacing_mut().interact_size.y = max_height;
                 egui::ScrollArea::vertical()
                     .max_height(30.0 * max_height)
-                    .show_rows(ui, max_height, filtered_paths.len(), |ui, row_range| {
-                        for row in row_range {
-                            ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
-                                let (index, path) =
-                                    filtered_paths.get(row).expect("Out of range: paths");
-                                if ui
-                                    .button(gen_rich_text(
-                                        ctx,
-                                        path,
-                                        text_style.clone(),
-                                        if *index == player_buffer.index {
-                                            Some(Color32::LIGHT_GREEN)
-                                        } else {
-                                            None
-                                        },
-                                    ))
-                                    .clicked()
-                                {
-                                    player_buffer.index = *index;
-                                }
+                    .show_rows(
+                        ui,
+                        max_height,
+                        self.filtered_paths.len(),
+                        |ui, row_range| {
+                            for row in row_range {
+                                ui.with_layout(Layout::left_to_right(Align::TOP), |ui| {
+                                    let (index, path) =
+                                        self.filtered_paths.get(row).expect("Out of range: paths");
+                                    if ui
+                                        .button(gen_rich_text(
+                                            ctx,
+                                            path,
+                                            text_style.clone(),
+                                            if *index == self.index {
+                                                Some(Color32::LIGHT_GREEN)
+                                            } else {
+                                                None
+                                            },
+                                        ))
+                                        .clicked()
+                                    {
+                                        self.index = *index;
+                                    }
 
-                                ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
-                                    ui.spacing_mut().item_spacing.x = 5.0;
-                                    if self
-                                        .remove_icon
-                                        .show(Vec2::new(max_height, max_height), ui)
-                                        .clicked()
-                                    {
-                                        if *index != player_buffer.index {
-                                            player_buffer.playlist.body.item_paths.remove(*index);
+                                    ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
+                                        ui.spacing_mut().item_spacing.x = 5.0;
+                                        if self
+                                            .remove_icon
+                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .clicked()
+                                        {
+                                            if *index != self.index {
+                                                self.playlist.body.item_paths.remove(*index);
+                                            }
+                                            if *index < self.index {
+                                                self.index -= 1;
+                                            }
                                         }
-                                        if *index < player_buffer.index {
-                                            player_buffer.index -= 1;
+                                        if self
+                                            .down_icon
+                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .clicked()
+                                            && *index < self.playlist.body.item_paths.len() - 1
+                                        {
+                                            self.playlist.body.item_paths.swap(*index, *index + 1);
+                                            if *index == self.index {
+                                                self.index += 1;
+                                            } else if *index + 1 == self.index {
+                                                self.index -= 1;
+                                            }
                                         }
-                                    }
-                                    if self
-                                        .down_icon
-                                        .show(Vec2::new(max_height, max_height), ui)
-                                        .clicked()
-                                        && *index < player_buffer.playlist.body.item_paths.len() - 1
-                                    {
-                                        player_buffer
-                                            .playlist
-                                            .body
-                                            .item_paths
-                                            .swap(*index, *index + 1);
-                                        if *index == player_buffer.index {
-                                            player_buffer.index += 1;
-                                        } else if *index + 1 == player_buffer.index {
-                                            player_buffer.index -= 1;
+                                        if self
+                                            .up_icon
+                                            .show(Vec2::new(max_height, max_height), ui)
+                                            .clicked()
+                                            && *index > 0
+                                        {
+                                            self.playlist.body.item_paths.swap(*index, *index - 1);
+                                            if *index == self.index {
+                                                self.index -= 1;
+                                            } else if *index - 1 == self.index {
+                                                self.index += 1;
+                                            }
                                         }
-                                    }
-                                    if self
-                                        .up_icon
-                                        .show(Vec2::new(max_height, max_height), ui)
-                                        .clicked()
-                                        && *index > 0
-                                    {
-                                        player_buffer
-                                            .playlist
-                                            .body
-                                            .item_paths
-                                            .swap(*index, *index - 1);
-                                        if *index == player_buffer.index {
-                                            player_buffer.index -= 1;
-                                        } else if *index - 1 == player_buffer.index {
-                                            player_buffer.index += 1;
-                                        }
-                                    }
+                                    });
                                 });
-                            });
-                        }
-                    });
+                            }
+                        },
+                    );
             });
 
             ui.add_space(5.0);
@@ -258,7 +257,7 @@ impl PlaylistWidget {
                             .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
                             .save_file()
                         {
-                            save.replace(path);
+                            let _ = self.playlist.write(path);
                         }
                     }
 
@@ -273,14 +272,14 @@ impl PlaylistWidget {
                                 .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
                                 .pick_file()
                             {
-                                load.replace(path);
+                                let _ = self.playlist.read(path);
                             }
                         }
                     });
                 });
             });
 
-            let header = &mut player_buffer.playlist.header;
+            let header = &mut self.playlist.header;
             ui.add_space(5.0);
             ui.group(|ui| {
                 egui::Grid::new("header")
@@ -356,5 +355,8 @@ impl PlaylistWidget {
                     });
             });
         });
+
+        // Cleanup state
+        self.playlist.save();
     }
 }
