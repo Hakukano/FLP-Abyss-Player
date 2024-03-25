@@ -102,7 +102,10 @@ impl eframe::App for Task {
                 .collect::<Vec<_>>()
                 .as_slice()
             {
-                ["configs", id] => {}
+                ["configs", id] => {
+                    self.view =
+                        View::Config(config::View::new(id, self.change_location_tx.clone(), ctx))
+                }
             },
             _ => {}
         }
@@ -115,7 +118,7 @@ impl eframe::App for Task {
 
         match &mut self.view {
             View::Init(view) => view.update(),
-            View::Config(view) => {}
+            View::Config(view) => view.update(ctx),
             _ => {}
         }
     }

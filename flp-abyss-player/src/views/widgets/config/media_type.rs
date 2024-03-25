@@ -6,8 +6,9 @@ use eframe::{
 };
 
 use crate::{
-    models::config::MediaType, utils::fonts::gen_rich_text,
-    views::widgets::button_icon::ButtonIcon, CLI,
+    models::config::MediaType,
+    utils::{cli::CLI, fonts::gen_rich_text},
+    views::widgets::button_icon::ButtonIcon,
 };
 
 pub struct ConfigMediaType {

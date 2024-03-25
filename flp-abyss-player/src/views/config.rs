@@ -1,16 +1,28 @@
-use std::sync::mpsc::Sender;
+use std::{collections::HashMap, sync::mpsc::Sender};
 
-use eframe::egui::Context;
+use eframe::egui::{
+    Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel,
+};
+use serde_json::json;
+
+use crate::{
+    models::config::{Config, MediaType, VideoPlayer},
+    utils::{fonts::gen_rich_text, helper::message_dialog_error},
+};
+
+use super::{
+    widgets::config::{
+        media_type::ConfigMediaType, playlist_path::ConfigPlaylistPath, root_path::ConfigRootPath,
+        video_player::ConfigVideoPlayer, video_player_path::ConfigVideoPlayerPath,
+    },
+    ChangeLocation,
+};
 
 pub struct View {
     change_location_tx: Sender<Vec<String>>,
 
-    state: Config,
-    state_buffer: Config,
+    config: Config,
 
-    can_play: bool,
-
-    player_bar: PlayerBar,
     config_playlist_path: ConfigPlaylistPath,
     config_media_type: ConfigMediaType,
     config_root_path: ConfigRootPath,
@@ -19,16 +31,12 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(change_location_tx: Sender<Vec<String>>, ctx: &Context) -> Self {
+    pub fn new(id: &str, change_location_tx: Sender<Vec<String>>, ctx: &Context) -> Self {
         Self {
             change_location_tx,
 
-            state: config.clone(),
-            state_buffer: config,
+            config: Config::find(id).expect("Config not found"),
 
-            can_play: false,
-
-            player_bar: PlayerBar::new(ctx),
             config_playlist_path: ConfigPlaylistPath::new(ctx),
             config_media_type: ConfigMediaType::new(ctx),
             config_root_path: ConfigRootPath::new(ctx),
@@ -36,10 +44,8 @@ impl View {
             config_video_player_path: ConfigVideoPlayerPath::new(ctx),
         }
     }
-}
 
-impl super::View for View {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    pub fn update(&mut self, ctx: &Context) {
         TopBottomPanel::top("title")
             .frame(Frame::none().inner_margin(Margin {
                 top: 10.0,
@@ -65,13 +71,15 @@ impl super::View for View {
                         .button(gen_rich_text(ctx, t!("ui.config.go"), Button, None))
                         .clicked()
                     {
-                        if self.can_play {
-                            self.command_tx
-                                .send(Command::new(
-                                    ControllerType::Player,
-                                    CommandName::Reload,
-                                    Value::Null,
-                                ))
+                        if self.config.can_play() {
+                            self.change_location_tx
+                                .send(ChangeLocation {
+                                    path: vec!["players".to_string(), "default".to_string()],
+                                    query: HashMap::from_iter([
+                                        "playlist_id".to_string(),
+                                        json!("default"),
+                                    ]),
+                                })
                                 .unwrap();
                         } else {
                             message_dialog_error("Please set all required fields!");
@@ -84,78 +92,53 @@ impl super::View for View {
             .frame(Frame::menu(ctx.style().as_ref()))
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing.y = 10.0;
-                ui.with_layout(
-                    Layout::left_to_right(Align::TOP).with_cross_justify(true),
-                    |ui| {
-                        let max_height = 20.0;
-                        ui.set_height(max_height);
-                        self.player_bar.show(
-                            max_height,
-                            ui,
-                            &mut self.state_buffer.repeat,
-                            &mut self.state_buffer.auto,
-                            &mut self.state_buffer.auto_interval,
-                            &mut self.state_buffer.lop,
-                            &mut self.state_buffer.random,
-                        );
-                    },
-                );
 
                 ui.horizontal(|ui| {
-                    self.config_playlist_path.show_config(
-                        ui,
-                        ctx,
-                        &mut self.state_buffer.playlist_path,
-                    );
                     self.config_playlist_path
-                        .show_hint(ui, ctx, &self.state_buffer.playlist_path);
+                        .show_config(ui, ctx, &mut self.config.playlist_path);
+                    self.config_playlist_path
+                        .show_hint(ui, ctx, &self.config.playlist_path);
                 });
 
-                if self.state.playlist_path.is_none() {
+                if self.config.playlist_path.is_none() {
                     ui.horizontal(|ui| {
-                        self.config_media_type.show_config(
-                            ui,
-                            ctx,
-                            &mut self.state_buffer.media_type,
-                        );
                         self.config_media_type
-                            .show_hint(ui, ctx, &self.state.media_type);
+                            .show_config(ui, ctx, &mut self.config.media_type);
+                        self.config_media_type
+                            .show_hint(ui, ctx, &self.config.media_type);
                     });
 
                     ui.horizontal(|ui| {
-                        self.config_root_path.show_config(
-                            ui,
-                            ctx,
-                            &mut self.state_buffer.root_path,
-                        );
                         self.config_root_path
-                            .show_hint(ui, ctx, &self.state_buffer.root_path);
+                            .show_config(ui, ctx, &mut self.config.root_path);
+                        self.config_root_path
+                            .show_hint(ui, ctx, &self.config.root_path);
                     });
 
-                    if self.state.media_type == MediaType::Video {
+                    if self.config.media_type == MediaType::Video {
                         ui.horizontal(|ui| {
                             self.config_video_player.show_config(
                                 ui,
                                 ctx,
-                                &mut self.state_buffer.video_player,
+                                &mut self.config.video_player,
                             );
                             self.config_video_player
-                                .show_hint(ui, ctx, &self.state.video_player);
+                                .show_hint(ui, ctx, &self.config.video_player);
                         });
 
-                        match self.state.video_player {
+                        match self.config.video_player {
                             VideoPlayer::Native => {}
                             _ => {
                                 ui.horizontal(|ui| {
                                     self.config_video_player_path.show_config(
                                         ui,
                                         ctx,
-                                        &mut self.state_buffer.video_player_path,
+                                        &mut self.config.video_player_path,
                                     );
                                     self.config_video_player_path.show_hint(
                                         ui,
                                         ctx,
-                                        &self.state_buffer.video_player_path,
+                                        &self.config.video_player_path,
                                     );
                                 });
                             }
@@ -165,14 +148,6 @@ impl super::View for View {
             });
 
         // Cleanup phase
-        if let Some(diff) = self.state.diff(&self.state_buffer) {
-            self.command_tx
-                .send(Command::new(
-                    ControllerType::Config,
-                    CommandName::Update,
-                    diff,
-                ))
-                .unwrap();
-        }
+        self.config.save();
     }
 }

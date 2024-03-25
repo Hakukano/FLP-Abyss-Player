@@ -5,7 +5,10 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::{utils::fonts::gen_rich_text, views::widgets::button_icon::ButtonIcon, CLI};
+use crate::{
+    utils::{cli::CLI, fonts::gen_rich_text},
+    views::widgets::button_icon::ButtonIcon,
+};
 
 pub struct ConfigRootPath {
     checkmark: ButtonIcon,

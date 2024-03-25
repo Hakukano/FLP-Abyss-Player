@@ -4,7 +4,7 @@ use std::path::Path;
 
 use eframe::{egui, epaint::Vec2};
 
-use crate::{models::config::AUTO_INTERVAL_RANGE, CLI};
+use crate::{models::config::AUTO_INTERVAL_RANGE, utils::cli::CLI};
 
 use super::toggle_icon::ToggleIcon;
 
