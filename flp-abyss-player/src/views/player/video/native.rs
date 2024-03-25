@@ -856,7 +856,7 @@ impl VideoPlayer {
         self.gta.state == gst::State::Paused
     }
 
-    fn is_end(&self) -> bool {
+    pub fn is_end(&self) -> bool {
         self.gta.state == gst::State::Null
     }
 

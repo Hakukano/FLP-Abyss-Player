@@ -117,6 +117,13 @@ impl VideoPlayer {
             VideoPlayer::Vlc(video_player) => video_player.resume(),
         }
     }
+
+    fn is_end(&self) -> bool {
+        match self {
+            VideoPlayer::Native(video_player) => video_player.is_end(),
+            VideoPlayer::Vlc(video_player) => video_player.is_end(),
+        }
+    }
 }
 
 pub struct MediaPlayer {
@@ -141,6 +148,7 @@ impl MediaPlayer {
             video_player,
         }
     }
+
     pub fn update(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
         self.video_player.update(ui, ctx);
 
@@ -205,5 +213,9 @@ impl MediaPlayer {
                 let _ = self.video_player.rewind(5);
             }
         }
+    }
+
+    pub fn is_end(&self) -> bool {
+        self.video_player.is_end()
     }
 }

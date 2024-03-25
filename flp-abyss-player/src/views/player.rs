@@ -46,6 +46,14 @@ impl MediaPlayer {
             MediaPlayer::Video(media_player) => media_player.update(ui, ctx, can_input),
         }
     }
+
+    fn is_end(&self) -> bool {
+        match self {
+            MediaPlayer::Server(_) => true,
+            MediaPlayer::Image(_) => true,
+            MediaPlayer::Video(media_player) => media_player.is_end(),
+        }
+    }
 }
 
 pub struct View {
@@ -112,7 +120,7 @@ impl View {
     pub fn update(&mut self, ctx: &Context, need_to_tick: bool) {
         let mut need_to_reload = false;
 
-        if need_to_tick {
+        if self.media_player.is_end() && need_to_tick {
             self.player.next();
             need_to_reload = true;
         }

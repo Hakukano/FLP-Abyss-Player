@@ -259,7 +259,7 @@ impl VideoPlayer {
         self.played.load(Ordering::Acquire) && self.status.read().state == "paused"
     }
 
-    fn is_end(&self) -> bool {
+    pub fn is_end(&self) -> bool {
         self.played.load(Ordering::Acquire) && self.status.read().state == "stopped"
     }
 
