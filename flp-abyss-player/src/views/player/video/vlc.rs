@@ -105,7 +105,7 @@ impl VideoPlayer {
     pub fn new(
         player_path: impl AsRef<Path>,
         video_path: impl AsRef<Path>,
-        ctx: egui::Context,
+        ctx: &egui::Context,
     ) -> Self {
         let pg = PasswordGenerator {
             length: 16,
@@ -197,7 +197,7 @@ impl VideoPlayer {
         video_player
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    pub fn update(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let status = self.status.read();
 
         ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
@@ -255,7 +255,7 @@ impl VideoPlayer {
         });
     }
 
-    fn is_paused(&self) -> bool {
+    pub fn is_paused(&self) -> bool {
         self.played.load(Ordering::Acquire) && self.status.read().state == "paused"
     }
 
@@ -263,15 +263,15 @@ impl VideoPlayer {
         self.played.load(Ordering::Acquire) && self.status.read().state == "stopped"
     }
 
-    fn position(&self) -> u32 {
+    pub fn position(&self) -> u32 {
         self.status.read().time
     }
 
-    fn duration(&self) -> u32 {
+    pub fn duration(&self) -> u32 {
         self.status.read().length
     }
 
-    fn volume(&self) -> u8 {
+    pub fn volume(&self) -> u8 {
         ((self.status.read().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
     }
 
@@ -282,12 +282,12 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn resume(&mut self) -> Result<()> {
+    pub fn resume(&mut self) -> Result<()> {
         self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
         Ok(())
     }
 
-    fn pause(&mut self) -> Result<()> {
+    pub fn pause(&mut self) -> Result<()> {
         self.send_status_get_request(vec![("command".to_string(), "pl_pause".to_string())]);
         Ok(())
     }
@@ -299,7 +299,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn set_volume(&mut self, percent: u8) -> Result<()> {
+    pub fn set_volume(&mut self, percent: u8) -> Result<()> {
         self.send_status_get_request(vec![
             ("command".to_string(), "volume".to_string()),
             ("val".to_string(), format!("{percent}%")),
@@ -307,7 +307,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn seek(&mut self, seconds: u32) -> Result<()> {
+    pub fn seek(&mut self, seconds: u32) -> Result<()> {
         self.send_status_get_request(vec![
             ("command".to_string(), "seek".to_string()),
             ("val".to_string(), format!("{seconds}")),
@@ -315,7 +315,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn fast_forward(&mut self, seconds: u32) -> Result<()> {
+    pub fn fast_forward(&mut self, seconds: u32) -> Result<()> {
         self.send_status_get_request(vec![
             ("command".to_string(), "seek".to_string()),
             ("val".to_string(), format!("+{seconds}")),
@@ -323,7 +323,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn rewind(&mut self, seconds: u32) -> Result<()> {
+    pub fn rewind(&mut self, seconds: u32) -> Result<()> {
         self.send_status_get_request(vec![
             ("command".to_string(), "seek".to_string()),
             ("val".to_string(), format!("-{seconds}")),

@@ -685,7 +685,7 @@ pub struct VideoPlayer {
 }
 
 impl VideoPlayer {
-    pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: egui::Context) -> Self {
+    pub fn new(video_path: impl AsRef<Path>, gl: Arc<glow::Context>, ctx: &egui::Context) -> Self {
         let video_player = Self {
             audio_volume: Arc::new(RwLock::new(None)),
             pipeline: Arc::new(RwLock::new(None)),
@@ -774,7 +774,7 @@ impl VideoPlayer {
         video_player
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    pub fn update(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let max_size = {
                 let video_frame_guard = self.video_frame.read();
@@ -812,7 +812,7 @@ impl VideoPlayer {
         });
     }
 
-    fn is_paused(&self) -> bool {
+    pub fn is_paused(&self) -> bool {
         *self.state.read() == gst::State::Paused
     }
 
@@ -820,7 +820,7 @@ impl VideoPlayer {
         *self.state.read() == gst::State::Null
     }
 
-    fn position(&self) -> u32 {
+    pub fn position(&self) -> u32 {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline
                 .query_position::<gst::ClockTime>()
@@ -831,7 +831,7 @@ impl VideoPlayer {
         }
     }
 
-    fn duration(&self) -> u32 {
+    pub fn duration(&self) -> u32 {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline
                 .query_duration::<gst::ClockTime>()
@@ -842,7 +842,7 @@ impl VideoPlayer {
         }
     }
 
-    fn volume(&self) -> u8 {
+    pub fn volume(&self) -> u8 {
         if let Some(audio_volume) = self.audio_volume.read().as_ref() {
             (audio_volume.property::<f64>("volume").max(0.0) * 100.0).min(u8::MAX as f64) as u8
         } else {
@@ -857,14 +857,14 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn resume(&mut self) -> Result<()> {
+    pub fn resume(&mut self) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Playing)?;
         }
         Ok(())
     }
 
-    fn pause(&mut self) -> Result<()> {
+    pub fn pause(&mut self) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.set_state(gst::State::Paused)?;
         }
@@ -878,14 +878,14 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn set_volume(&mut self, percent: u8) -> Result<()> {
+    pub fn set_volume(&mut self, percent: u8) -> Result<()> {
         if let Some(audio_volume) = self.audio_volume.read().as_ref() {
             audio_volume.set_property("volume", percent as f64 / 100.0);
         }
         Ok(())
     }
 
-    fn seek(&mut self, seconds: u32) -> Result<()> {
+    pub fn seek(&mut self, seconds: u32) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
@@ -895,7 +895,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn fast_forward(&mut self, seconds: u32) -> Result<()> {
+    pub fn fast_forward(&mut self, seconds: u32) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
@@ -910,7 +910,7 @@ impl VideoPlayer {
         Ok(())
     }
 
-    fn rewind(&mut self, seconds: u32) -> Result<()> {
+    pub fn rewind(&mut self, seconds: u32) -> Result<()> {
         if let Some(pipeline) = self.pipeline.read().as_ref() {
             pipeline.seek_simple(
                 gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
