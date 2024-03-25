@@ -19,10 +19,10 @@ impl View {
     pub fn update(&mut self) {
         if !self.initialized {
             self.initialized = true;
-            self.change_location_tx.send(ChangeLocation {
+            let _ = self.change_location_tx.send(ChangeLocation {
                 path: vec!["configs".to_string(), "default".to_string()],
                 query: HashMap::new(),
-            })
+            });
         }
     }
 }

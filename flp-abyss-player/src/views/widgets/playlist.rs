@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::path::Path;
 
 use chrono::{DateTime, Local};
@@ -93,7 +91,7 @@ impl PlaylistWidget {
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, index: &mut usize) {
+    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, current_index: &mut usize) {
         ui.with_layout(Layout::top_down(Align::TOP), |ui| {
             ui.group(|ui| {
                 ui.with_layout(
@@ -183,7 +181,7 @@ impl PlaylistWidget {
                                             ctx,
                                             path,
                                             text_style.clone(),
-                                            if *index == self.index {
+                                            if *index == *current_index {
                                                 Some(Color32::LIGHT_GREEN)
                                             } else {
                                                 None
@@ -191,7 +189,7 @@ impl PlaylistWidget {
                                         ))
                                         .clicked()
                                     {
-                                        self.index = *index;
+                                        *current_index = *index;
                                     }
 
                                     ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
@@ -201,11 +199,11 @@ impl PlaylistWidget {
                                             .show(Vec2::new(max_height, max_height), ui)
                                             .clicked()
                                         {
-                                            if *index != self.index {
+                                            if *index != *current_index {
                                                 self.playlist.body.item_paths.remove(*index);
                                             }
-                                            if *index < self.index {
-                                                self.index -= 1;
+                                            if *index < *current_index {
+                                                *current_index -= 1;
                                             }
                                         }
                                         if self
@@ -215,10 +213,10 @@ impl PlaylistWidget {
                                             && *index < self.playlist.body.item_paths.len() - 1
                                         {
                                             self.playlist.body.item_paths.swap(*index, *index + 1);
-                                            if *index == self.index {
-                                                self.index += 1;
-                                            } else if *index + 1 == self.index {
-                                                self.index -= 1;
+                                            if *index == *current_index {
+                                                *current_index += 1;
+                                            } else if *index + 1 == *current_index {
+                                                *current_index -= 1;
                                             }
                                         }
                                         if self
@@ -228,10 +226,10 @@ impl PlaylistWidget {
                                             && *index > 0
                                         {
                                             self.playlist.body.item_paths.swap(*index, *index - 1);
-                                            if *index == self.index {
-                                                self.index -= 1;
-                                            } else if *index - 1 == self.index {
-                                                self.index += 1;
+                                            if *index == *current_index {
+                                                *current_index -= 1;
+                                            } else if *index - 1 == *current_index {
+                                                *current_index += 1;
                                             }
                                         }
                                     });

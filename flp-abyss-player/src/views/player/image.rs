@@ -29,7 +29,7 @@ impl MediaPlayer {
     pub fn update(&mut self, ui: &mut egui::Ui) {
         ui.centered_and_justified(|ui| {
             ui.add(
-                Image::new(ImageSource::Texture(self.texture.into())).fit_to_exact_size(
+                Image::new(ImageSource::Texture((&self.texture).into())).fit_to_exact_size(
                     scale_fit_all(ui.available_size(), self.texture.size_vec2()),
                 ),
             );
