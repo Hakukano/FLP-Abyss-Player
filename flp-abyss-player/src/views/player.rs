@@ -1,6 +1,6 @@
 use eframe::egui::{
     Align, CentralPanel, Context, DragValue, Frame, Key, Layout, Margin, TextStyle::*,
-    TopBottomPanel, Ui, Vec2, Window,
+    TopBottomPanel, Vec2, Window,
 };
 use serde_json::Value;
 use std::{
@@ -9,39 +9,27 @@ use std::{
 };
 
 use crate::{
-    controllers::{Command, CommandName, ControllerType},
     models::{
         config::{Config, MediaType},
         player::Player,
     },
-    utils::{differ::Differ, fonts::gen_rich_text},
-    views::{
-        timer::{Signal, SignalName},
-        widgets::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::Playlist},
-        Packet, PacketName, ViewType,
-    },
-    CLI,
+    utils::{cli::CLI, differ::Differ, fonts::gen_rich_text},
+    views::widgets::{button_icon::ButtonIcon, player_bar::PlayerBar, playlist::PlaylistWidget},
 };
 
 mod image;
 mod server;
 mod video;
 
-pub trait MediaPlayer {
-    fn is_loaded(&self) -> bool;
-    fn is_end(&self) -> bool;
-    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &Context, state: &Player);
-    fn sync(&mut self, state: &Player);
-    fn show_central_panel(&mut self, ui: &mut Ui, ctx: &Context, can_input: bool);
+enum MediaPlayer {
+    Server(server::MediaPlayer),
+    Image(image::MediaPlayer),
+    Video(image::MediaPlayer),
 }
 
 pub struct View {
-    packet_tx: Sender<Packet>,
-    command_tx: Sender<Command>,
-    signal_tx: Sender<Signal>,
-
-    state: Player,
-    state_buffer: Player,
+    playlist: PlaylistWidget,
+    player: Player,
 
     search: bool,
     search_str: String,
@@ -54,59 +42,41 @@ pub struct View {
     prev_icon: ButtonIcon,
     next_icon: ButtonIcon,
     playlist_icon: ButtonIcon,
-    playlist: Playlist,
 
     show_playlist: bool,
 
-    media_player: Box<dyn MediaPlayer>,
+    media_player: MediaPlayer,
 }
 
 impl View {
-    pub fn new(
-        player: Player,
-        packet_tx: Sender<Packet>,
-        command_tx: Sender<Command>,
-        signal_tx: Sender<Signal>,
-        ctx: &Context,
-        gl: Arc<glow::Context>,
-    ) -> Self {
-        let mut media_player: Box<dyn MediaPlayer> = match player.playlist.header.media_type {
-            MediaType::Server => Box::new(server::MediaPlayer::new()),
-            MediaType::Image => Box::new(image::MediaPlayer::new()),
-            MediaType::Video => Box::new(video::MediaPlayer::new(ctx, gl)),
-            _ => panic!("Unknown media type"),
-        };
-        media_player.reload(
-            player
-                .playlist
-                .body
-                .item_paths
-                .first()
-                .expect("Out of bound: paths"),
-            ctx,
-            &player,
-        );
+    pub fn new(id: &str, ctx: &Context, gl: Arc<glow::Context>) -> Self {
+        let player = Player::find(id).expect("Player not found");
+        let playlist = player.playlist().expect("Playlist not found");
+
+        let filtered_paths = playlist
+            .item_paths()
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (i, p.clone()))
+            .collect();
+
         let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
-        Self {
-            packet_tx,
-            command_tx,
-            signal_tx,
 
-            state: player.clone(),
-            state_buffer: player.clone(),
+        let mut media_player = match playlist.header.media_type {
+            MediaType::Server => MediaPlayer::Server(server::MediaPlayer::new()),
+            MediaType::Image => MediaPlayer::Image(image::MediaPlayer::new()),
+            MediaType::Video => MediaPlayer::Video(video::MediaPlayer::new(ctx, gl)),
+            _ => panic!("Unknown media type"),
+        };
+
+        Self {
+            player: player.clone(),
 
             search: false,
             search_str: String::new(),
-            filtered_paths: player
-                .playlist
-                .body
-                .item_paths
-                .iter()
-                .enumerate()
-                .map(|(i, p)| (i, p.clone()))
-                .collect(),
+            filtered_paths,
 
             save: None,
             load: None,
@@ -119,7 +89,7 @@ impl View {
                 icon_path.join("playlist.png"),
                 ctx,
             ),
-            playlist: Playlist::new(ctx),
+            playlist: PlaylistWidget::new(playlist, ctx),
 
             show_playlist: false,
 
@@ -142,27 +112,6 @@ impl View {
             ctx,
             &self.state_buffer,
         );
-    }
-}
-
-impl super::View for View {
-    fn handle(&mut self, packet: Packet) {
-        match packet.name {
-            PacketName::Update => {
-                let player: Player = serde_json::from_value(packet.data).unwrap();
-                self.state = player;
-                self.state_buffer = self.state.clone();
-                self.filtered_paths = self.state.playlist.filter(self.search_str.as_str());
-                self.media_player.sync(&self.state);
-            }
-            PacketName::Filter => {
-                self.filtered_paths = serde_json::from_value(packet.data).unwrap();
-            }
-            PacketName::Tick => {
-                self.state_buffer.next();
-            }
-            _ => {}
-        }
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {

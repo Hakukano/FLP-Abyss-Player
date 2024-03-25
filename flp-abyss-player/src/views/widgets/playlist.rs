@@ -13,10 +13,9 @@ use crate::{
     models::{
         config::{MediaType, VideoPlayer},
         player::Player,
+        playlist::{self, Playlist},
     },
-    utils,
-    utils::fonts::gen_rich_text,
-    CLI,
+    utils::{cli::CLI, fonts::gen_rich_text},
 };
 
 use super::{
@@ -24,7 +23,9 @@ use super::{
     config::{video_player::ConfigVideoPlayer, video_player_path::ConfigVideoPlayerPath},
 };
 
-pub struct Playlist {
+pub struct PlaylistWidget {
+    playlist: Playlist,
+
     search_icon: ButtonIcon,
     add_one_icon: ButtonIcon,
     add_many_icon: ButtonIcon,
@@ -38,12 +39,14 @@ pub struct Playlist {
     config_video_player_path: ConfigVideoPlayerPath,
 }
 
-impl Playlist {
-    pub fn new(ctx: &egui::Context) -> Self {
+impl PlaylistWidget {
+    pub fn new(playlist: Playlist, ctx: &egui::Context) -> Self {
         let icon_path = Path::new(CLI.assets_path.as_str())
             .join("image")
             .join("icon");
         Self {
+            playlist,
+
             search_icon: ButtonIcon::from_rgba_image_files(
                 "search",
                 icon_path.join("search.png"),
@@ -252,7 +255,7 @@ impl Playlist {
                     {
                         if let Some(path) = rfd::FileDialog::new()
                             .set_title("SAVE")
-                            .add_filter(utils::playlist::EXTENSION, &[utils::playlist::EXTENSION])
+                            .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
                             .save_file()
                         {
                             save.replace(path);
@@ -267,10 +270,7 @@ impl Playlist {
                         {
                             if let Some(path) = rfd::FileDialog::new()
                                 .set_title("LOAD")
-                                .add_filter(
-                                    utils::playlist::EXTENSION,
-                                    &[utils::playlist::EXTENSION],
-                                )
+                                .add_filter(playlist::EXTENSION, &[playlist::EXTENSION])
                                 .pick_file()
                             {
                                 load.replace(path);

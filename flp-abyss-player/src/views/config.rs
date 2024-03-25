@@ -1,13 +1,11 @@
 use std::{collections::HashMap, sync::mpsc::Sender};
 
-use eframe::egui::{
-    Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel,
-};
-use serde_json::json;
-
 use crate::{
     models::config::{Config, MediaType, VideoPlayer},
     utils::{fonts::gen_rich_text, helper::message_dialog_error},
+};
+use eframe::egui::{
+    Align, CentralPanel, Context, Frame, Layout, Margin, TextStyle::*, TopBottomPanel,
 };
 
 use super::{
@@ -75,10 +73,7 @@ impl View {
                             self.change_location_tx
                                 .send(ChangeLocation {
                                     path: vec!["players".to_string(), "default".to_string()],
-                                    query: HashMap::from_iter([
-                                        "playlist_id".to_string(),
-                                        json!("default"),
-                                    ]),
+                                    query: HashMap::new(),
                                 })
                                 .unwrap();
                         } else {
