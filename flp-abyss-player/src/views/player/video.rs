@@ -1,4 +1,3 @@
-use anyhow::Result;
 use eframe::{
     egui::{self, Key, Layout, TextStyle},
     emath::Align,
@@ -8,9 +7,8 @@ use std::{collections::VecDeque, path::Path, sync::Arc};
 
 use crate::{
     models::{config, player::Player},
-    utils::{fonts::gen_rich_text, helper::seconds_to_h_m_s},
+    utils::{cli::CLI, fonts::gen_rich_text, helper::seconds_to_h_m_s},
     views::widgets::button_icon::ButtonIcon,
-    CLI,
 };
 
 mod native;
@@ -18,35 +16,40 @@ mod vlc;
 
 const CONTROLLER_HEIGHT: f32 = 20.0;
 
-pub trait VideoPlayer {
-    fn is_paused(&self) -> bool;
-    fn is_end(&self) -> bool;
-    fn position(&self) -> u32;
-    fn duration(&self) -> u32;
-    fn volume(&self) -> u8;
-    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
-    fn start(&mut self) -> Result<()>;
-    fn resume(&mut self) -> Result<()>;
-    fn pause(&mut self) -> Result<()>;
-    fn stop(&mut self) -> Result<()>;
-    fn set_volume(&mut self, percent: u8) -> Result<()>;
-    fn seek(&mut self, seconds: u32) -> Result<()>;
-    fn fast_forward(&mut self, seconds: u32) -> Result<()>;
-    fn rewind(&mut self, seconds: u32) -> Result<()>;
+enum VideoPlayer {
+    Native,
+    Vlc,
+}
+
+impl VideoPlayer {
+    fn new(player: &Player) -> Self {
+        match player
+            .playlist()
+            .expect("Playlist not found")
+            .header
+            .video_player
+        {
+            config::VideoPlayer::Native => Self::Native,
+            config::VideoPlayer::Vlc => Self::Vlc,
+            _ => panic!("No video player selected"),
+        }
+    }
 }
 
 pub struct MediaPlayer {
     volume_icon: ButtonIcon,
 
-    video_player: Option<Box<dyn VideoPlayer>>,
-
     error: VecDeque<String>,
 
     gl: Arc<glow::Context>,
+
+    video_player: VideoPlayer,
 }
 
 impl MediaPlayer {
-    pub fn new(ctx: &egui::Context, gl: Arc<glow::Context>) -> Self {
+    pub fn new(player: &Player, ctx: &egui::Context, gl: Arc<glow::Context>) -> Self {
+        let video_player = VideoPlayer::new(player);
+
         Self {
             volume_icon: ButtonIcon::from_rgba_image_files(
                 "volume",
@@ -56,55 +59,12 @@ impl MediaPlayer {
                     .join("volume.png"),
                 ctx,
             ),
-            video_player: None,
+            video_player,
             error: VecDeque::new(),
             gl,
         }
     }
-}
-
-impl super::MediaPlayer for MediaPlayer {
-    fn is_loaded(&self) -> bool {
-        self.video_player.is_some()
-    }
-
-    fn is_end(&self) -> bool {
-        self.video_player
-            .as_ref()
-            .map(|v| v.is_end())
-            .unwrap_or(false)
-    }
-
-    fn reload(&mut self, path: &dyn AsRef<Path>, ctx: &egui::Context, state: &Player) {
-        let player = &state.playlist.header.video_player;
-        let player_path = &state.playlist.header.video_player_path;
-        if let Some(mut video_player) = self.video_player.take() {
-            if let Err(err) = video_player.stop() {
-                self.error.push_back(err.to_string());
-            }
-        }
-        let mut video_player: Box<dyn VideoPlayer> = match player {
-            config::VideoPlayer::Native => {
-                Box::new(native::VideoPlayer::new(path, self.gl.clone(), ctx.clone()))
-            }
-            config::VideoPlayer::Vlc => Box::new(vlc::VideoPlayer::new(
-                player_path
-                    .as_ref()
-                    .expect("Player path should be available at this point"),
-                path,
-                ctx.clone(),
-            )),
-            _ => panic!("Unknown video player: {:?}", player),
-        };
-        if let Err(err) = video_player.start() {
-            self.error.push_back(err.to_string());
-        }
-        self.video_player.replace(video_player);
-    }
-
-    fn sync(&mut self, _paths: &Player) {}
-
-    fn show_central_panel(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
+    pub fn update(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, can_input: bool) {
         if let Some(video_player) = self.video_player.as_mut() {
             video_player.show(ui, ctx);
 

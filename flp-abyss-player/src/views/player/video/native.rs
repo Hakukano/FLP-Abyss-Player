@@ -773,17 +773,45 @@ impl VideoPlayer {
 
         video_player
     }
-}
 
-impl Drop for VideoPlayer {
-    fn drop(&mut self) {
-        if let Some(pipeline) = self.pipeline.read().as_ref() {
-            let _ = pipeline.set_state(gst::State::Null);
-        }
+    pub fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        egui::Frame::canvas(ui.style()).show(ui, |ui| {
+            let max_size = {
+                let video_frame_guard = self.video_frame.read();
+                if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
+                    scale_fit_all(
+                        Vec2::new(
+                            ui.available_width(),
+                            ui.available_height() - CONTROLLER_HEIGHT,
+                        ),
+                        Vec2::new(
+                            video_frame_guard.width as f32,
+                            video_frame_guard.height as f32,
+                        ),
+                    )
+                } else {
+                    ui.available_size()
+                }
+            };
+            let (rect, response) = ui.allocate_exact_size(max_size, egui::Sense::click());
+            if response.clicked() {
+                if self.is_paused() {
+                    let _ = self.resume();
+                } else {
+                    let _ = self.pause();
+                }
+            }
+            let video_frame = self.video_frame.clone();
+            let callback = egui::PaintCallback {
+                callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
+                    video_frame.read().paint();
+                })),
+                rect,
+            };
+            ui.painter().add(callback);
+        });
     }
-}
 
-impl super::VideoPlayer for VideoPlayer {
     fn is_paused(&self) -> bool {
         *self.state.read() == gst::State::Paused
     }
@@ -820,44 +848,6 @@ impl super::VideoPlayer for VideoPlayer {
         } else {
             0
         }
-    }
-
-    fn show(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
-        egui::Frame::canvas(ui.style()).show(ui, |ui| {
-            let max_size = {
-                let video_frame_guard = self.video_frame.read();
-                if video_frame_guard.width > 0 && video_frame_guard.height > 0 {
-                    scale_fit_all(
-                        Vec2::new(
-                            ui.available_width(),
-                            ui.available_height() - CONTROLLER_HEIGHT,
-                        ),
-                        Vec2::new(
-                            video_frame_guard.width as f32,
-                            video_frame_guard.height as f32,
-                        ),
-                    )
-                } else {
-                    ui.available_size()
-                }
-            };
-            let (rect, response) = ui.allocate_exact_size(max_size, egui::Sense::click());
-            if response.clicked() {
-                if self.is_paused() {
-                    let _ = self.resume();
-                } else {
-                    let _ = self.pause();
-                }
-            }
-            let video_frame = self.video_frame.clone();
-            let callback = egui::PaintCallback {
-                callback: Arc::new(egui_glow::CallbackFn::new(move |_info, _painter| {
-                    video_frame.read().paint();
-                })),
-                rect,
-            };
-            ui.painter().add(callback);
-        });
     }
 
     fn start(&mut self) -> Result<()> {
@@ -934,5 +924,13 @@ impl super::VideoPlayer for VideoPlayer {
             )?;
         }
         Ok(())
+    }
+}
+
+impl Drop for VideoPlayer {
+    fn drop(&mut self) {
+        if let Some(pipeline) = self.pipeline.read().as_ref() {
+            let _ = pipeline.set_state(gst::State::Null);
+        }
     }
 }

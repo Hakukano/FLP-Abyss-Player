@@ -4,10 +4,7 @@ use eframe::{egui::TextStyle, epaint::Color32};
 use parking_lot::RwLock;
 use tokio::runtime::{self, Runtime};
 
-use crate::{
-    utils::{fonts::gen_rich_text, helper::find_available_port},
-    models::player::Player,
-};
+use crate::utils::{fonts::gen_rich_text, helper::find_available_port};
 
 use self::{client::http_server::HttpServer, service::playlist::memory::Playlist};
 
@@ -28,7 +25,7 @@ pub struct MediaPlayer {
 }
 
 impl MediaPlayer {
-    pub fn new() -> Self {
+    pub fn new(item_paths: Vec<PathBuf>) -> Self {
         let runtime = runtime::Builder::new_multi_thread()
             .worker_threads(RUNTIME_THREADS)
             .thread_name(RUNTIME_THREAD_NAME)
@@ -37,7 +34,7 @@ impl MediaPlayer {
             .build()
             .expect("Cannot build tokio runtime");
         let slf = Self {
-            paths: Arc::new(RwLock::new(Vec::new())),
+            paths: Arc::new(RwLock::new(item_paths)),
             bind_port: find_available_port().expect("Cannot find available port"),
             runtime,
         };
@@ -52,41 +49,8 @@ impl MediaPlayer {
         });
         slf
     }
-}
 
-impl super::MediaPlayer for MediaPlayer {
-    fn is_loaded(&self) -> bool {
-        true
-    }
-
-    fn is_end(&self) -> bool {
-        false
-    }
-
-    fn reload(
-        &mut self,
-        _path: &dyn AsRef<std::path::Path>,
-        _ctx: &eframe::egui::Context,
-        _state: &Player,
-    ) {
-    }
-
-    fn sync(&mut self, state: &Player) {
-        *self.paths.write() = state
-            .playlist
-            .body
-            .item_paths
-            .iter()
-            .map(PathBuf::from)
-            .collect();
-    }
-
-    fn show_central_panel(
-        &mut self,
-        ui: &mut eframe::egui::Ui,
-        ctx: &eframe::egui::Context,
-        _can_input: bool,
-    ) {
+    pub fn update(&mut self, ui: &mut eframe::egui::Ui, ctx: &eframe::egui::Context) {
         ui.label(gen_rich_text(
             ctx,
             format!("Listening on: {}:{}", BIND_HOST, self.bind_port),

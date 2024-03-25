@@ -5,7 +5,7 @@ use axum::{Extension, Router};
 use tokio::net::TcpListener;
 use tower_http::services::{ServeDir, ServeFile};
 
-use crate::{views::player::server::service::playlist::Playlist, CLI};
+use crate::{utils::cli::CLI, views::player::server::service::playlist::Playlist};
 
 mod playlists;
 

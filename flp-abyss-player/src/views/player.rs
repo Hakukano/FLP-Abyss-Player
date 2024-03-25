@@ -27,11 +27,11 @@ enum MediaPlayer {
 }
 
 impl MediaPlayer {
-    pub fn new(player: &Player, ctx: &Context) -> Self {
+    fn new(player: &Player, ctx: &Context) -> Self {
         match player.playlist().expect("Playlist not found").media_type {
-            MediaType::Server => MediaPlayer::Server(server::MediaPlayer::new()),
-            MediaType::Image => MediaPlayer::Image(image::MediaPlayer::new(player, ctx)),
-            MediaType::Video => MediaPlayer::Video(video::MediaPlayer::new(ctx, gl)),
+            MediaType::Server => Self::Server(server::MediaPlayer::new()),
+            MediaType::Image => Self::Image(image::MediaPlayer::new(player, ctx)),
+            MediaType::Video => Self::Video(video::MediaPlayer::new(ctx, gl)),
             _ => panic!("Unknown media type"),
         }
     }

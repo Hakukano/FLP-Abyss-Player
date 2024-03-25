@@ -197,50 +197,7 @@ impl VideoPlayer {
         video_player
     }
 
-    fn send_status_get_request(&self, query: Vec<(String, String)>) {
-        let request_url = gen_vlc_http_request_url_base(self.http_port, VLC_HTTP_STATUS);
-        let request_password = self.http_password.clone();
-        self.runtime.spawn(async move {
-            let _ = Client::new()
-                .request(Method::GET, request_url.as_str())
-                .query(query.as_slice())
-                .basic_auth("", Some(request_password.as_str()))
-                .send()
-                .await;
-        });
-    }
-}
-
-impl Drop for VideoPlayer {
-    fn drop(&mut self) {
-        if let Some(child) = self.child.as_mut() {
-            let _ = child.kill();
-        }
-    }
-}
-
-impl super::VideoPlayer for VideoPlayer {
-    fn is_paused(&self) -> bool {
-        self.played.load(Ordering::Acquire) && self.status.read().state == "paused"
-    }
-
-    fn is_end(&self) -> bool {
-        self.played.load(Ordering::Acquire) && self.status.read().state == "stopped"
-    }
-
-    fn position(&self) -> u32 {
-        self.status.read().time
-    }
-
-    fn duration(&self) -> u32 {
-        self.status.read().length
-    }
-
-    fn volume(&self) -> u8 {
-        ((self.status.read().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
-    }
-
-    fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let status = self.status.read();
 
         ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
@@ -283,6 +240,39 @@ impl super::VideoPlayer for VideoPlayer {
                 None,
             ));
         });
+    }
+
+    fn send_status_get_request(&self, query: Vec<(String, String)>) {
+        let request_url = gen_vlc_http_request_url_base(self.http_port, VLC_HTTP_STATUS);
+        let request_password = self.http_password.clone();
+        self.runtime.spawn(async move {
+            let _ = Client::new()
+                .request(Method::GET, request_url.as_str())
+                .query(query.as_slice())
+                .basic_auth("", Some(request_password.as_str()))
+                .send()
+                .await;
+        });
+    }
+
+    fn is_paused(&self) -> bool {
+        self.played.load(Ordering::Acquire) && self.status.read().state == "paused"
+    }
+
+    fn is_end(&self) -> bool {
+        self.played.load(Ordering::Acquire) && self.status.read().state == "stopped"
+    }
+
+    fn position(&self) -> u32 {
+        self.status.read().time
+    }
+
+    fn duration(&self) -> u32 {
+        self.status.read().length
+    }
+
+    fn volume(&self) -> u8 {
+        ((self.status.read().volume as f32 / 256.0) * 100.0).min(u8::MAX as f32) as u8
     }
 
     fn start(&mut self) -> Result<()> {
@@ -339,5 +329,13 @@ impl super::VideoPlayer for VideoPlayer {
             ("val".to_string(), format!("-{seconds}")),
         ]);
         Ok(())
+    }
+}
+
+impl Drop for VideoPlayer {
+    fn drop(&mut self) {
+        if let Some(child) = self.child.as_mut() {
+            let _ = child.kill();
+        }
     }
 }
