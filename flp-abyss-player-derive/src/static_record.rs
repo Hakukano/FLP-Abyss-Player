@@ -116,8 +116,8 @@ pub fn handle(token: TokenStream) -> TokenStream {
                 #singleton.read().get("default").cloned().unwrap()
             }
 
-            pub fn save(self) {
-                #singleton.write().insert(self.id.clone(), self);
+            pub fn save(&self) {
+                #singleton.write().insert(self.id.clone(), self.clone());
             }
         }
     };
