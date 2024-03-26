@@ -10,7 +10,6 @@ import {
   Stack,
   Table,
 } from "react-bootstrap";
-import { open } from "@tauri-apps/plugin-dialog";
 import { PlusCircle, XCircle } from "react-bootstrap-icons";
 
 import { ApiServices } from "../services/api";

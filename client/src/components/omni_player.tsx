@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import {
   ArrowLeftSquare,
   ArrowRightSquare,
@@ -197,7 +196,7 @@ export function OmniPlayer(props: Props) {
         >
           {props.entry.mime.startsWith("image") ? (
             <img
-              src={convertFileSrc(props.entry.meta.path)}
+              src={props.entry.meta.path}
               className="w-100 h-100"
               style={{
                 objectFit: "contain",
@@ -205,7 +204,7 @@ export function OmniPlayer(props: Props) {
             />
           ) : (
             <ReactPlayer
-              url={convertFileSrc(props.entry.meta.path)}
+              url={props.entry.meta.path}
               playing={true}
               loop={loop}
               controls

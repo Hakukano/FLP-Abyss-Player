@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import fetch, { Response } from "node-fetch";
+
 import { MetaCmpBy } from "../utils/meta";
 import {
   AppConfigService,
@@ -10,24 +11,19 @@ import { PlaylistService, instantiatePlaylistService } from "./api/playlist";
 import { ScannerService, instantiateScannerService } from "./api/scanner";
 import { SessionService, instantiateSessionService } from "./api/session";
 
-type Method = "POST" | "GET" | "PUT" | "DELETE";
-
-export interface Response<Body> {
-  status: number;
-  body: Body;
-}
-
-export async function sendTauriCommand<Args, Body>(
+export async function sendRequest(
   path: string[],
-  method: Method,
-  args: Args,
-): Promise<Response<Body>> {
-  return await invoke("api", {
-    request: {
-      path,
-      method,
-      args,
-    },
+  searchParams: { [key: string]: string },
+  method: string,
+  body?: any,
+): Promise<Response> {
+  const url = new URL(`/${path.join("/")}`);
+  Object.entries(searchParams).forEach(([k, v]) =>
+    url.searchParams.append(k, v),
+  );
+  return await fetch(url, {
+    method,
+    body,
   });
 }
 

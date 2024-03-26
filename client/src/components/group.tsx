@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { Stack } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
@@ -47,7 +46,7 @@ export default function Group(props: Props) {
   };
 
   const deleteGroup = async (id: string) => {
-    if (await confirm(t("group.delete.confirm"))) {
+    if (confirm(t("group.delete.confirm"))) {
       await props.apiServices.group.destroy(id);
       if (id === props.group?.id) {
         navigate(`/player?playlist_id=${props.playlist.id}`);

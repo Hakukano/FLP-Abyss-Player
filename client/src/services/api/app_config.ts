@@ -1,5 +1,4 @@
-import { Response } from "../api.ts";
-import TauriCommand from "./app_config/tauri_command.ts";
+import Fetch from "./app_config/fetch.ts";
 
 export const basePath = ["app_config"];
 
@@ -16,12 +15,10 @@ export interface AppConfigDetails
     AppConfigMutable {}
 
 export interface AppConfigService {
-  index(): Promise<Response<AppConfigBrief>>;
-  update(appConfig: AppConfigMutable): Promise<Response<void>>;
+  index(): Promise<AppConfigBrief>;
+  update(appConfig: AppConfigMutable): Promise<void>;
 }
 
 export function instantiateAppConfigService(): AppConfigService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Fetch() : new Fetch();
 }

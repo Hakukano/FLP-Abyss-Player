@@ -1,4 +1,4 @@
-import { Response, SortArgs, sendTauriCommand } from "../../api";
+import { Response, SortArgs, sendRequest } from "../../api";
 import {
   GroupBrief,
   CreateArgs,
@@ -11,26 +11,26 @@ import {
 
 export default class TauriCommand implements GroupService {
   index(args: IndexArgs): Promise<Response<GroupBrief[]>> {
-    return sendTauriCommand(basePath, "GET", args);
+    return sendRequest(basePath, "GET", args);
   }
 
   create(args: CreateArgs): Promise<Response<GroupDetails>> {
-    return sendTauriCommand(basePath, "POST", args);
+    return sendRequest(basePath, "POST", args);
   }
 
   sort(args: SortArgs): Promise<Response<void>> {
-    return sendTauriCommand(basePath, "PUT", args);
+    return sendRequest(basePath, "PUT", args);
   }
 
   show(id: string): Promise<Response<GroupDetails>> {
-    return sendTauriCommand(basePath.concat([id]), "GET", {});
+    return sendRequest(basePath.concat([id]), "GET", {});
   }
 
   destroy(id: string): Promise<Response<void>> {
-    return sendTauriCommand(basePath.concat([id]), "DELETE", {});
+    return sendRequest(basePath.concat([id]), "DELETE", {});
   }
 
   shift(id: string, args: ShiftArgs): Promise<Response<void>> {
-    return sendTauriCommand(basePath.concat([id]), "PUT", args);
+    return sendRequest(basePath.concat([id]), "PUT", args);
   }
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { Stack } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { ScanModal, useScan } from "./scan_modal";
@@ -52,7 +51,7 @@ export default function Entry(props: Props) {
   };
 
   const deleteEntry = async (id: string) => {
-    if (await confirm(t("entry.delete.confirm"))) {
+    if (confirm(t("entry.delete.confirm"))) {
       await props.apiServices.entry.destroy(id);
       if (id === props.entry?.id) {
         navigate(
