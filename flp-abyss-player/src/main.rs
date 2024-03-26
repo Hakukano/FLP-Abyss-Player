@@ -19,8 +19,5 @@ i18n!(fallback = "en_US");
 fn main() {
     utils::initializer::initialize();
 
-    // Init locale
-    rust_i18n::set_locale(models::config::Config::get_default().locale.as_str());
-
     views::Task::run();
 }

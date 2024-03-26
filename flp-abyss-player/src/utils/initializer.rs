@@ -5,6 +5,8 @@ pub fn initialize() {
     let config = config::args::new();
     config.save();
 
+    rust_i18n::set_locale(config.locale.as_str());
+
     let playlist = Playlist::new("default".to_string(), &config);
     playlist.save();
 
@@ -16,6 +18,8 @@ pub fn initialize() {
 pub fn initialize() {
     let config = config::args::new();
     config.save();
+
+    rust_i18n::set_locale(config.locale.as_str());
 
     let playlist = Playlist::new("default".to_string(), &config);
     playlist.save();
