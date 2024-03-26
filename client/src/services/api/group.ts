@@ -1,6 +1,6 @@
 import { Meta } from "../../utils/meta";
-import { Response, SortArgs } from "../api";
-import TauriCommand from "./group/tauri_command";
+import { SortArgs } from "../api";
+import Remote from "./group/remote";
 
 export const basePath = ["groups"];
 
@@ -30,21 +30,19 @@ export interface ShiftArgs {
 }
 
 export interface GroupService {
-  index(args: IndexArgs): Promise<Response<GroupBrief[]>>;
+  index(args: IndexArgs): Promise<GroupBrief[]>;
 
-  create(args: CreateArgs): Promise<Response<GroupDetails>>;
+  create(args: CreateArgs): Promise<GroupDetails>;
 
-  sort(args: SortArgs): Promise<Response<void>>;
+  sort(args: SortArgs): Promise<void>;
 
-  show(id: string): Promise<Response<GroupDetails>>;
+  show(id: string): Promise<GroupDetails>;
 
-  destroy(id: string): Promise<Response<void>>;
+  destroy(id: string): Promise<void>;
 
-  shift(id: string, args: ShiftArgs): Promise<Response<void>>;
+  shift(id: string, args: ShiftArgs): Promise<void>;
 }
 
 export function instantiateGroupService(): GroupService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }

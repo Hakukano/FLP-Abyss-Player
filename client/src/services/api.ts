@@ -12,7 +12,7 @@ import { ScannerService, instantiateScannerService } from "./api/scanner";
 import { SessionService, instantiateSessionService } from "./api/session";
 
 interface RequestOptions {
-  searchParams?: string;
+  query?: string;
   body?: any;
 }
 
@@ -22,11 +22,29 @@ export async function sendRequest(
   options: RequestOptions = {},
 ): Promise<Response> {
   const url = new URL(`/${path.join("/")}`);
-  if (options.searchParams) url.search = options.searchParams;
+  if (options.query) url.search = options.query;
   return await fetch(url, {
     method: method,
     body: options.body,
   });
+}
+
+export async function sendRequestVoid(
+  method: "POST" | "GET" | "PUT" | "DELETE",
+  path: string[],
+  options: RequestOptions = {},
+): Promise<void> {
+  await sendRequest(method, path, options);
+}
+
+export async function sendRequestJson<T>(
+  method: "POST" | "GET" | "PUT" | "DELETE",
+  path: string[],
+  options: RequestOptions = {},
+): Promise<T> {
+  const resp = await sendRequest(method, path, options);
+  const body = await resp.json();
+  return body as T;
 }
 
 export interface SortArgs {

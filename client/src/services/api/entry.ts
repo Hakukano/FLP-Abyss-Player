@@ -1,6 +1,6 @@
 import { Meta } from "../../utils/meta";
-import { Response, SortArgs } from "../api";
-import TauriCommand from "./entry/tauri_command";
+import { SortArgs } from "../api";
+import Remote from "./entry/remote";
 
 export const basePath = ["entries"];
 
@@ -31,21 +31,19 @@ export interface ShiftArgs {
 }
 
 export interface EntryService {
-  index(args: IndexArgs): Promise<Response<EntryBrief[]>>;
+  index(args: IndexArgs): Promise<EntryBrief[]>;
 
-  create(args: CreateArgs): Promise<Response<EntryDetails>>;
+  create(args: CreateArgs): Promise<EntryDetails>;
 
-  sort(args: SortArgs): Promise<Response<void>>;
+  sort(args: SortArgs): Promise<void>;
 
-  show(id: string): Promise<Response<EntryDetails>>;
+  show(id: string): Promise<EntryDetails>;
 
-  destroy(id: string): Promise<Response<void>>;
+  destroy(id: string): Promise<void>;
 
-  shift(id: string, args: ShiftArgs): Promise<Response<void>>;
+  shift(id: string, args: ShiftArgs): Promise<void>;
 }
 
 export function instantiateEntryService(): EntryService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }

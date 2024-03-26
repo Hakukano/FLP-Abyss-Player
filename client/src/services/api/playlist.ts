@@ -1,5 +1,4 @@
-import { Response } from "../api";
-import TauriCommand from "./playlist/tauri_command";
+import Remote from "./playlist/remote";
 
 export const basePath = ["playlists"];
 
@@ -19,17 +18,15 @@ export interface CreateArgs {
 }
 
 export interface PlaylistService {
-  index(): Promise<Response<PlaylistBrief[]>>;
+  index(): Promise<PlaylistBrief[]>;
 
-  create(playlistCreate: CreateArgs): Promise<Response<PlaylistDetails>>;
+  create(playlistCreate: CreateArgs): Promise<PlaylistDetails>;
 
-  show(id: string): Promise<Response<PlaylistDetails>>;
+  show(id: string): Promise<PlaylistDetails>;
 
-  destroy(id: string): Promise<Response<void>>;
+  destroy(id: string): Promise<void>;
 }
 
 export function instantiatePlaylistService(): PlaylistService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }

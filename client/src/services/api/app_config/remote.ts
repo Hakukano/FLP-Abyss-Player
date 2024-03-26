@@ -1,4 +1,4 @@
-import { sendRequest } from "../../api.ts";
+import { sendRequest, sendRequestJson } from "../../api.ts";
 import {
   AppConfigService,
   basePath,
@@ -8,10 +8,8 @@ import {
 import i18next from "i18next";
 
 export default class Remote implements AppConfigService {
-  async index(): Promise<AppConfigBrief> {
-    const resp = await sendRequest("GET", basePath);
-    const body = await resp.json();
-    return body as AppConfigBrief;
+  index(): Promise<AppConfigBrief> {
+    return sendRequestJson("GET", basePath);
   }
 
   async update(appConfig: AppConfigMutable): Promise<void> {
