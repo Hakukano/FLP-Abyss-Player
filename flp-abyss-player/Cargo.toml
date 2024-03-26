@@ -13,10 +13,13 @@ readme = "../README.md"
 
 [dependencies]
 anyhow = "1.0"
+axum = "0.7"
+axum-macros = "0.4"
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
-flp-abyss-player-derive = { version = "0.1", path = "../src-derive" }
-image = "0.24"
+flp-abyss-player-derive = { version = "0.1", path = "../flp-abyss-player-derive" }
+http = "1.1"
+image = "0.25"
 mime = "0.3"
 mime_guess = "2.0"
 nom = "7.1"
@@ -26,6 +29,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sys-locale = "0.3"
 tap = "1.0"
+tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = "0.3"

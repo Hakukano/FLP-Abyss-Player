@@ -1,56 +1,45 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-use crate::services::{
-    entry::EntryService, group::GroupService, playlist::PlaylistService, session::SessionService,
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+    Json,
 };
+use http::StatusCode;
+use serde::{Deserialize, Serialize};
 
-use super::{ApiResult, FromArgs, Response};
+use crate::services::Services;
 
 #[derive(Deserialize, Serialize)]
-struct WriteArgs {
+pub struct WriteArgs {
     path: String,
 }
-impl FromArgs for WriteArgs {}
-pub fn save(
-    args: Value,
-    session_service: &dyn SessionService,
-    playlist_service: &dyn PlaylistService,
-    group_service: &dyn GroupService,
-    entry_service: &dyn EntryService,
-) -> ApiResult {
-    let args = WriteArgs::from_args(args)?;
-    session_service
+pub async fn save(services: State<Services>, Json(body): Json<WriteArgs>) -> Response {
+    services
+        .session
+        .read()
         .save(
-            args.path.as_str(),
-            playlist_service,
-            group_service,
-            entry_service,
+            body.path.as_str(),
+            services.playlist.read().as_ref(),
+            services.group.read().as_ref(),
+            services.entry.read().as_ref(),
         )
-        .map_err(|err| Response::bad_request(err.to_string()))
-        .map(|_| Response::no_content())
+        .map(|_| StatusCode::NO_CONTENT.into_response())
+        .unwrap_or_else(|err| (StatusCode::BAD_REQUEST, err.to_string()).into_response())
 }
 
 #[derive(Deserialize, Serialize)]
-struct ReadArgs {
+pub struct ReadArgs {
     path: String,
 }
-impl FromArgs for ReadArgs {}
-pub fn load(
-    args: Value,
-    session_service: &mut dyn SessionService,
-    playlist_service: &mut dyn PlaylistService,
-    group_service: &mut dyn GroupService,
-    entry_service: &mut dyn EntryService,
-) -> ApiResult {
-    let args = ReadArgs::from_args(args)?;
-    session_service
+pub async fn load(services: State<Services>, Json(body): Json<ReadArgs>) -> Response {
+    services
+        .session
+        .write()
         .load(
-            args.path.as_str(),
-            playlist_service,
-            group_service,
-            entry_service,
+            body.path.as_str(),
+            services.playlist.write().as_mut(),
+            services.group.write().as_mut(),
+            services.entry.write().as_mut(),
         )
-        .map_err(|err| Response::bad_request(err.to_string()))
-        .map(|_| Response::no_content())
+        .map(|_| StatusCode::NO_CONTENT.into_response())
+        .unwrap_or_else(|err| (StatusCode::BAD_REQUEST, err.to_string()).into_response())
 }

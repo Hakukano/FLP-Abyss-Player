@@ -15,16 +15,19 @@ pub struct AppConfigService {
 }
 
 impl AppConfigService {
+    #[allow(dead_code)]
     fn new(s: impl AsRef<str>) -> Self {
         serde_json::from_str(s.as_ref()).expect("Cannot parse json for SystemConfig")
     }
 
+    #[allow(dead_code)]
     fn load(path: impl AsRef<Path>) -> Result<String> {
         let mut data = String::new();
         BufReader::new(File::open(path)?).read_to_string(&mut data)?;
         Ok(data)
     }
 
+    #[allow(dead_code)]
     pub fn load_or_defaults(path: impl AsRef<Path>) -> Self {
         if let Ok(data) = Self::load(path) {
             Self::new(data)

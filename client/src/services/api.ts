@@ -21,10 +21,14 @@ export async function sendRequest(
 ): Promise<Response> {
   const url = new URL(`/${path.join("/")}`);
   if (options.query) url.search = options.query;
-  return await fetch(url, {
+  const resp = await fetch(url, {
     method: method,
     body: options.body,
   });
+  if (resp.status >= 400) {
+    throw { status: resp.status, body: await resp.text() };
+  }
+  return resp;
 }
 
 export async function sendRequestVoid(

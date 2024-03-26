@@ -1,101 +1,106 @@
-use std::path::Path;
-
+use axum::{
+    extract::{Path, Query, State},
+    response::{IntoResponse, Response},
+    Json,
+};
+use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::{
     models::entry::Entry,
-    services::entry::EntryService,
+    services::Services,
     utils::meta::{Meta, MetaCmpBy},
 };
 
-use super::{ApiResult, FromArgs, Response};
-
 #[derive(Deserialize, Serialize)]
-struct IndexArgs {
+pub struct IndexArgs {
     group_id: Option<String>,
 }
-impl FromArgs for IndexArgs {}
-pub fn index(args: Value, entry_service: &dyn EntryService) -> ApiResult {
-    let args = IndexArgs::from_args(args)?;
-    if let Some(group_id) = args.group_id {
-        Response::ok(entry_service.find_by_group_id(group_id.as_str()))
+pub async fn index(services: State<Services>, Query(query): Query<IndexArgs>) -> Response {
+    if let Some(group_id) = query.group_id {
+        Json(services.entry.read().find_by_group_id(group_id.as_str())).into_response()
     } else {
-        Response::ok(entry_service.all())
+        Json(services.entry.read().all()).into_response()
     }
 }
 
 #[derive(Deserialize, Serialize)]
-struct CreateArgs {
+pub struct CreateArgs {
     group_id: String,
     path: String,
 }
-impl FromArgs for CreateArgs {}
-pub fn create(args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
-    let args = CreateArgs::from_args(args)?;
-
-    let path = Path::new(args.path.as_str());
+pub async fn create(services: State<Services>, Json(body): Json<CreateArgs>) -> Response {
+    let path = std::path::Path::new(body.path.as_str());
     if !path.exists() {
-        return Err(Response::not_found());
+        return StatusCode::NOT_FOUND.into_response();
     }
-    let meta = Meta::from_path(path).map_err(|err| {
-        error!("Cannot read entry meta: {}", err);
-        Response::internal_server_error()
-    })?;
-    let entry = Entry::new(meta, args.group_id);
-    entry_service
-        .save(entry)
-        .map_err(|err| {
-            error!("Cannot save entry: {}", err);
-            Response::internal_server_error()
+    Meta::from_path(path)
+        .map(|meta| {
+            services
+                .entry
+                .write()
+                .save(Entry::new(meta, body.group_id))
+                .map(|entry| (StatusCode::CREATED, Json(entry)).into_response())
+                .unwrap_or_else(|err| {
+                    error!("Cannot save entry: {}", err);
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                })
         })
-        .and_then(Response::created)
+        .unwrap_or_else(|err| {
+            error!("Cannot read entry meta: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        })
 }
 
 #[derive(Deserialize, Serialize)]
-struct SortArgs {
+pub struct SortArgs {
     by: MetaCmpBy,
     ascend: bool,
 }
-impl FromArgs for SortArgs {}
-pub fn sort(args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
-    let args = SortArgs::from_args(args)?;
-    entry_service.sort(args.by, args.ascend);
-    Ok(Response::no_content())
+pub async fn sort(services: State<Services>, Json(body): Json<SortArgs>) -> Response {
+    services.entry.write().sort(body.by, body.ascend);
+    StatusCode::NO_CONTENT.into_response()
 }
 
-pub fn show(id: &str, entry_service: &dyn EntryService) -> ApiResult {
-    Response::ok(
-        entry_service
-            .find_by_id(id)
-            .ok_or_else(Response::not_found)?,
-    )
+pub async fn show(services: State<Services>, Path(id): Path<String>) -> Response {
+    services
+        .entry
+        .read()
+        .find_by_id(id.as_str())
+        .map(|entry| Json(entry).into_response())
+        .unwrap_or_else(|| StatusCode::NOT_FOUND.into_response())
 }
 
-pub fn destroy(id: &str, entry_service: &mut dyn EntryService) -> ApiResult {
-    entry_service
-        .destroy(id)
-        .map_err(|_| Response::not_found())?;
-    Ok(Response::no_content())
+pub async fn destroy(services: State<Services>, Path(id): Path<String>) -> Response {
+    services
+        .entry
+        .write()
+        .destroy(id.as_str())
+        .map(|_| StatusCode::NO_CONTENT.into_response())
+        .unwrap_or_else(|_| StatusCode::NOT_FOUND.into_response())
 }
 
 #[derive(Deserialize, Serialize)]
-struct ShiftArgs {
+pub struct ShiftArgs {
     offset: i64,
 }
-impl FromArgs for ShiftArgs {}
-pub fn shift(id: &str, args: Value, entry_service: &mut dyn EntryService) -> ApiResult {
-    let args = ShiftArgs::from_args(args)?;
-    let mut entries = entry_service.all();
-    let index = entries
+pub async fn shift(
+    services: State<Services>,
+    Path(id): Path<String>,
+    Json(body): Json<ShiftArgs>,
+) -> Response {
+    let mut entries = services.entry.read().all();
+    entries
         .iter()
         .position(|entry| entry.id == id)
-        .ok_or_else(Response::not_found)?;
-    let new_index = (index as i64 + args.offset)
-        .max(0)
-        .min(entries.len() as i64 - 1) as usize;
-    let deleted = entries.remove(index);
-    entries.insert(new_index, deleted);
-    entry_service.set_all(entries);
-    Ok(Response::no_content())
+        .map(|index| {
+            let new_index = (index as i64 + body.offset)
+                .max(0)
+                .min(entries.len() as i64 - 1) as usize;
+            let deleted = entries.remove(index);
+            entries.insert(new_index, deleted);
+            services.entry.write().set_all(entries);
+            StatusCode::NO_CONTENT.into_response()
+        })
+        .unwrap_or_else(|| StatusCode::NOT_FOUND.into_response())
 }

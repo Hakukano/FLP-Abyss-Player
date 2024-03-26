@@ -1,5 +1,4 @@
 use anyhow::Result;
-use tauri::{App, Manager};
 
 use crate::models::app_config::AppConfig;
 
@@ -17,13 +16,4 @@ fn system_locale() -> String {
 
 pub fn instantiate() -> Box<dyn AppConfigService> {
     Box::<json::AppConfigService>::default()
-}
-
-pub fn initialize(instance: &mut Box<dyn AppConfigService>, app: &App) {
-    *instance = Box::new(json::AppConfigService::load_or_defaults(
-        app.path()
-            .app_config_dir()
-            .expect("App config dir not found")
-            .join("app_config.json"),
-    ))
 }

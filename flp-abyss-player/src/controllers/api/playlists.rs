@@ -1,50 +1,52 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-use crate::{
-    models::playlist::Playlist,
-    services::{entry::EntryService, group::GroupService, playlist::PlaylistService},
+use axum::{
+    extract::{Path, State},
+    response::{IntoResponse, Response},
+    Json,
 };
+use http::StatusCode;
+use serde::{Deserialize, Serialize};
 
-use super::{ApiResult, FromArgs, Response};
+use crate::{models::playlist::Playlist, services::Services};
 
-pub fn index(playlist_service: &dyn PlaylistService) -> ApiResult {
-    Response::ok(playlist_service.all())
+pub async fn index(services: State<Services>) -> Response {
+    Json(services.playlist.read().all()).into_response()
 }
 
 #[derive(Deserialize, Serialize)]
-struct CreateArgs {
+pub struct CreateArgs {
     name: String,
 }
-impl FromArgs for CreateArgs {}
-pub fn create(args: Value, playlist_service: &mut dyn PlaylistService) -> ApiResult {
-    let args = CreateArgs::from_args(args)?;
-    let playlist = Playlist::new(args.name);
-    playlist_service
+pub async fn create(services: State<Services>, Json(body): Json<CreateArgs>) -> Response {
+    let playlist = Playlist::new(body.name);
+    services
+        .playlist
+        .write()
         .save(playlist)
-        .map_err(|err| {
+        .map(|playlist| (StatusCode::CREATED, Json(playlist)).into_response())
+        .unwrap_or_else(|err| {
             error!("Cannot save playlist: {}", err);
-            Response::internal_server_error()
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         })
-        .and_then(Response::created)
 }
 
-pub fn show(id: &str, playlist_service: &dyn PlaylistService) -> ApiResult {
-    Response::ok(
-        playlist_service
-            .find_by_id(id)
-            .ok_or_else(Response::not_found)?,
-    )
+pub async fn show(services: State<Services>, Path(id): Path<String>) -> Response {
+    services
+        .playlist
+        .read()
+        .find_by_id(id.as_str())
+        .map(|playlist| Json(playlist).into_response())
+        .unwrap_or_else(|| StatusCode::NOT_FOUND.into_response())
 }
 
-pub fn destroy(
-    id: &str,
-    playlist_service: &mut dyn PlaylistService,
-    group_serivce: &mut dyn GroupService,
-    entry_service: &mut dyn EntryService,
-) -> ApiResult {
-    playlist_service
-        .destroy(id, group_serivce, entry_service)
-        .map_err(|_| Response::not_found())?;
-    Ok(Response::no_content())
+pub async fn destroy(services: State<Services>, Path(id): Path<String>) -> Response {
+    services
+        .playlist
+        .write()
+        .destroy(
+            id.as_str(),
+            services.group.write().as_mut(),
+            services.entry.write().as_mut(),
+        )
+        .map(|_| StatusCode::NO_CONTENT.into_response())
+        .unwrap_or_else(|_| StatusCode::NOT_FOUND.into_response())
 }
