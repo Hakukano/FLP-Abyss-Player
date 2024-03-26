@@ -11,19 +11,21 @@ import { PlaylistService, instantiatePlaylistService } from "./api/playlist";
 import { ScannerService, instantiateScannerService } from "./api/scanner";
 import { SessionService, instantiateSessionService } from "./api/session";
 
+interface RequestOptions {
+  searchParams?: string;
+  body?: any;
+}
+
 export async function sendRequest(
+  method: "POST" | "GET" | "PUT" | "DELETE",
   path: string[],
-  searchParams: { [key: string]: string },
-  method: string,
-  body?: any,
+  options: RequestOptions = {},
 ): Promise<Response> {
   const url = new URL(`/${path.join("/")}`);
-  Object.entries(searchParams).forEach(([k, v]) =>
-    url.searchParams.append(k, v),
-  );
+  if (options.searchParams) url.search = options.searchParams;
   return await fetch(url, {
-    method,
-    body,
+    method: method,
+    body: options.body,
   });
 }
 

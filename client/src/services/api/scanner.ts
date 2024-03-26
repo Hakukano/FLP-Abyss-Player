@@ -1,5 +1,4 @@
-import { Response } from "../api";
-import TauriCommand from "./scanner/tauri_command";
+import Remote from "./scanner/remote";
 
 export const basePath = ["scanner"];
 
@@ -9,11 +8,9 @@ export interface IndexArgs {
 }
 
 export interface ScannerService {
-  index(args: IndexArgs): Promise<Response<string[]>>;
+  index(args: IndexArgs): Promise<string[]>;
 }
 
 export function instantiateScannerService(): ScannerService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }

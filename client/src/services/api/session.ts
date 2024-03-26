@@ -1,5 +1,4 @@
-import { Response } from "../api";
-import TauriCommand from "./session/tauri_command";
+import Remote from "./session/remote";
 
 export const basePath = ["session"];
 
@@ -8,12 +7,10 @@ export interface Session {
 }
 
 export interface SessionService {
-  write(session: Session): Promise<Response<void>>;
-  read(session: Session): Promise<Response<void>>;
+  write(session: Session): Promise<void>;
+  read(session: Session): Promise<void>;
 }
 
 export function instantiateSessionService(): SessionService {
-  return import.meta.env.MODE === "test"
-    ? new TauriCommand()
-    : new TauriCommand();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }

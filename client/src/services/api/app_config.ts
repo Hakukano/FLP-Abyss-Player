@@ -1,4 +1,4 @@
-import Fetch from "./app_config/fetch.ts";
+import Remote from "./app_config/remote.ts";
 
 export const basePath = ["app_config"];
 
@@ -20,5 +20,5 @@ export interface AppConfigService {
 }
 
 export function instantiateAppConfigService(): AppConfigService {
-  return import.meta.env.MODE === "test" ? new Fetch() : new Fetch();
+  return import.meta.env.MODE === "test" ? new Remote() : new Remote();
 }
