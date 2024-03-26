@@ -25,12 +25,15 @@ dev:
 
 audit:
 	cargo deny check bans
+	cd ./client && yarn && yarn audit
 
 lint:
 	cargo clippy
+	cd ./client && yarn && yarn lint
 
 test:
 	cargo test
+	cd ./client && yarn && yarn test
 
 $(TARGET_COVERAGE_SERVER): FORCE
 	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
@@ -41,7 +44,7 @@ server:
 	cargo build
 
 client:
-	cd ./client && yarn build && cd ..
+	cd ./client && yarn && yarn build && cd ..
 	rm -rf ./assets/static
 	cp -r ./client/out ./assets/static
 
