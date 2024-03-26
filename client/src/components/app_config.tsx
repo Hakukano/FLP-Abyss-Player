@@ -26,8 +26,7 @@ export default function AppConfig(props: Props) {
   const errorState = useError();
 
   const fetchAppConfig = async () => {
-    const resp = await props.apiServices.appConfig.index();
-    setAppConfig(resp.body);
+    setAppConfig(await props.apiServices.appConfig.index());
   };
 
   const setLocale = async (locale: string) => {

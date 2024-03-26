@@ -15,7 +15,7 @@ async function main() {
 
   const apiServices = new ApiServices();
 
-  const appConfig = (await apiServices.appConfig.index()).body;
+  const appConfig = await apiServices.appConfig.index();
 
   await i18next.use(initReactI18next).init({
     debug: import.meta.env.DEV,

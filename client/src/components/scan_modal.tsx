@@ -76,20 +76,6 @@ export function ScanModal(props: Props) {
     setGroupedPaths({});
   };
 
-  const popupRootPath = () => {
-    open({
-      multiple: false,
-      directory: true,
-      recursive: true,
-    })
-      .then((path) => {
-        setRootPath(path);
-      })
-      .catch((err) => {
-        errorState.popup(err);
-      });
-  };
-
   const addAllowedMime = () => {
     if (inputMime.trim().length === 0) {
       return;
@@ -114,7 +100,7 @@ export function ScanModal(props: Props) {
     }
     props.apiServices.scanner
       .index({ root_path: rootPath, allowed_mimes: allowedMimes })
-      .then((resp) => setUngroupedPaths(resp.body))
+      .then((resp) => setUngroupedPaths(resp))
       .catch((err) => errorState.popup(err));
   };
 
@@ -176,12 +162,10 @@ export function ScanModal(props: Props) {
   const submit = async () => {
     try {
       for (const [group, entries] of Object.entries(groupedPaths)) {
-        const createdGroup = (
-          await props.apiServices.group.create({
-            playlist_id: props.playlistId,
-            path: group,
-          })
-        ).body;
+        const createdGroup = await props.apiServices.group.create({
+          playlist_id: props.playlistId,
+          path: group,
+        });
         for (const entry of entries) {
           await props.apiServices.entry.create({
             group_id: createdGroup.id,
@@ -219,7 +203,6 @@ export function ScanModal(props: Props) {
                   <Button
                     className="w-100"
                     variant={rootPath ? "info" : "danger"}
-                    onClick={popupRootPath}
                   >
                     {rootPath ? rootPath : t("scan.errors.root_not_set")}
                   </Button>

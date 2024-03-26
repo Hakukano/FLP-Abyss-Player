@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { Container, Stack } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
@@ -31,7 +30,7 @@ export default function Playlists(props: Props) {
   };
 
   const fetchPlaylists = async () => {
-    setPlaylists((await props.apiServices.playlist.index()).body);
+    setPlaylists(await props.apiServices.playlist.index());
   };
 
   const newPlaylist = () => {
@@ -57,7 +56,7 @@ export default function Playlists(props: Props) {
   };
 
   const deletePlaylist = async (id: string) => {
-    if (await confirm(t("playlist.delete.confirm"))) {
+    if (confirm(t("playlist.delete.confirm"))) {
       await props.apiServices.playlist.destroy(id);
       await fetchPlaylists();
     }

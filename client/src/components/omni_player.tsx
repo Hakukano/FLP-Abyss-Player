@@ -120,7 +120,7 @@ export function OmniPlayer(props: Props) {
         })
         .then((resp) => {
           navigate(
-            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[nextGroupIndex].id}&entry_id=${resp.body[0].id}`,
+            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[nextGroupIndex].id}&entry_id=${resp[0].id}`,
           );
         })
         .catch((err) => errorState.popup(err));
@@ -166,7 +166,7 @@ export function OmniPlayer(props: Props) {
         })
         .then((resp) => {
           navigate(
-            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[previousGroupIndex].id}&entry_id=${resp.body[resp.body.length - 1].id}`,
+            `/player?playlist_id=${props.playlist.id}&group_id=${props.groups[previousGroupIndex].id}&entry_id=${resp[resp.length - 1].id}`,
           );
         })
         .catch((err) => errorState.popup(err));

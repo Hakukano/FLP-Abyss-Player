@@ -1,5 +1,3 @@
-import fetch, { Response } from "node-fetch";
-
 import { MetaCmpBy } from "../utils/meta";
 import {
   AppConfigService,

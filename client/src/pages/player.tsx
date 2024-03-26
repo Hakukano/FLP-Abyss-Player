@@ -42,14 +42,14 @@ export default function Player(props: Props) {
   const fetchGroups = (playlistId: string) => {
     props.apiServices.group
       .index({ playlist_id: playlistId })
-      .then((resp) => setGroups(resp.body))
+      .then((resp) => setGroups(resp))
       .catch((err) => errorState.popup(err));
   };
 
   const fetchEntries = (groupId: string) => {
     props.apiServices.entry
       .index({ group_id: groupId })
-      .then((resp) => setEntries(resp.body))
+      .then((resp) => setEntries(resp))
       .catch((err) => errorState.popup(err));
   };
 
@@ -62,8 +62,8 @@ export default function Player(props: Props) {
       props.apiServices.playlist
         .show(playlistId)
         .then((resp) => {
-          setPlaylist(resp.body);
-          fetchGroups(resp.body.id);
+          setPlaylist(resp);
+          fetchGroups(resp.id);
         })
         .catch((err) => errorState.popup(err));
     }
@@ -71,15 +71,15 @@ export default function Player(props: Props) {
       props.apiServices.group
         .show(groupId)
         .then((resp) => {
-          setGroup(resp.body);
-          fetchEntries(resp.body.id);
+          setGroup(resp);
+          fetchEntries(resp.id);
         })
         .catch((err) => errorState.popup(err));
     }
     if (entryId) {
       props.apiServices.entry
         .show(entryId)
-        .then((resp) => setEntry(resp.body))
+        .then((resp) => setEntry(resp))
         .catch((err) => errorState.popup(err));
     }
   }, [searchParams]);

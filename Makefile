@@ -46,7 +46,7 @@ server:
 client:
 	cd ./client && yarn && yarn build && cd ..
 	rm -rf ./assets/static
-	cp -r ./client/out ./assets/static
+	cp -r ./client/dist ./assets/static
 
 $(TARGET_BUNDLE_ASSETS):
 	mkdir -p $(OUTPUT_DIRECTORY)
