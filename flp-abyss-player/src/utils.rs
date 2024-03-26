@@ -5,7 +5,10 @@ pub mod test;
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    net::TcpListener,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 pub fn init_tracing(
     stdout: bool,
@@ -41,4 +44,12 @@ pub fn system_time_to_utc(system_time: &SystemTime) -> Result<DateTime<Utc>> {
         system_time.duration_since(UNIX_EPOCH)?.as_millis() as i64
     )
     .ok_or_else(|| anyhow!("Cannot convert milliseconds to Utc time"))
+}
+
+pub fn find_available_port() -> Option<u16> {
+    (40000..40100).find(|port| port_is_available(*port))
+}
+
+pub fn port_is_available(port: u16) -> bool {
+    TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
