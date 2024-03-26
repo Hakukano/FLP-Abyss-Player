@@ -19,11 +19,12 @@ export async function sendRequest(
   path: string[],
   options: RequestOptions = {},
 ): Promise<Response> {
-  const url = new URL(`/${path.join("/")}`);
+  const url = new URL(`/api/${path.join("/")}`, window.location.origin);
   if (options.query) url.search = options.query;
   const resp = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
     method: method,
-    body: options.body,
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
   if (resp.status >= 400) {
     throw { status: resp.status, body: await resp.text() };
