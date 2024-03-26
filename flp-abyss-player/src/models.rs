@@ -1,10 +1,5 @@
-use std::collections::HashMap;
-
-use once_cell::sync::Lazy;
-use parking_lot::RwLock;
-
-pub mod config;
-pub mod player;
+pub mod app_config;
+pub mod entry;
+pub mod group;
 pub mod playlist;
-
-type Singleton<T> = Lazy<RwLock<HashMap<String, T>>>;
+pub mod session;
