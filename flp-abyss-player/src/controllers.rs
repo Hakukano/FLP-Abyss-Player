@@ -1,5 +1,8 @@
 use axum::Router;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
+};
 
 use crate::services::Services;
 
@@ -13,5 +16,6 @@ pub fn router(services: Services) -> Router {
                 .not_found_service(ServeFile::new("./assets/static/index.html")),
         )
         .nest("/api", api::router())
+        .layer(TraceLayer::new_for_http())
         .with_state(services)
 }
