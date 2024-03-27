@@ -6,7 +6,8 @@ use tower_http::{
 
 use crate::services::Services;
 
-pub mod api;
+mod api;
+mod stream;
 
 pub fn router(services: Services) -> Router {
     Router::new()
@@ -16,6 +17,7 @@ pub fn router(services: Services) -> Router {
                 .not_found_service(ServeFile::new("./assets/static/index.html")),
         )
         .nest("/api", api::router())
+        .nest("/stream", stream::router())
         .layer(TraceLayer::new_for_http())
         .with_state(services)
 }

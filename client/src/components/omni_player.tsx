@@ -196,7 +196,7 @@ export function OmniPlayer(props: Props) {
         >
           {props.entry.mime.startsWith("image") ? (
             <img
-              src={props.entry.meta.path}
+              src={`/stream/entries/${props.entry.id}`}
               className="w-100 h-100"
               style={{
                 objectFit: "contain",
@@ -204,7 +204,7 @@ export function OmniPlayer(props: Props) {
             />
           ) : (
             <ReactPlayer
-              url={props.entry.meta.path}
+              url={`/stream/entries/${props.entry.id}`}
               playing={true}
               loop={loop}
               controls

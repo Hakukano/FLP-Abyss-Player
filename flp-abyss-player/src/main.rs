@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate tracing;
 
+#[macro_use]
+extern crate async_trait;
+
 use tokio::net::TcpListener;
 use tracing::Level;
 use utils::find_available_port;

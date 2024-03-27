@@ -514,12 +514,14 @@ name = "flp-abyss-player"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "axum-macros",
  "base64 0.22.0",
  "chrono",
  "flp-abyss-player-derive",
  "http",
+ "http-range-header",
  "image",
  "mime",
  "mime_guess",
@@ -531,6 +533,7 @@ dependencies = [
  "sys-locale",
  "tap",
  "tokio",
+ "tokio-util",
  "tower-http",
  "tracing",
  "tracing-appender",
