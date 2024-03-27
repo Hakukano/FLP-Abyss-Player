@@ -1,27 +1,31 @@
 OUTPUT_DIRECTORY = out
 
-TARGET_BUNDLE_ASSETS = $(OUTPUT_DIRECTORY)/assets.zip
-SRC_BUNDLE_ASSETS = assets
+EXEUTABLE_NAME = flp-abyss-player
 
-TARGET_BUNDLE_SCRIPTS = $(OUTPUT_DIRECTORY)/scripts.zip
-SRC_BUNDLE_SCRIPTS = scripts
+SERVER_BUILD_DIRECTORY = target
+SERVER_DEBUG_BUILD_DIRECTORY = ${SERVER_BUILD_DIRECTORY}/debug
+SERVER_RELEASE_BUILD_DIRECTORY = ${SERVER_BUILD_DIRECTORY}/release
+SERVER_OUT = ${OUTPUT_DIRECTORY}/${EXEUTABLE_NAME}
+
+CLIENT_BUILD_DIRECTORY = client/dist
+CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/public
 
 COVERAGE_DIRECTORY = coverage
-
 TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
-.PHONY: usage clean dev audit lint test server client bundle
+SCRIPTS_DIRECTORY = scripts
+SCRIPTS_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/scripts
+
+.PHONY: usage clean audit lint test client dev build
 
 usage:
-	echo "Usage: make [usage] [clean] [dev] [audit] [lint] [test] [coverage] [server] [client] [bundle]"
+	echo "Usage: make [usage] [clean] [audit] [lint] [test] [coverage] [client] [dev] [build]"
 
 FORCE: ;
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
-
-dev:
-	cargo run
+	mkdir -p ${OUTPUT_DIRECTORY}
 
 audit:
 	cargo deny check bans
@@ -40,20 +44,16 @@ $(TARGET_COVERAGE_SERVER): FORCE
 
 coverage: $(TARGET_COVERAGE_SERVER);
 
-server:
-	cargo build
-
-client:
+client: clean
 	cd ./client && yarn && yarn build && cd ..
-	rm -rf ./assets/static
-	cp -r ./client/dist ./assets/static
+	cp -r ${CLIENT_BUILD_DIRECTORY} ${CLIENT_OUT_DIRECTORY}
 
-$(TARGET_BUNDLE_ASSETS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_ASSETS) $(SRC_BUNDLE_ASSETS)
+dev: client
+	cargo build
+	cp ${SERVER_DEBUG_BUILD_DIRECTORY}/${EXEUTABLE_NAME} ${SERVER_OUT}
+	${SERVER_OUT}
 
-$(TARGET_BUNDLE_SCRIPTS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_SCRIPTS) $(SRC_BUNDLE_SCRIPTS)
-
-bundle: clean $(TARGET_BUNDLE_ASSETS) $(TARGET_BUNDLE_SCRIPTS)
+build: client
+	cargo build --release
+	cp ${SERVER_RELEASE_BUILD_DIRECTORY}/${EXEUTABLE_NAME} ${SERVER_OUT}
+	cp -r $(SCRIPTS_DIRECTORY) $(SCRIPTS_OUT_DIRECTORY)

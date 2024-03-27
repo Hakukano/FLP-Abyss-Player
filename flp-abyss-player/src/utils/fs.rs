@@ -6,8 +6,12 @@ pub fn exe_path() -> PathBuf {
     current_exe().unwrap()
 }
 
+pub fn exe_directory() -> PathBuf {
+    exe_path().parent().unwrap().to_path_buf()
+}
+
 pub fn public_path() -> PathBuf {
-    exe_path().join("public")
+    exe_directory().join("public")
 }
 
 pub fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
