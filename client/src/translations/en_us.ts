@@ -45,7 +45,6 @@ export default {
     },
     ungrouped: {
       title: "Ungrouped",
-      one_level_deeper: "One level deeper",
     },
     grouped: {
       title: "Grouped",

@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   Button,
   Col,
-  FormCheck,
   FormControl,
   Modal,
   Row,
@@ -45,7 +44,6 @@ export function ScanModal(props: Props) {
   const [inputMime, setInputMime] = useState<string>("");
   const [allowedMimes, setAllowedMimes] = useState<string[]>([]);
   const [ungroupedPaths, setUngroupedPaths] = useState<string[]>([]);
-  const [oneLevelDeeper, setOneLevelDeeper] = useState(false);
   const [groupPath, setGroupPath] = useState("");
   const [groupedPaths, setGroupedPaths] = useState<{
     [key: string]: string[];
@@ -71,7 +69,6 @@ export function ScanModal(props: Props) {
     setInputMime("");
     setAllowedMimes([]);
     setUngroupedPaths([]);
-    setOneLevelDeeper(false);
     setGroupPath("");
     setGroupedPaths({});
   };
@@ -105,17 +102,22 @@ export function ScanModal(props: Props) {
   };
 
   const grouping = () => {
-    const groupPathNoEnding = groupPath.replace(/\/$/, "");
     const groupsToMatch = new Set<string>();
-    if (oneLevelDeeper) {
+    let endingDelimiter = null;
+    if (groupPath.endsWith("/")) {
+      endingDelimiter = "/";
+    } else if (groupPath.endsWith("\\")) {
+      endingDelimiter = "\\";
+    }
+    if (typeof endingDelimiter === "string") {
       for (const ungroupedPath of ungroupedPaths) {
         const matched = ungroupedPath.match(
-          new RegExp(`^${groupPathNoEnding}(/[^/]*)/`),
+          new RegExp(`^${groupPath}([^${endingDelimiter}]*)${endingDelimiter}`),
         );
         if (!matched || matched.length < 2) {
           continue;
         }
-        groupsToMatch.add(`${groupPathNoEnding}${matched[1]}`);
+        groupsToMatch.add(`${groupPath}${matched[1]}`);
       }
     } else {
       groupsToMatch.add(groupPath);
@@ -269,15 +271,6 @@ export function ScanModal(props: Props) {
                   onChange={(e) => {
                     setGroupPath(e.target.value);
                   }}
-                />
-                <span style={{ whiteSpace: "nowrap" }}>
-                  {t("scan.ungrouped.one_level_deeper")}
-                </span>
-                <FormCheck
-                  type="checkbox"
-                  checked={oneLevelDeeper}
-                  onChange={(e) => setOneLevelDeeper(e.target.checked)}
-                  className="ms-auto"
                 />
                 <PlusCircle
                   className="text-info"
