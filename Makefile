@@ -11,9 +11,6 @@ CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/public
 COVERAGE_DIRECTORY = coverage
 TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
-SCRIPTS_DIRECTORY = scripts
-SCRIPTS_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/scripts
-
 .PHONY: usage clean audit lint test client dev build
 
 usage:
@@ -52,5 +49,3 @@ build: clean
 
 	cargo build --release
 	cp ${SERVER_BUILD} ${SERVER_OUT}
-
-	cp -r $(SCRIPTS_DIRECTORY) $(SCRIPTS_OUT_DIRECTORY)
