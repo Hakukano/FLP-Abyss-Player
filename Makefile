@@ -43,7 +43,8 @@ $(TARGET_COVERAGE_SERVER): FORCE
 coverage: $(TARGET_COVERAGE_SERVER);
 
 dev:
-	cargo dev
+	cd ./client && yarn
+	cargo run & yarn --cwd ./client dev ; fg
 
 build: clean
 	cd ./client && yarn && yarn build
