@@ -6,7 +6,6 @@ extern crate async_trait;
 
 use tokio::net::TcpListener;
 use tracing::Level;
-use utils::find_available_port;
 
 mod controllers;
 mod models;
@@ -26,10 +25,7 @@ async fn main() {
 
     let services = services::Services::new();
 
-    let addr = format!(
-        "127.0.0.1:{}",
-        find_available_port().expect("No available port found")
-    );
+    let addr = "0.0.0.0:44444".to_string();
     let app = controllers::router(services);
     let listener = TcpListener::bind(addr.as_str()).await.unwrap();
     info!("Listening at {}", addr);
