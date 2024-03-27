@@ -19,8 +19,8 @@ export async function sendRequest(
   path: string[],
   options: RequestOptions = {},
 ): Promise<Response> {
-  const url = new URL(`/api/${path.join("/")}`, window.location.origin);
-  if (options.query) url.search = options.query;
+  let url = `/api/${path.join("/")}`;
+  if (options.query) url = url + "?" + options.query;
   const resp = await fetch(url, {
     headers: { "Content-Type": "application/json" },
     method: method,

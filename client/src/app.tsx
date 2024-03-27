@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import Welcome from "./pages/welcome.tsx";
 import Player from "./pages/player.tsx";
 import { ApiServices } from "./services/api.ts";
 import Playlists from "./pages/playlists.tsx";
@@ -15,7 +14,7 @@ function App(props: Props) {
       <Routes>
         <Route
           path="/"
-          element={<Welcome apiServices={props.apiServices} />}
+          element={<Playlists apiServices={props.apiServices} />}
         ></Route>
         <Route
           path="/playlists"
