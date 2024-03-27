@@ -99,7 +99,7 @@ export function ScanModal(props: Props) {
       return errorState.popup(t("scan.errors.allowed_mimes_not_set"));
     }
     props.apiServices.scanner
-      .index({ root_path: rootPath, allowed_mimes: allowedMimes })
+      .index({ root_path: rootPath, allowed_mimes: allowedMimes.join(",") })
       .then((resp) => setUngroupedPaths(resp))
       .catch((err) => errorState.popup(err));
   };
@@ -200,12 +200,11 @@ export function ScanModal(props: Props) {
                   <span>{t("scan.root_path.label")}</span>
                 </Col>
                 <Col md={9}>
-                  <Button
+                  <FormControl
+                    type="text"
                     className="w-100"
-                    variant={rootPath ? "info" : "danger"}
-                  >
-                    {rootPath ? rootPath : t("scan.errors.root_not_set")}
-                  </Button>
+                    onChange={(e) => setRootPath(e.target.value)}
+                  />
                 </Col>
               </Row>
               <Stack gap={2}>

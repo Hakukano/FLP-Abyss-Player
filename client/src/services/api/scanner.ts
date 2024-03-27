@@ -4,7 +4,7 @@ export const basePath = ["scanner"];
 
 export interface IndexArgs {
   root_path: string;
-  allowed_mimes: string[];
+  allowed_mimes: string;
 }
 
 export interface ScannerService {
