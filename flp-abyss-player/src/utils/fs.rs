@@ -1,4 +1,14 @@
+use std::{env::current_exe, path::PathBuf};
+
 use walkdir::WalkDir;
+
+pub fn exe_path() -> PathBuf {
+    current_exe().unwrap()
+}
+
+pub fn public_path() -> PathBuf {
+    exe_path().join("public")
+}
 
 pub fn match_mime(mime: impl AsRef<str>, patterns: impl AsRef<[String]>) -> bool {
     patterns

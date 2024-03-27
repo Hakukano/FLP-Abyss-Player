@@ -4,7 +4,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::services::Services;
+use crate::{services::Services, utils::fs::public_path};
 
 mod api;
 mod stream;
@@ -13,8 +13,8 @@ pub fn router(services: Services) -> Router {
     Router::new()
         .nest_service(
             "/",
-            ServeDir::new("./assets/static")
-                .not_found_service(ServeFile::new("./assets/static/index.html")),
+            ServeDir::new(public_path())
+                .not_found_service(ServeFile::new(public_path().join("index.html"))),
         )
         .nest("/api", api::router())
         .nest("/stream", stream::router())
