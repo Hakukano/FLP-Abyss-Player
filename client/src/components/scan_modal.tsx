@@ -111,13 +111,12 @@ export function ScanModal(props: Props) {
     }
     if (typeof endingDelimiter === "string") {
       for (const ungroupedPath of ungroupedPaths) {
-        const matched = ungroupedPath.match(
-          new RegExp(`^${groupPath}([^${endingDelimiter}]*)${endingDelimiter}`),
+        const headless = ungroupedPath.replace(groupPath, "");
+        const nextLevel = headless.substring(
+          0,
+          headless.indexOf(endingDelimiter),
         );
-        if (!matched || matched.length < 2) {
-          continue;
-        }
-        groupsToMatch.add(`${groupPath}${matched[1]}`);
+        groupsToMatch.add(`${groupPath}${nextLevel}`);
       }
     } else {
       groupsToMatch.add(groupPath);

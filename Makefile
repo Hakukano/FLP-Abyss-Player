@@ -1,3 +1,5 @@
+VERSION = $(shell cat VERSION | tr -d '[:space:]')
+
 OUTPUT_DIRECTORY = out
 
 EXEUTABLE_NAME = flp-abyss-player
@@ -5,8 +7,10 @@ EXEUTABLE_NAME = flp-abyss-player
 SERVER_BUILD = target/release/${EXEUTABLE_NAME}
 SERVER_OUT = ${OUTPUT_DIRECTORY}/${EXEUTABLE_NAME}
 
+CLIENT_STATIC_NAME = public
+
 CLIENT_BUILD_DIRECTORY = client/dist
-CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/public
+CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/${CLIENT_STATIC_NAME}
 
 COVERAGE_DIRECTORY = coverage
 TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
@@ -51,3 +55,5 @@ build: clean
 
 	cargo build --release
 	cp ${SERVER_BUILD} ${SERVER_OUT}
+
+	cd ${OUTPUT_DIRECTORY} && zip -r "${EXEUTABLE_NAME}-${VERSION}.zip" ${EXEUTABLE_NAME} ${CLIENT_STATIC_NAME}
