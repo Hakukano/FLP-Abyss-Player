@@ -53,3 +53,5 @@ build: clean
 
 	cargo build --release
 	cp ${SERVER_BUILD} ${SERVER_OUT}
+
+	cp LICENSE README.md VERSION ${OUTPUT_DIRECTORY}
