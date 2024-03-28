@@ -11,10 +11,10 @@ CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/public
 COVERAGE_DIRECTORY = coverage
 TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
 
-.PHONY: usage clean audit lint test client dev build
+.PHONY: usage clean audit lint test client dev-server dev-client build
 
 usage:
-	echo "Usage: make [usage] [clean] [audit] [lint] [test] [coverage] [client] [dev] [build]"
+	echo "Usage: make [usage] [clean] [audit] [lint] [test] [coverage] [client] [dev-server] [dev-client] [build]"
 
 FORCE: ;
 
@@ -39,9 +39,11 @@ $(TARGET_COVERAGE_SERVER): FORCE
 
 coverage: $(TARGET_COVERAGE_SERVER);
 
-dev:
-	cd ./client && yarn
-	cargo run & yarn --cwd ./client dev ; fg
+dev-server:
+	cargo run
+
+dev-client:
+	cd ./client && yarn && yarn dev
 
 build: clean
 	cd ./client && yarn && yarn build
