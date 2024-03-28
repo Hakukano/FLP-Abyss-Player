@@ -28,7 +28,9 @@ jobs:
         with:
           name: flp-abyss-player-${{ matrix.os }}
           path: out/*
+          overwrite: true
   release:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
