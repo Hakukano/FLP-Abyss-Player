@@ -1,5 +1,3 @@
-VERSION = $(shell cat VERSION | tr -d '[:space:]')
-
 OUTPUT_DIRECTORY = out
 
 EXEUTABLE_NAME = flp-abyss-player
@@ -55,5 +53,3 @@ build: clean
 
 	cargo build --release
 	cp ${SERVER_BUILD} ${SERVER_OUT}
-
-	cd ${OUTPUT_DIRECTORY} && zip -r "${EXEUTABLE_NAME}-${VERSION}.zip" ${EXEUTABLE_NAME} ${CLIENT_STATIC_NAME}
