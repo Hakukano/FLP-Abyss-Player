@@ -1,30 +1,55 @@
 OUTPUT_DIRECTORY = out
 
-TARGET_BUNDLE_ASSETS = $(OUTPUT_DIRECTORY)/assets.zip
-SRC_BUNDLE_ASSETS = assets
+EXEUTABLE_NAME = flp-abyss-player
 
-TARGET_BUNDLE_SCRIPTS = $(OUTPUT_DIRECTORY)/scripts.zip
-SRC_BUNDLE_SCRIPTS = scripts
+SERVER_BUILD = target/release/${EXEUTABLE_NAME}
+SERVER_OUT = ${OUTPUT_DIRECTORY}/${EXEUTABLE_NAME}
 
-.PHONY: usage client bundle clean
+CLIENT_STATIC_NAME = public
+
+CLIENT_BUILD_DIRECTORY = client/dist
+CLIENT_OUT_DIRECTORY = ${OUTPUT_DIRECTORY}/${CLIENT_STATIC_NAME}
+
+COVERAGE_DIRECTORY = coverage
+TARGET_COVERAGE_SERVER = $(COVERAGE_DIRECTORY)/tarpaulin-report.html
+
+.PHONY: usage clean audit lint test client dev-server dev-client build
 
 usage:
-	echo "Usage: make [client] [bundle] [clean]"
+	echo "Usage: make [usage] [clean] [audit] [lint] [test] [coverage] [client] [dev-server] [dev-client] [build]"
+
+FORCE: ;
 
 clean:
 	rm -rf $(OUTPUT_DIRECTORY)
+	mkdir -p ${OUTPUT_DIRECTORY}
 
-client:
-	cd ./client && yarn build && cd ..
-	rm -rf ./assets/static
-	cp -r ./client/out ./assets/static
+audit:
+	cargo deny check bans
+	cd ./client && yarn && yarn audit
 
-$(TARGET_BUNDLE_ASSETS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_ASSETS) $(SRC_BUNDLE_ASSETS)
+lint:
+	cargo clippy
+	cd ./client && yarn && yarn lint
 
-$(TARGET_BUNDLE_SCRIPTS):
-	mkdir -p $(OUTPUT_DIRECTORY)
-	zip -r $(TARGET_BUNDLE_SCRIPTS) $(SRC_BUNDLE_SCRIPTS)
+test:
+	cargo test
+	cd ./client && yarn && yarn test
 
-bundle: clean $(TARGET_BUNDLE_ASSETS) $(TARGET_BUNDLE_SCRIPTS)
+$(TARGET_COVERAGE_SERVER): FORCE
+	cargo tarpaulin --workspace --all-features --out='Html' --output-dir=$(COVERAGE_DIRECTORY)
+
+coverage: $(TARGET_COVERAGE_SERVER);
+
+dev-server:
+	cargo run
+
+dev-client:
+	cd ./client && yarn && yarn dev
+
+build: clean
+	cd ./client && yarn && yarn build
+	cp -r ${CLIENT_BUILD_DIRECTORY} ${CLIENT_OUT_DIRECTORY}
+
+	cargo build --release
+	cp ${SERVER_BUILD} ${SERVER_OUT}

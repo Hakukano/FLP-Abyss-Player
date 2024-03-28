@@ -1,0 +1,40 @@
+[package]
+name = "flp-abyss-player"
+version = "0.1.0"
+edition = "2021"
+authors = ["Hakukano <hakukano@flp-web.org>"]
+description = "Media player that sees all"
+repository = "https://github.com/Hakukano/FLP-Abyss-Player"
+homepage = "https://flp-abyss-player.rs/"
+license = "MIT OR Apache-2.0"
+readme = "../README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+async-trait = "0.1"
+axum = "0.7"
+axum-macros = "0.4"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+flp-abyss-player-derive = { version = "0.1", path = "../flp-abyss-player-derive" }
+http = "1.1"
+http-range-header = "0.4"
+image = "0.25"
+mime = "0.3"
+mime_guess = "2.0"
+nom = "7.1"
+parking_lot = "0.12"
+rand = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sys-locale = "0.3"
+tap = "1.0"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+tower-http = { version = "0.5", features = ["full"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = "0.3"
+walkdir = "2.4"
