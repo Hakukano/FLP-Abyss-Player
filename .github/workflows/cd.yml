@@ -29,23 +29,3 @@ jobs:
           name: flp-abyss-player-${{ matrix.os }}
           path: out/*
           overwrite: true
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: flp-abyss-player-*
-          merge-multiple: true
-      - name: set version
-        run: |
-          VER=$(cat VERSION)
-          echo "VERSION=$VER" >> $GITHUB_ENV
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          tag_name: v${{ env.VERSION }}
-          files: flp-abyss-player-*
-          fail_on_unmatched_files: true
