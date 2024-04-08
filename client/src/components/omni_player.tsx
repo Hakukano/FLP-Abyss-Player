@@ -187,7 +187,16 @@ export function OmniPlayer(props: Props) {
   return (
     <>
       <ErrorModal state={errorState} />
-      <Row className="vw-100" style={{ height: "calc(100vh - 40px)" }}>
+      <Row
+        style={{ width: "calc(100% - 32px)", height: "calc(100vh - 64px)" }}
+        onClick={(event) => {
+          if (event.clientX < window.innerWidth / 2) {
+            previousEntry();
+          } else {
+            nextEntry();
+          }
+        }}
+      >
         <Col
           style={{
             maxWidth: "100%",
@@ -215,8 +224,11 @@ export function OmniPlayer(props: Props) {
         </Col>
       </Row>
       <Row
-        className="vw-100"
-        style={{ height: "32px", paddingTop: "4px", alignItems: "center" }}
+        style={{
+          width: "calc(100% - 32px)",
+          paddingTop: "4px",
+          alignItems: "center",
+        }}
       >
         <Col md={2}>
           <ArrowLeftSquare

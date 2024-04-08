@@ -89,7 +89,7 @@ export default function Player(props: Props) {
   };
 
   return (
-    <Container fluid>
+    <Container fluid className="d-flex flex-column align-items-center">
       <ErrorModal state={errorState} />
       <MenuModal state={menuState} apiServices={props.apiServices} />
       {playlist &&
