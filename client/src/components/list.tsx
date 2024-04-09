@@ -19,7 +19,7 @@ import {
   VisibilityState,
   PaginationState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Select from "react-select";
 
 interface Props {
@@ -161,6 +161,17 @@ export default function List(props: Props) {
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
   });
+
+  useEffect(() => {
+    const entryIndex = props.data.findIndex((row) =>
+      props.highlightedIds?.has(row["id"]),
+    );
+    const pageIndex = Math.floor(entryIndex / pagination.pageSize);
+    console.log(entryIndex, pageIndex);
+    if (entryIndex >= 0) {
+      table.setPageIndex(pageIndex);
+    }
+  }, [props.data]);
 
   return (
     <Stack gap={2}>

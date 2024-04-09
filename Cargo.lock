@@ -520,6 +520,7 @@ dependencies = [
  "base64 0.22.0",
  "chrono",
  "flp-abyss-player-derive",
+ "flp-rusty-model",
  "http",
  "http-range-header",
  "image",
@@ -544,6 +545,18 @@ dependencies = [
 [[package]]
 name = "flp-abyss-player-derive"
 version = "0.1.0"
+dependencies = [
+ "convert_case",
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "flp-rusty-model"
+version = "0.1.0"
+source = "git+https://github.com/Hakukano/FLP-Rusty-Model.git?tag=v0.1.0#f61ae70d8ba9b536b438dbac7c6f470032ea9c42"
 dependencies = [
  "convert_case",
  "darling",
