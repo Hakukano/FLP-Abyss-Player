@@ -4,12 +4,12 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::{services::Services, utils::fs::public_path};
+use crate::utils::fs::public_path;
 
 mod api;
 mod stream;
 
-pub fn router(services: Services) -> Router {
+pub fn router() -> Router {
     Router::new()
         .nest_service(
             "/",
@@ -19,5 +19,4 @@ pub fn router(services: Services) -> Router {
         .nest("/api", api::router())
         .nest("/stream", stream::router())
         .layer(TraceLayer::new_for_http())
-        .with_state(services)
 }

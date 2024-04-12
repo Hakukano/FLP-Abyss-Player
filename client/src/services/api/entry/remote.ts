@@ -18,7 +18,7 @@ export default class Remote implements EntryService {
     });
   }
 
-  create(args: CreateArgs): Promise<EntryDetails> {
+  create(args: CreateArgs): Promise<void> {
     return sendRequestJson("POST", basePath, { body: args });
   }
 

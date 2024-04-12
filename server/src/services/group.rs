@@ -1,40 +1,65 @@
-use anyhow::Result;
+use anyhow::anyhow;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde_json::Value;
 
 use crate::{models::group::Group, utils::meta::MetaCmpBy};
 
-use super::entry::EntryService;
+pub type SaveError = ();
 
-mod memory;
+pub type DestroyError = ();
 
-pub trait GroupService: Send + Sync {
-    fn all(&self) -> Vec<Group>;
-
-    fn set_all(&mut self, groups: Vec<Group>);
-
-    fn find_by_id(&self, id: &str) -> Option<Group> {
-        self.all().iter().find(|group| group.id == id).cloned()
-    }
-
-    fn find_by_playlist_id(&self, playlist_id: &str) -> Vec<Group> {
-        self.all()
-            .iter()
-            .filter(|group| group.playlist_id == playlist_id)
-            .cloned()
-            .collect()
-    }
-
-    fn save(&mut self, group: Group) -> Result<Group>;
-
-    fn sort(&mut self, by: MetaCmpBy, ascend: bool);
-
-    fn destroy(&mut self, id: &str, entry_service: &mut dyn EntryService) -> Result<Group>;
-
-    fn to_json(&self) -> Value;
-
-    fn set_json(&mut self, value: Value) -> Result<()>;
+pub fn all() -> Vec<Group> {
+    INSTANCE.read().clone()
 }
 
-pub fn instantiate() -> Box<dyn GroupService> {
-    Box::<memory::GroupService>::default()
+pub fn find(id: &str) -> Option<Group> {
+    INSTANCE.read().iter().find(|group| group.id == id).cloned()
 }
+
+pub fn save(group: &Group) -> Result<(), SaveError> {
+    for existing in INSTANCE.write().iter_mut() {
+        if existing.id == group.id {
+            *existing = group.clone();
+            return Ok(());
+        }
+    }
+    INSTANCE.write().push(group.clone());
+    Ok(())
+}
+
+pub fn destroy(id: &str) -> Result<(), DestroyError> {
+    INSTANCE.write().retain(|group| group.id != id);
+    Ok(())
+}
+
+pub fn to_json() -> Value {
+    serde_json::to_value(INSTANCE.read().clone()).expect("Corrupted group data")
+}
+
+pub fn set_json(value: Value) -> anyhow::Result<()> {
+    *INSTANCE.write() = serde_json::from_value(value)?;
+    Ok(())
+}
+
+pub fn sort(by: MetaCmpBy, ascend: bool) {
+    INSTANCE
+        .write()
+        .sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
+}
+
+pub fn shift(id: &str, offset: i64) -> anyhow::Result<()> {
+    let mut groups = Group::all();
+    groups
+        .iter()
+        .position(|group| group.id == id)
+        .map(|index| {
+            let new_index = (index as i64 + offset).max(0).min(groups.len() as i64 - 1) as usize;
+            let deleted = groups.remove(index);
+            groups.insert(new_index, deleted);
+            *INSTANCE.write() = groups;
+        })
+        .ok_or_else(|| anyhow!("Not found"))
+}
+
+static INSTANCE: Lazy<RwLock<Vec<Group>>> = Lazy::new(RwLock::default);

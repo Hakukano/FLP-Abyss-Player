@@ -20,7 +20,7 @@ export interface CreateArgs {
 export interface PlaylistService {
   index(): Promise<PlaylistBrief[]>;
 
-  create(playlistCreate: CreateArgs): Promise<PlaylistDetails>;
+  create(playlistCreate: CreateArgs): Promise<void>;
 
   show(id: string): Promise<PlaylistDetails>;
 

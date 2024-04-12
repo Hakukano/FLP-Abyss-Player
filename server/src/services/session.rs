@@ -1,27 +1,18 @@
+use std::{fs::File, path::Path};
+
 use anyhow::Result;
 
-use super::{entry::EntryService, group::GroupService, playlist::PlaylistService};
+use crate::models::session::Session;
 
-mod fs;
-
-pub trait SessionService: Send + Sync {
-    fn save(
-        &self,
-        path: &str,
-        playlist_service: &dyn PlaylistService,
-        group_service: &dyn GroupService,
-        entry_service: &dyn EntryService,
-    ) -> Result<()>;
-
-    fn load(
-        &self,
-        path: &str,
-        playlist_service: &mut dyn PlaylistService,
-        group_service: &mut dyn GroupService,
-        entry_service: &mut dyn EntryService,
-    ) -> Result<()>;
+pub fn save(path: impl AsRef<Path>) -> Result<()> {
+    let file = File::create(path)?;
+    let session = Session::new();
+    serde_json::to_writer(file, &session)?;
+    Ok(())
 }
 
-pub fn instantiate() -> Box<dyn SessionService> {
-    Box::<fs::SessionService>::default()
+pub fn load(path: impl AsRef<Path>) -> Result<()> {
+    let file = File::open(path)?;
+    let session: Session = serde_json::from_reader(file)?;
+    session.apply()
 }

@@ -1,13 +1,17 @@
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use flp_rusty_model::RustyModel;
 use serde::{Deserialize, Serialize};
 
+use super::group::Group;
 use crate::utils::meta::Meta;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, RustyModel)]
+#[rusty_model(service = "crate::services::entry", belongs_to = ["group"])]
 pub struct Entry {
     pub id: String,
     pub mime: String,
     pub meta: Meta,
+    #[rusty_model(findable)]
     pub group_id: String,
 }
 

@@ -1,36 +1,42 @@
-use anyhow::Result;
+use std::collections::HashMap;
+
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde_json::Value;
 
 use crate::models::playlist::Playlist;
 
-use super::{entry::EntryService, group::GroupService};
+pub type SaveError = ();
 
-mod memory;
+pub type DestroyError = ();
 
-pub trait PlaylistService: Send + Sync {
-    fn all(&self) -> Vec<Playlist>;
-
-    fn find_by_id(&self, id: &str) -> Option<Playlist> {
-        self.all()
-            .iter()
-            .find(|playlist| playlist.id == id)
-            .cloned()
-    }
-
-    fn save(&mut self, playlist: Playlist) -> Result<Playlist>;
-
-    fn destroy(
-        &mut self,
-        id: &str,
-        group_service: &mut dyn GroupService,
-        entry_service: &mut dyn EntryService,
-    ) -> Result<Playlist>;
-
-    fn to_json(&self) -> Value;
-
-    fn set_json(&mut self, value: Value) -> Result<()>;
+pub fn all() -> Vec<Playlist> {
+    INSTANCE.read().values().cloned().collect()
 }
 
-pub fn instantiate() -> Box<dyn PlaylistService> {
-    Box::<memory::PlaylistService>::default()
+pub fn find(id: &str) -> Option<Playlist> {
+    INSTANCE.read().get(id).cloned()
 }
+
+pub fn save(playlist: &Playlist) -> Result<(), SaveError> {
+    INSTANCE
+        .write()
+        .insert(playlist.id.clone(), playlist.clone());
+    Ok(())
+}
+
+pub fn destroy(id: &str) -> Result<(), DestroyError> {
+    INSTANCE.write().remove(id);
+    Ok(())
+}
+
+pub fn to_json() -> Value {
+    serde_json::to_value(INSTANCE.read().clone()).expect("Corrupted playlist data")
+}
+
+pub fn set_json(value: Value) -> anyhow::Result<()> {
+    *INSTANCE.write() = serde_json::from_value(value)?;
+    Ok(())
+}
+
+static INSTANCE: Lazy<RwLock<HashMap<String, Playlist>>> = Lazy::new(RwLock::default);

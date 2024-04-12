@@ -1,38 +1,65 @@
-use anyhow::Result;
+use anyhow::anyhow;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde_json::Value;
 
 use crate::{models::entry::Entry, utils::meta::MetaCmpBy};
 
-mod memory;
+pub type SaveError = ();
 
-pub trait EntryService: Send + Sync {
-    fn all(&self) -> Vec<Entry>;
+pub type DestroyError = ();
 
-    fn set_all(&mut self, groups: Vec<Entry>);
-
-    fn find_by_id(&self, id: &str) -> Option<Entry> {
-        self.all().iter().find(|entry| entry.id == id).cloned()
-    }
-
-    fn find_by_group_id(&self, group_id: &str) -> Vec<Entry> {
-        self.all()
-            .iter()
-            .filter(|group| group.group_id == group_id)
-            .cloned()
-            .collect()
-    }
-
-    fn save(&mut self, entry: Entry) -> Result<Entry>;
-
-    fn sort(&mut self, by: MetaCmpBy, ascend: bool);
-
-    fn destroy(&mut self, id: &str) -> Result<Entry>;
-
-    fn to_json(&self) -> Value;
-
-    fn set_json(&mut self, value: Value) -> Result<()>;
+pub fn all() -> Vec<Entry> {
+    INSTANCE.read().clone()
 }
 
-pub fn instantiate() -> Box<dyn EntryService> {
-    Box::<memory::EntryService>::default()
+pub fn find(id: &str) -> Option<Entry> {
+    INSTANCE.read().iter().find(|entry| entry.id == id).cloned()
 }
+
+pub fn save(entry: &Entry) -> Result<(), SaveError> {
+    for existing in INSTANCE.write().iter_mut() {
+        if existing.id == entry.id {
+            *existing = entry.clone();
+            return Ok(());
+        }
+    }
+    INSTANCE.write().push(entry.clone());
+    Ok(())
+}
+
+pub fn destroy(id: &str) -> Result<(), DestroyError> {
+    INSTANCE.write().retain(|entry| entry.id != id);
+    Ok(())
+}
+
+pub fn to_json() -> Value {
+    serde_json::to_value(INSTANCE.read().clone()).expect("Corrupted entry data")
+}
+
+pub fn set_json(value: Value) -> anyhow::Result<()> {
+    *INSTANCE.write() = serde_json::from_value(value)?;
+    Ok(())
+}
+
+pub fn sort(by: MetaCmpBy, ascend: bool) {
+    INSTANCE
+        .write()
+        .sort_by(|a, b| a.meta.cmp_by(&b.meta, by, ascend));
+}
+
+pub fn shift(id: &str, offset: i64) -> anyhow::Result<()> {
+    let mut entries = Entry::all();
+    entries
+        .iter()
+        .position(|entry| entry.id == id)
+        .map(|index| {
+            let new_index = (index as i64 + offset).max(0).min(entries.len() as i64 - 1) as usize;
+            let deleted = entries.remove(index);
+            entries.insert(new_index, deleted);
+            *INSTANCE.write() = entries;
+        })
+        .ok_or_else(|| anyhow!("Not found"))
+}
+
+static INSTANCE: Lazy<RwLock<Vec<Entry>>> = Lazy::new(RwLock::default);

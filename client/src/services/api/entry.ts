@@ -33,7 +33,7 @@ export interface ShiftArgs {
 export interface EntryService {
   index(args: IndexArgs): Promise<EntryBrief[]>;
 
-  create(args: CreateArgs): Promise<EntryDetails>;
+  create(args: CreateArgs): Promise<void>;
 
   sort(args: SortArgs): Promise<void>;
 

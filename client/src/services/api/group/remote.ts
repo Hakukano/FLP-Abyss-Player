@@ -18,7 +18,7 @@ export default class Remote implements GroupService {
     });
   }
 
-  create(args: CreateArgs): Promise<GroupDetails> {
+  create(args: CreateArgs): Promise<void> {
     return sendRequestJson("POST", basePath, { body: args });
   }
 

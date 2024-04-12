@@ -1,7 +1,11 @@
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use flp_rusty_model::RustyModel;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Deserialize, Serialize)]
+use super::group::Group;
+
+#[derive(Clone, Deserialize, Serialize, RustyModel)]
+#[rusty_model(service = "crate::services::playlist", has_many = ["group"])]
 pub struct Playlist {
     pub id: String,
     pub name: String,

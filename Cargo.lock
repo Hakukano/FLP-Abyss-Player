@@ -527,6 +527,7 @@ dependencies = [
  "mime",
  "mime_guess",
  "nom",
+ "once_cell",
  "parking_lot",
  "rand",
  "serde",
@@ -1148,6 +1149,9 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+dependencies = [
+ "parking_lot_core",
+]
 
 [[package]]
 name = "overload"
