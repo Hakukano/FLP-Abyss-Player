@@ -167,7 +167,6 @@ export default function List(props: Props) {
       props.highlightedIds?.has(row["id"]),
     );
     const pageIndex = Math.floor(entryIndex / pagination.pageSize);
-    console.log(entryIndex, pageIndex);
     if (entryIndex >= 0) {
       table.setPageIndex(pageIndex);
     }
