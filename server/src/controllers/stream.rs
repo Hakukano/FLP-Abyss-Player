@@ -2,7 +2,7 @@ use std::{io::SeekFrom, ops::Deref};
 
 use axum::{
     body::Body,
-    extract::{FromRequestParts, Path, State},
+    extract::{FromRequestParts, Path},
     response::{AppendHeaders, IntoResponse, Response},
     routing::get,
     Router,
@@ -19,7 +19,7 @@ use tokio::{
 };
 use tokio_util::io::ReaderStream;
 
-use crate::services::Services;
+use crate::models::entry::Entry;
 
 struct RangesHeader(ParsedRanges);
 
@@ -56,12 +56,8 @@ where
     }
 }
 
-async fn entry(
-    services: State<Services>,
-    ranges: Option<RangesHeader>,
-    Path(id): Path<String>,
-) -> Result<Response, Response> {
-    let entry = services.entry.read().find_by_id(id.as_str());
+async fn entry(ranges: Option<RangesHeader>, Path(id): Path<String>) -> Result<Response, Response> {
+    let entry = Entry::find(&id);
     match entry {
         None => Ok((StatusCode::NOT_FOUND, ()).into_response()),
         Some(entry) => {
@@ -114,6 +110,6 @@ async fn entry(
     }
 }
 
-pub fn router() -> Router<Services> {
+pub fn router() -> Router {
     Router::new().route("/entries/:id", get(entry))
 }

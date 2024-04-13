@@ -23,10 +23,8 @@ async fn main() {
         },
     );
 
-    let services = services::Services::new();
-
     let addr = "0.0.0.0:44444".to_string();
-    let app = controllers::router(services);
+    let app = controllers::router();
     let listener = TcpListener::bind(addr.as_str()).await.unwrap();
     info!("Listening at {}", addr);
     axum::serve(listener, app).await.unwrap();

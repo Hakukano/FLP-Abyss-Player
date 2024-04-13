@@ -3,8 +3,6 @@ use axum::{
     Router,
 };
 
-use crate::services::Services;
-
 mod app_config;
 mod entries;
 mod groups;
@@ -12,7 +10,7 @@ mod playlists;
 mod scanner;
 mod session;
 
-pub fn router() -> Router<Services> {
+pub fn router() -> Router {
     Router::new()
         .route(
             "/app_config",

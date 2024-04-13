@@ -13,12 +13,14 @@ axum-macros = "0.4"
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 flp-abyss-player-derive = { version = "0.1", path = "../server-derive" }
+flp-rusty-model = { git = "https://github.com/Hakukano/FLP-Rusty-Model.git", tag = "v0.2.0" }
 http = "1.1"
 http-range-header = "0.4"
 image = "0.25"
 mime = "0.3"
 mime_guess = "2.0"
 nom = "7.1"
+once_cell = { version = "1.19", features = ["parking_lot"] }
 parking_lot = "0.12"
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"] }

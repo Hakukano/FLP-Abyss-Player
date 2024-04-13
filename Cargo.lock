@@ -520,12 +520,14 @@ dependencies = [
  "base64 0.22.0",
  "chrono",
  "flp-abyss-player-derive",
+ "flp-rusty-model",
  "http",
  "http-range-header",
  "image",
  "mime",
  "mime_guess",
  "nom",
+ "once_cell",
  "parking_lot",
  "rand",
  "serde",
@@ -544,6 +546,18 @@ dependencies = [
 [[package]]
 name = "flp-abyss-player-derive"
 version = "0.1.0"
+dependencies = [
+ "convert_case",
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "flp-rusty-model"
+version = "0.2.0"
+source = "git+https://github.com/Hakukano/FLP-Rusty-Model.git?tag=v0.2.0#e62e4342179c596f60228b9017a51a3e7113ab44"
 dependencies = [
  "convert_case",
  "darling",
@@ -1135,6 +1149,9 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+dependencies = [
+ "parking_lot_core",
+]
 
 [[package]]
 name = "overload"
