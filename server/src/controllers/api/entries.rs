@@ -17,7 +17,7 @@ pub struct IndexArgs {
 }
 pub async fn index(Query(query): Query<IndexArgs>) -> Response {
     if let Some(group_id) = query.group_id {
-        Json(Entry::find(&group_id)).into_response()
+        Json(Entry::find_by_group_id(&group_id)).into_response()
     } else {
         Json(Entry::all()).into_response()
     }
