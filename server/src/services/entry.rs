@@ -17,15 +17,15 @@ pub fn find(id: &str) -> Option<Entry> {
     INSTANCE.read().iter().find(|entry| entry.id == id).cloned()
 }
 
-pub fn save(entry: &Entry) -> Result<(), SaveError> {
+pub fn save(entry: Entry) -> Result<Entry, SaveError> {
     for existing in INSTANCE.write().iter_mut() {
         if existing.id == entry.id {
             *existing = entry.clone();
-            return Ok(());
+            return Ok(entry);
         }
     }
     INSTANCE.write().push(entry.clone());
-    Ok(())
+    Ok(entry)
 }
 
 pub fn destroy(id: &str) -> Result<(), DestroyError> {

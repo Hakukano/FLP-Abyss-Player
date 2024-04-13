@@ -32,7 +32,7 @@ export interface ShiftArgs {
 export interface GroupService {
   index(args: IndexArgs): Promise<GroupBrief[]>;
 
-  create(args: CreateArgs): Promise<void>;
+  create(args: CreateArgs): Promise<GroupDetails>;
 
   sort(args: SortArgs): Promise<void>;
 

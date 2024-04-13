@@ -12,8 +12,8 @@ export default class Remote implements PlaylistService {
     return sendRequestJson("GET", basePath);
   }
 
-  create(playlistCreate: CreateArgs): Promise<void> {
-    return sendRequestVoid("POST", basePath, { body: playlistCreate });
+  create(playlistCreate: CreateArgs): Promise<PlaylistDetails> {
+    return sendRequestJson("POST", basePath, { body: playlistCreate });
   }
 
   show(id: string): Promise<PlaylistDetails> {

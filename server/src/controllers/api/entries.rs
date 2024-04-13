@@ -37,7 +37,7 @@ pub async fn create(Json(body): Json<CreateArgs>) -> Response {
         .map(|meta| {
             Entry::new(meta, body.group_id)
                 .save()
-                .map(|_| StatusCode::CREATED.into_response())
+                .map(|entry| (StatusCode::CREATED, Json(entry)).into_response())
                 .unwrap_or_else(|_| {
                     error!("Cannot save entry");
                     StatusCode::INTERNAL_SERVER_ERROR.into_response()

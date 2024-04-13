@@ -19,7 +19,7 @@ pub struct CreateArgs {
 pub async fn create(Json(body): Json<CreateArgs>) -> Response {
     Playlist::new(body.name)
         .save()
-        .map(|_| StatusCode::CREATED.into_response())
+        .map(|playlist| (StatusCode::CREATED, Json(playlist)).into_response())
         .unwrap_or_else(|_| {
             error!("Cannot save playlist");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

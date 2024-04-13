@@ -556,8 +556,8 @@ dependencies = [
 
 [[package]]
 name = "flp-rusty-model"
-version = "0.1.0"
-source = "git+https://github.com/Hakukano/FLP-Rusty-Model.git?tag=v0.1.0#f61ae70d8ba9b536b438dbac7c6f470032ea9c42"
+version = "0.2.0"
+source = "git+https://github.com/Hakukano/FLP-Rusty-Model.git?tag=v0.2.0#e62e4342179c596f60228b9017a51a3e7113ab44"
 dependencies = [
  "convert_case",
  "darling",

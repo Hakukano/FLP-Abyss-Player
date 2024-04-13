@@ -37,7 +37,7 @@ pub async fn create(Json(body): Json<CreateArgs>) -> Response {
         .map(|meta| {
             Group::new(meta, body.playlist_id)
                 .save()
-                .map(|_| StatusCode::CREATED.into_response())
+                .map(|group| (StatusCode::CREATED, Json(group)).into_response())
                 .unwrap_or_else(|_| {
                     error!("Cannot save group");
                     StatusCode::INTERNAL_SERVER_ERROR.into_response()

@@ -18,11 +18,11 @@ pub fn find(id: &str) -> Option<Playlist> {
     INSTANCE.read().get(id).cloned()
 }
 
-pub fn save(playlist: &Playlist) -> Result<(), SaveError> {
+pub fn save(playlist: Playlist) -> Result<Playlist, SaveError> {
     INSTANCE
         .write()
         .insert(playlist.id.clone(), playlist.clone());
-    Ok(())
+    Ok(playlist)
 }
 
 pub fn destroy(id: &str) -> Result<(), DestroyError> {
